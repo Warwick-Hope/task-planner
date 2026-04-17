@@ -74,7 +74,7 @@ All tables have RLS enabled. Policies to be added per phase.
 
 Goal: working app for personal use end to end
 
-- [ ] 1.1 Auth — email/password sign up and sign in, protected routes, session handling
+- [x] 1.1 Auth — email/password sign up and sign in, protected routes, session handling
 - [ ] 1.2 RLS policies — add policies to all tables so users only see their own data
 - [ ] 1.3 Onboarding — first run flow: set display name, create initial role categories, optionally add mission
 - [ ] 1.4 Role category management — CRUD UI for managing the two-level hierarchy
@@ -108,7 +108,8 @@ Goal: working app for personal use end to end
 - [x] Supabase dev and prod projects created
 - [x] Database schema created in dev — all tables and enums, RLS enabled
 - [x] Initial commit pushed to main
-- [ ] Next: Phase 1.1 — Auth
+- [x] Phase 1.1 — Auth complete: email/password sign up and sign in, protected routes, session handling via middleware
+- [ ] Next: Phase 1.2 — RLS policies
 
 ## How to continue in a new session
 
