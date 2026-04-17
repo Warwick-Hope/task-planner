@@ -41,7 +41,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 href="/roles"
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
-                Focus areas
+                Roles
               </Link>
             </nav>
           </div>

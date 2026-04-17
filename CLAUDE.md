@@ -37,6 +37,8 @@ ANTHROPIC_API_KEY=your_anthropic_key
 - **Subtasks** — one level deep via parent_task_id on tasks table. No recursive nesting for now.
 - **Mission/Values** — separate tables, not part of profile. Reference layer for planning sessions only, not per-task metadata.
 - **AI parsing** — Anthropic API called server-side via Next.js API route. Never expose API key client-side.
+- **Role category deletion** — current behaviour: deleting a role category cascades to task_roles, silently untagging affected tasks. Tasks themselves are not deleted. For Phase 1 (single user) this is acceptable with a UI warning showing affected task count. Archive/soft-delete to be revisited in Phase 2 if needed.
+- **Sharing / multi-user** — deferred decision. Current architecture (user_id on all tables, per-user RLS) supports single-user only. Sharing would require: an organisations/teams table, membership table, updated RLS policies allowing team members to read/write shared data, and an invitation flow. This is a significant change — needs design before Phase 3. Do not add shared data patterns to Phase 1 or 2 without revisiting schema first.
 
 ## Database schema (created in dev)
 

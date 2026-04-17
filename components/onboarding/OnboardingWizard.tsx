@@ -9,7 +9,7 @@ interface RoleCategory {
   colour: string
 }
 
-const STEPS = ['Your name', 'Areas of focus', 'Mission']
+const STEPS = ['Your name', 'Roles', 'Mission']
 
 export default function OnboardingWizard() {
   const router = useRouter()
@@ -110,7 +110,7 @@ export default function OnboardingWizard() {
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && canAdvance() && setStep(1)}
-                placeholder="e.g. Warwick"
+                placeholder="Your name"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
             </div>
@@ -120,7 +120,7 @@ export default function OnboardingWizard() {
           {step === 1 && (
             <div>
               <h1 className="text-xl font-semibold text-gray-900 mb-1">
-                What are your main areas of focus?
+                What are your main roles?
               </h1>
               <p className="text-sm text-gray-500 mb-6">
                 Add the top-level roles or domains that tasks will belong to. You can add more later.
@@ -157,7 +157,7 @@ export default function OnboardingWizard() {
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && addRole()}
-                  placeholder="e.g. Work, Personal, Health"
+                  placeholder="e.g. Work, Personal, Health…"
                   className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
                 <div className="flex items-center gap-2">
