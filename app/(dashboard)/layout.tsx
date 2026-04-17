@@ -12,6 +12,17 @@ export default async function DashboardLayout({ children }: { children: React.Re
     redirect('/login')
   }
 
+  // Redirect to onboarding if profile not yet created
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('id, display_name')
+    .eq('id', user.id)
+    .single()
+
+  if (!profile) {
+    redirect('/onboarding')
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
