@@ -2,22 +2,12 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { ROLE_COLOURS } from '@/lib/constants'
 
 interface RoleCategory {
   name: string
   colour: string
 }
-
-const COLOURS = [
-  '#3B82F6',
-  '#10B981',
-  '#8B5CF6',
-  '#F59E0B',
-  '#EF4444',
-  '#EC4899',
-  '#14B8A6',
-  '#6B7280',
-]
 
 const STEPS = ['Your name', 'Areas of focus', 'Mission']
 
@@ -28,7 +18,7 @@ export default function OnboardingWizard() {
   const [displayName, setDisplayName] = useState('')
   const [roles, setRoles] = useState<RoleCategory[]>([])
   const [newRoleName, setNewRoleName] = useState('')
-  const [newRoleColour, setNewRoleColour] = useState(COLOURS[0])
+  const [newRoleColour, setNewRoleColour] = useState(ROLE_COLOURS[0])
   const [mission, setMission] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -38,7 +28,7 @@ export default function OnboardingWizard() {
     if (!name) return
     setRoles((prev) => [...prev, { name, colour: newRoleColour }])
     setNewRoleName('')
-    setNewRoleColour(COLOURS[roles.length % COLOURS.length])
+    setNewRoleColour(ROLE_COLOURS[roles.length % ROLE_COLOURS.length])
   }
 
   function removeRole(index: number) {
@@ -173,7 +163,7 @@ export default function OnboardingWizard() {
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-gray-500 shrink-0">Colour:</span>
                   <div className="flex gap-1.5 flex-wrap">
-                    {COLOURS.map((c) => (
+                    {ROLE_COLOURS.map((c) => (
                       <button
                         key={c}
                         onClick={() => setNewRoleColour(c)}
