@@ -75,7 +75,7 @@ All tables have RLS enabled. Policies to be added per phase.
 Goal: working app for personal use end to end
 
 - [x] 1.1 Auth — email/password sign up and sign in, protected routes, session handling
-- [ ] 1.2 RLS policies — add policies to all tables so users only see their own data
+- [x] 1.2 RLS policies — add policies to all tables so users only see their own data
 - [ ] 1.3 Onboarding — first run flow: set display name, create initial role categories, optionally add mission
 - [ ] 1.4 Role category management — CRUD UI for managing the two-level hierarchy
 - [ ] 1.5 Manual task entry — form to create a task with title, notes, horizon fields, role tags
@@ -109,7 +109,8 @@ Goal: working app for personal use end to end
 - [x] Database schema created in dev — all tables and enums, RLS enabled
 - [x] Initial commit pushed to main
 - [x] Phase 1.1 — Auth complete: email/password sign up and sign in, protected routes, session handling via middleware
-- [ ] Next: Phase 1.2 — RLS policies
+- [x] Phase 1.2 — RLS policies complete: all tables have select/insert/update/delete policies scoped to auth.uid(). task_roles joins through tasks.
+- [ ] Next: Phase 1.3 — Onboarding
 
 ## How to continue in a new session
 
