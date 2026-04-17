@@ -80,7 +80,7 @@ Goal: working app for personal use end to end
 - [x] 1.2 RLS policies — add policies to all tables so users only see their own data
 - [x] 1.3 Onboarding — first run flow: set display name, create initial role categories, optionally add mission
 - [x] 1.4 Role category management — CRUD UI for managing the two-level hierarchy
-- [ ] 1.5 Manual task entry — form to create a task with title, notes, horizon fields, role tags
+- [x] 1.5 Manual task entry — form to create a task with title, notes, horizon fields, role tags
 - [ ] 1.6 Task list view — filterable, sortable by horizon, role, status. Unplanned view (all horizon fields null).
 - [ ] 1.7 AI brain dump — chat window with model selector, submits to API route, Sonnet parses into one or more structured tasks, user reviews and confirms before saving
 - [ ] 1.8 Basic horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
@@ -114,7 +114,8 @@ Goal: working app for personal use end to end
 - [x] Phase 1.2 — RLS policies complete: all tables have select/insert/update/delete policies scoped to auth.uid(). task_roles joins through tasks.
 - [x] Phase 1.3 — Onboarding complete: 3-step wizard (display name, role categories, mission). Dashboard layout redirects to /onboarding if no profile exists.
 - [x] Phase 1.4 — Role category management complete: CRUD at /roles, two-level hierarchy, inline edit/add/delete, colour picker, deletion blocked if children exist.
-- [ ] Next: Phase 1.5 — Manual task entry
+- [x] Phase 1.5 — Manual task entry complete: /tasks/new form with title, notes, horizon precision selector, role tag multi-select, status picker. lib/horizon.ts handles all field derivation.
+- [ ] Next: Phase 1.6 — Task list view
 
 ## How to continue in a new session
 
