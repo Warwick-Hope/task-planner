@@ -1,3 +1,5 @@
+import type { Task } from '@/types'
+
 export type HorizonPrecision = 'unplanned' | 'year' | 'half' | 'quarter' | 'month' | 'week' | 'day' | 'time'
 
 export const HORIZON_PRECISION_LABELS: Record<HorizonPrecision, string> = {
@@ -161,4 +163,60 @@ export function buildHorizonFields(
   }
 
   return empty
+}
+
+/**
+ * Returns a sortable string key for a task's horizon.
+ * Earlier horizons sort first; unplanned tasks sort last.
+ */
+export function horizonSortKey(task: Task): string {
+  if (task.horizon_time_slot) return `a_${task.horizon_time_slot}`
+  if (task.horizon_day) return `b_${task.horizon_day}`
+  if (task.horizon_week) return `c_${task.horizon_week}`
+  if (task.horizon_month != null && task.horizon_year != null) {
+    return `d_${task.horizon_year}-${String(task.horizon_month).padStart(2, '0')}`
+  }
+  if (task.horizon_quarter != null && task.horizon_year != null) {
+    return `e_${task.horizon_year}-Q${task.horizon_quarter}`
+  }
+  if (task.horizon_half != null && task.horizon_year != null) {
+    return `f_${task.horizon_year}-H${task.horizon_half}`
+  }
+  if (task.horizon_year != null) return `g_${task.horizon_year}`
+  return 'z_unplanned'
+}
+
+/** Returns a human-readable summary of a task's horizon. */
+export function formatHorizon(task: Task): string {
+  if (task.horizon_time_slot) {
+    return new Date(task.horizon_time_slot).toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  }
+  if (task.horizon_day) {
+    return new Date(task.horizon_day + 'T12:00:00').toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    })
+  }
+  if (task.horizon_week) {
+    const d = new Date(task.horizon_week + 'T12:00:00')
+    return `w/c ${d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}`
+  }
+  if (task.horizon_month != null && task.horizon_year != null) {
+    const d = new Date(task.horizon_year, task.horizon_month - 1, 1)
+    return d.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  }
+  if (task.horizon_quarter != null && task.horizon_year != null) {
+    return `Q${task.horizon_quarter} ${task.horizon_year}`
+  }
+  if (task.horizon_half != null && task.horizon_year != null) {
+    return `H${task.horizon_half} ${task.horizon_year}`
+  }
+  if (task.horizon_year != null) return `${task.horizon_year}`
+  return 'Unplanned'
 }

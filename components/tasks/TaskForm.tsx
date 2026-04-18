@@ -139,7 +139,7 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
       return
     }
 
-    router.push('/dashboard')
+    router.push('/tasks')
     router.refresh()
   }
 
