@@ -91,24 +91,17 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
     })
   }
 
-  function colourFor(role: RoleCategory): string {
-    if (role.parent_id === null) return role.colour ?? '#6B7280'
-    const parent = roles.find((r) => r.id === role.parent_id)
-    return parent?.colour ?? '#6B7280'
-  }
-
-  // Sort roles: parents first by sort_order, then children under their parent
-  const sortedRoles = (() => {
-    const parents = roles.filter((r) => r.parent_id === null).sort((a, b) => a.sort_order - b.sort_order)
-    const result: RoleCategory[] = []
-    for (const parent of parents) {
-      result.push(parent)
-      const children = roles
+  // Group children under their parent for display
+  const roleGroups = (() => {
+    const parents = roles
+      .filter((r) => r.parent_id === null)
+      .sort((a, b) => a.sort_order - b.sort_order)
+    return parents.map((parent) => ({
+      parent,
+      children: roles
         .filter((r) => r.parent_id === parent.id)
-        .sort((a, b) => a.sort_order - b.sort_order)
-      result.push(...children)
-    }
-    return result
+        .sort((a, b) => a.sort_order - b.sort_order),
+    }))
   })()
 
   async function handleSubmit(e: React.FormEvent) {
@@ -146,7 +139,7 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
       return
     }
 
-    router.push('/tasks')
+    router.push('/dashboard')
     router.refresh()
   }
 
@@ -324,35 +317,54 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
         )}
       </div>
 
-      {/* Roles */}
-      {sortedRoles.length > 0 && (
+      {/* Roles — top-level are group headers only; children are selectable */}
+      {roleGroups.length > 0 && (
         <div>
-          <p className="block text-sm font-medium text-gray-700 mb-2">Role</p>
-          <div className="flex flex-wrap gap-2">
-            {sortedRoles.map((role) => {
-              const colour = colourFor(role)
-              const selected = selectedRoleIds.has(role.id)
-              const isChild = role.parent_id !== null
-              return (
-                <button
-                  key={role.id}
-                  type="button"
-                  onClick={() => toggleRole(role.id)}
-                  className={`flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
-                    selected
-                      ? 'border-transparent text-white'
-                      : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
-                  } ${isChild ? 'ml-3' : ''}`}
-                  style={selected ? { backgroundColor: colour } : {}}
-                >
+          <p className="block text-sm font-medium text-gray-700 mb-3">Role</p>
+          <div className="space-y-3">
+            {roleGroups.map(({ parent, children }) => (
+              <div key={parent.id}>
+                {/* Non-selectable parent label */}
+                <div className="flex items-center gap-1.5 mb-1.5">
                   <span
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ backgroundColor: selected ? 'rgba(255,255,255,0.6)' : colour }}
+                    className="w-2.5 h-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: parent.colour ?? '#6B7280' }}
                   />
-                  {role.name}
-                </button>
-              )
-            })}
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                    {parent.name}
+                  </span>
+                </div>
+
+                {/* Selectable children */}
+                {children.length > 0 ? (
+                  <div className="flex flex-wrap gap-2 pl-4">
+                    {children.map((child) => {
+                      const colour = parent.colour ?? '#6B7280'
+                      const selected = selectedRoleIds.has(child.id)
+                      return (
+                        <button
+                          key={child.id}
+                          type="button"
+                          onClick={() => toggleRole(child.id)}
+                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                            selected
+                              ? 'border-transparent text-white'
+                              : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                          }`}
+                          style={selected ? { backgroundColor: colour } : {}}
+                        >
+                          {child.name}
+                        </button>
+                      )
+                    })}
+                  </div>
+                ) : (
+                  <p className="pl-4 text-xs text-gray-400 italic">
+                    No subcategories — add them in Roles
+                  </p>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}
