@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { RoleCategory, TaskStatus } from '@/types'
+import type { Category, TaskStatus } from '@/types'
 import {
   type HorizonPrecision,
   HORIZON_PRECISION_LABELS,
@@ -61,13 +61,13 @@ function currentHalf(): 1 | 2 {
   return quarterToHalf(currentQuarter())
 }
 
-export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
+export default function TaskForm({ categories }: { categories: Category[] }) {
   const router = useRouter()
 
   const [title, setTitle] = useState('')
   const [notes, setNotes] = useState('')
   const [status, setStatus] = useState<TaskStatus>('not_started')
-  const [selectedRoleIds, setSelectedRoleIds] = useState<Set<string>>(new Set())
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
 
   // Horizon state
   const [precision, setPrecision] = useState<HorizonPrecision>('unplanned')
@@ -82,24 +82,15 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  function toggleRole(id: string) {
-    setSelectedRoleIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
-
   // Group children under their parent for display
-  const roleGroups = (() => {
-    const parents = roles
-      .filter((r) => r.parent_id === null)
+  const categoryGroups = (() => {
+    const parents = categories
+      .filter((c) => c.parent_id === null)
       .sort((a, b) => a.sort_order - b.sort_order)
     return parents.map((parent) => ({
       parent,
-      children: roles
-        .filter((r) => r.parent_id === parent.id)
+      children: categories
+        .filter((c) => c.parent_id === parent.id)
         .sort((a, b) => a.sort_order - b.sort_order),
     }))
   })()
@@ -127,7 +118,7 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
         title,
         notes: notes || undefined,
         status,
-        roleIds: Array.from(selectedRoleIds),
+        category_id: selectedCategoryId,
         ...horizonFields,
       }),
     })
@@ -317,14 +308,13 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
         )}
       </div>
 
-      {/* Roles — top-level are group headers only; children are selectable */}
-      {roleGroups.length > 0 && (
+      {/* Categories — top-level are group headers; children are selectable (single select) */}
+      {categoryGroups.length > 0 && (
         <div>
-          <p className="block text-sm font-medium text-gray-700 mb-3">Role</p>
+          <p className="block text-sm font-medium text-gray-700 mb-3">Category</p>
           <div className="space-y-3">
-            {roleGroups.map(({ parent, children }) => (
+            {categoryGroups.map(({ parent, children }) => (
               <div key={parent.id}>
-                {/* Non-selectable parent label */}
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -335,17 +325,18 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
                   </span>
                 </div>
 
-                {/* Selectable children */}
                 {children.length > 0 ? (
                   <div className="flex flex-wrap gap-2 pl-4">
                     {children.map((child) => {
                       const colour = parent.colour ?? '#6B7280'
-                      const selected = selectedRoleIds.has(child.id)
+                      const selected = selectedCategoryId === child.id
                       return (
                         <button
                           key={child.id}
                           type="button"
-                          onClick={() => toggleRole(child.id)}
+                          onClick={() =>
+                            setSelectedCategoryId(selected ? null : child.id)
+                          }
                           className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                             selected
                               ? 'border-transparent text-white'
@@ -360,7 +351,7 @@ export default function TaskForm({ roles }: { roles: RoleCategory[] }) {
                   </div>
                 ) : (
                   <p className="pl-4 text-xs text-gray-400 italic">
-                    No subcategories — add them in Roles
+                    No subcategories — add them in Categories
                   </p>
                 )}
               </div>

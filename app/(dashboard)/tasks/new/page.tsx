@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import TaskForm from '@/components/tasks/TaskForm'
 
-export const metadata = { title: 'New task — Task Planner' }
+export const metadata = { title: 'New task — Clarity' }
 
 export default async function NewTaskPage() {
   const supabase = createClient()
@@ -9,10 +9,10 @@ export default async function NewTaskPage() {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { data: roles } = await supabase
-    .from('role_categories')
-    .select('id, name, colour, parent_id, sort_order')
-    .eq('user_id', user!.id)
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('owner_id', user!.id)
     .order('sort_order', { ascending: true })
 
   return (
@@ -20,7 +20,7 @@ export default async function NewTaskPage() {
       <div className="mb-6">
         <h1 className="text-xl font-semibold text-gray-900">New task</h1>
       </div>
-      <TaskForm roles={roles ?? []} />
+      <TaskForm categories={categories ?? []} />
     </div>
   )
 }

@@ -1,14 +1,14 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 
-interface RoleCategory {
+interface CategoryInput {
   name: string
   colour: string
 }
 
 interface OnboardingPayload {
   displayName: string
-  roleCategories: RoleCategory[]
+  roleCategories: CategoryInput[]
   mission?: string
 }
 
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Display name is required' }, { status: 400 })
   }
   if (!roleCategories?.length) {
-    return NextResponse.json({ error: 'At least one role category is required' }, { status: 400 })
+    return NextResponse.json({ error: 'At least one category is required' }, { status: 400 })
   }
 
   // Insert profile
@@ -45,25 +45,49 @@ export async function POST(request: Request) {
     .insert({ id: user.id, display_name: displayName.trim() })
 
   if (profileError) {
-    // Profile already exists — onboarding already completed
     if (profileError.code === '23505') {
       return NextResponse.json({ error: 'Already onboarded' }, { status: 409 })
     }
     return NextResponse.json({ error: profileError.message }, { status: 500 })
   }
 
-  // Insert role categories
-  const { error: rolesError } = await supabase.from('role_categories').insert(
+  // Create personal workspace
+  const { data: workspace, error: workspaceError } = await supabase
+    .from('workspaces')
+    .insert({ type: 'personal', name: `${displayName.trim()}'s workspace`, created_by: user.id })
+    .select('id')
+    .single()
+
+  if (workspaceError) {
+    return NextResponse.json({ error: workspaceError.message }, { status: 500 })
+  }
+
+  // Add user as owner member
+  const { error: memberError } = await supabase.from('workspace_members').insert({
+    workspace_id: workspace.id,
+    user_id: user.id,
+    role: 'owner',
+    display_name: displayName.trim(),
+  })
+
+  if (memberError) {
+    return NextResponse.json({ error: memberError.message }, { status: 500 })
+  }
+
+  // Insert personal categories
+  const { error: categoriesError } = await supabase.from('categories').insert(
     roleCategories.map((rc, index) => ({
-      user_id: user.id,
+      workspace_id: workspace.id,
+      owner_id: user.id,
       name: rc.name.trim(),
       colour: rc.colour,
+      is_shared: false,
       sort_order: index,
     }))
   )
 
-  if (rolesError) {
-    return NextResponse.json({ error: rolesError.message }, { status: 500 })
+  if (categoriesError) {
+    return NextResponse.json({ error: categoriesError.message }, { status: 500 })
   }
 
   // Insert mission if provided

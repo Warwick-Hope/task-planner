@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
-import type { RoleCategory } from '@/types'
+import type { Category } from '@/types'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -11,13 +11,13 @@ const STATUS_OPTIONS = [
   { value: 'cancelled', label: 'Cancelled' },
 ]
 
-export default function TaskFilters({ allRoles }: { allRoles: RoleCategory[] }) {
+export default function TaskFilters({ allCategories }: { allCategories: Category[] }) {
   const router = useRouter()
   const pathname = usePathname()
   const params = useSearchParams()
 
   const currentStatus = params.get('status') ?? 'all'
-  const currentRole = params.get('role') ?? 'all'
+  const currentCategory = params.get('category') ?? 'all'
   const currentView = params.get('view') ?? 'all'
 
   function set(key: string, value: string) {
@@ -31,8 +31,8 @@ export default function TaskFilters({ allRoles }: { allRoles: RoleCategory[] }) 
     router.push(qs ? `${pathname}?${qs}` : pathname)
   }
 
-  // Only show subcategories (children) as role filter options — same logic as task form
-  const childRoles = allRoles.filter((r) => r.parent_id !== null)
+  // Only show subcategories (children) as filter options
+  const childCategories = allCategories.filter((c) => c.parent_id !== null)
 
   return (
     <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-6">
@@ -54,34 +54,34 @@ export default function TaskFilters({ allRoles }: { allRoles: RoleCategory[] }) 
         ))}
       </div>
 
-      {/* Role */}
-      {childRoles.length > 0 && (
+      {/* Category */}
+      {childCategories.length > 0 && (
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-gray-400 mr-1">Role</span>
+          <span className="text-xs text-gray-400 mr-1">Category</span>
           <button
-            onClick={() => set('role', 'all')}
+            onClick={() => set('category', 'all')}
             className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              currentRole === 'all'
+              currentCategory === 'all'
                 ? 'bg-gray-800 text-white'
                 : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             All
           </button>
-          {childRoles.map((role) => {
-            const parent = allRoles.find((r) => r.id === role.parent_id)
+          {childCategories.map((cat) => {
+            const parent = allCategories.find((c) => c.id === cat.parent_id)
             const colour = parent?.colour ?? '#6B7280'
-            const selected = currentRole === role.id
+            const selected = currentCategory === cat.id
             return (
               <button
-                key={role.id}
-                onClick={() => set('role', role.id)}
+                key={cat.id}
+                onClick={() => set('category', cat.id)}
                 className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                   selected ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
                 style={selected ? { backgroundColor: colour } : {}}
               >
-                {role.name}
+                {cat.name}
               </button>
             )
           })}

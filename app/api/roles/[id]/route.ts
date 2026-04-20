@@ -16,14 +16,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
 
-  const updates: Record<string, unknown> = { name: name.trim(), updated_at: new Date().toISOString() }
+  const updates: Record<string, unknown> = { name: name.trim() }
   if (colour !== undefined) updates.colour = colour
 
   const { data, error } = await supabase
-    .from('role_categories')
+    .from('categories')
     .update(updates)
     .eq('id', params.id)
-    .eq('user_id', user.id)
+    .eq('owner_id', user.id)
     .select('id, name, colour, parent_id, sort_order')
     .single()
 
@@ -41,12 +41,11 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  // Prevent deletion if this category has children
   const { count } = await supabase
-    .from('role_categories')
+    .from('categories')
     .select('id', { count: 'exact', head: true })
     .eq('parent_id', params.id)
-    .eq('user_id', user.id)
+    .eq('owner_id', user.id)
 
   if (count && count > 0) {
     return NextResponse.json(
@@ -56,10 +55,10 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
   }
 
   const { error } = await supabase
-    .from('role_categories')
+    .from('categories')
     .delete()
     .eq('id', params.id)
-    .eq('user_id', user.id)
+    .eq('owner_id', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

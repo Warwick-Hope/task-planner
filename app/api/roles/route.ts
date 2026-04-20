@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase-server'
+import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { NextResponse } from 'next/server'
 
 export async function GET() {
@@ -10,9 +11,9 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
   const { data, error } = await supabase
-    .from('role_categories')
+    .from('categories')
     .select('id, name, colour, parent_id, sort_order')
-    .eq('user_id', user.id)
+    .eq('owner_id', user.id)
     .order('sort_order', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
@@ -28,6 +29,9 @@ export async function POST(request: Request) {
 
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
+  const workspaceId = await getPersonalWorkspaceId(supabase, user.id)
+  if (!workspaceId) return NextResponse.json({ error: 'No workspace found' }, { status: 400 })
+
   const body = await request.json()
   const { name, colour, parent_id } = body
 
@@ -35,19 +39,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
 
-  // Determine sort_order: append after existing siblings
   const { count } = await supabase
-    .from('role_categories')
+    .from('categories')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+    .eq('owner_id', user.id)
     .is('parent_id', parent_id ?? null)
 
   const { data, error } = await supabase
-    .from('role_categories')
+    .from('categories')
     .insert({
-      user_id: user.id,
+      workspace_id: workspaceId,
+      owner_id: user.id,
       name: name.trim(),
-      colour: parent_id ? null : (colour ?? '#6B7280'),
+      colour: parent_id ? '#6B7280' : (colour ?? '#6B7280'),
+      is_shared: false,
       parent_id: parent_id ?? null,
       sort_order: count ?? 0,
     })
