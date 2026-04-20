@@ -192,6 +192,17 @@ created_at
 
 ---
 
+## Git workflow
+
+- **One branch per phase** — named `feat/phase-N-description` (e.g. `feat/phase-0-schema`, `feat/phase-1-personal`)
+- **Claude names the branch** at the start of each new phase — never use auto-generated worktree names
+- **Commit after each completed phase step** — use the commit format above; don't batch multiple steps into one commit
+- **Migration files always committed** — every Supabase migration in `supabase/migrations/` is committed immediately after it runs successfully on dev
+- **Merge to `main` when phase is complete** — after smoke test passes, not mid-phase
+- **No force push, no direct commits to `main`** — all work goes through a named branch
+
+---
+
 ## Phased build plan
 
 ### Phase 0 — Schema migration (do this before anything else)
