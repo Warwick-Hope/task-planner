@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx supabase *)",
+      "Bash(npx tsc *)",
+      "Bash(copy \"C:\\\\Dev\\\\task-planner\\\\.env.local\" \".env.local\")",
+      "Bash(npm run *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/)",
+      "mcp__Claude_in_Chrome__tabs_context_mcp",
+      "Bash(node_modules/.bin/supabase db *)",
+      "Bash(npx --prefer-offline supabase db push)",
+      "Bash(where supabase *)",
+      "Read(//c/Users/WarwickHopePlantPlan/.npm/**)",
+      "Bash(supabase db *)",
+      "mcp__e5271fa6-ff94-4317-9b2d-d15242be3d81__execute_sql",
+      "mcp__e5271fa6-ff94-4317-9b2d-d15242be3d81__get_logs",
+      "mcp__e5271fa6-ff94-4317-9b2d-d15242be3d81__apply_migration",
+      "Bash(node -e \"require\\('@anthropic-ai/sdk'\\); console.log\\('ok'\\)\")",
+      "Bash(npm install *)"
+    ]
+  }
+}

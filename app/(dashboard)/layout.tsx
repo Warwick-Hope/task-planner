@@ -44,10 +44,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Tasks
               </Link>
               <Link
+                href="/brain-dump"
+                className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                Brain dump
+              </Link>
+              <Link
                 href="/roles"
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
-                Roles
+                Categories
               </Link>
             </nav>
           </div>

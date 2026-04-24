@@ -247,6 +247,7 @@ Still to build:
 - [ ] 1.12 Recurring tasks — rrule-based recurrence, UI to set pattern, auto-generate next occurrence on completion
 - [ ] 1.13 Mission and values UI — read/write personal mission statement and values list
 - [ ] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
+- [ ] 1.15 AI planning assistant — conversational assistant with read access to personal workspace (tasks, horizons, categories, mission/values); surfaces insights, proposes changes (move task, set horizon, flag stale items), user approves before any write; build after dashboard so there's meaningful context to reason over
 
 ---
 
