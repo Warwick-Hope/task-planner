@@ -51,33 +51,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: profileError.message }, { status: 500 })
   }
 
-  // Create personal workspace
-  const { data: workspace, error: workspaceError } = await supabase
-    .from('workspaces')
-    .insert({ type: 'personal', name: `${displayName.trim()}'s workspace`, created_by: user.id })
-    .select('id')
-    .single()
+  // Create personal workspace + owner member via SECURITY DEFINER RPC (bypasses RLS for bootstrap)
+  const { data: workspaceId, error: workspaceError } = await supabase.rpc(
+    'create_personal_workspace',
+    { p_display_name: displayName.trim() }
+  )
 
   if (workspaceError) {
     return NextResponse.json({ error: workspaceError.message }, { status: 500 })
   }
 
-  // Add user as owner member
-  const { error: memberError } = await supabase.from('workspace_members').insert({
-    workspace_id: workspace.id,
-    user_id: user.id,
-    role: 'owner',
-    display_name: displayName.trim(),
-  })
-
-  if (memberError) {
-    return NextResponse.json({ error: memberError.message }, { status: 500 })
-  }
-
   // Insert personal categories
   const { error: categoriesError } = await supabase.from('categories').insert(
     roleCategories.map((rc, index) => ({
-      workspace_id: workspace.id,
+      workspace_id: workspaceId,
       owner_id: user.id,
       name: rc.name.trim(),
       colour: rc.colour,
