@@ -212,17 +212,17 @@ Goal: rebuild dev database on the new combined schema. Wipe dev, do not touch pr
 - [ ] 0.1 Drop existing dev tables and recreate enums: `task_status`, `workspace_type`, `member_role`, `task_source`, `assignment_status`
 - [ ] 0.2 Create `workspaces` and `workspace_members` tables with RLS
 - [ ] 0.3 Create `household_profiles` table with RLS
-- [ ] 0.4 Create `profiles` table (unchanged structure, updated RLS)
-- [ ] 0.5 Create `categories` table (replaces `role_categories`) with RLS
-- [ ] 0.6 Create `tasks` table with all new fields and RLS
-- [ ] 0.7 Create `non_negotiables` table with RLS
-- [ ] 0.8 Create `missions` and `values` tables with RLS
-- [ ] 0.9 Create `rooms`, `meals`, `meal_plan`, `ingredients` tables with RLS
-- [ ] 0.10 Create `shopping_list` table with RLS
-- [ ] 0.11 Create `household_invitations` table with RLS
-- [ ] 0.12 Update `/types/index.ts` — full TypeScript types for all tables
-- [ ] 0.13 Update all existing app code to use new schema (workspace_id, categories instead of role_categories, etc.)
-- [ ] 0.14 Smoke test: auth, onboarding, role/category CRUD, task entry, task list all working on new schema
+- [x] 0.4 Create `profiles` table (unchanged structure, updated RLS)
+- [x] 0.5 Create `categories` table (replaces `role_categories`) with RLS
+- [x] 0.6 Create `tasks` table with all new fields and RLS
+- [x] 0.7 Create `non_negotiables` table with RLS
+- [x] 0.8 Create `missions` and `values` tables with RLS
+- [x] 0.9 Create `rooms`, `meals`, `meal_plan`, `ingredients` tables with RLS
+- [x] 0.10 Create `shopping_list` table with RLS
+- [x] 0.11 Create `household_invitations` table with RLS
+- [x] 0.12 Update `/types/index.ts` — full TypeScript types for all tables
+- [x] 0.13 Update all existing app code to use new schema (workspace_id, categories instead of role_categories, etc.)
+- [x] 0.14 Smoke test: auth, onboarding, role/category CRUD, task entry, task list all working on new schema
 
 ---
 
@@ -317,9 +317,9 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Repo created: https://github.com/WarwickHope/task-planner
 - [x] Next.js 14 scaffold — TypeScript, Tailwind, Supabase client, ESLint, Prettier
 - [x] Supabase dev and prod projects created
-- [x] Phase 1.1–1.6 complete on old schema (user_id pattern)
-- [ ] **Next: Phase 0.1 — rebuild dev database on new combined schema**
-- [ ] Dev database wipe confirmed — prod untouched
+- [x] Phase 0 complete — new combined schema live on dev, smoke test passed
+- [x] Phase 1.1–1.6 complete on new schema
+- [ ] **Next: Phase 1.7 — AI brain dump**
 
 ---
 
