@@ -2,14 +2,7 @@
 
 import { useState } from 'react'
 import { ROLE_COLOURS } from '@/lib/constants'
-
-interface RoleCategory {
-  id: string
-  name: string
-  colour: string | null
-  parent_id: string | null
-  sort_order: number
-}
+import type { Category } from '@/types'
 
 interface EditState {
   id: string
@@ -47,12 +40,12 @@ function ColourPicker({
   )
 }
 
-export default function RoleCategoryManager({
+export default function CategoryManager({
   initialCategories,
 }: {
-  initialCategories: RoleCategory[]
+  initialCategories: Category[]
 }) {
-  const [categories, setCategories] = useState<RoleCategory[]>(initialCategories)
+  const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [editing, setEditing] = useState<EditState | null>(null)
   const [adding, setAdding] = useState<AddState | null>(null)
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
@@ -69,7 +62,7 @@ export default function RoleCategoryManager({
       .sort((a, b) => a.sort_order - b.sort_order)
   }
 
-  function colourFor(cat: RoleCategory): string {
+  function colourFor(cat: Category): string {
     if (cat.parent_id === null) return cat.colour ?? '#6B7280'
     const parent = categories.find((c) => c.id === cat.parent_id)
     return parent?.colour ?? '#6B7280'
@@ -77,7 +70,7 @@ export default function RoleCategoryManager({
 
   // ── Edit ──────────────────────────────────────────────────────────────────
 
-  function startEdit(cat: RoleCategory) {
+  function startEdit(cat: Category) {
     setEditing({ id: cat.id, name: cat.name, colour: colourFor(cat) })
     setAdding(null)
     setError(null)
@@ -107,7 +100,7 @@ export default function RoleCategoryManager({
       return
     }
 
-    const updated: RoleCategory = await res.json()
+    const updated: Category = await res.json()
     setCategories((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
     setEditing(null)
     setSaving(false)
@@ -164,7 +157,7 @@ export default function RoleCategoryManager({
       return
     }
 
-    const created: RoleCategory = await res.json()
+    const created: Category = await res.json()
     setCategories((prev) => [...prev, created])
     setAdding(null)
     setSaving(false)
@@ -215,7 +208,7 @@ export default function RoleCategoryManager({
     )
   }
 
-  function renderCategory(cat: RoleCategory, isChild = false) {
+  function renderCategory(cat: Category, isChild = false) {
     const colour = colourFor(cat)
     const isEditing = editing?.id === cat.id
     const isDeletePending = deleteConfirm === cat.id

@@ -16,13 +16,12 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (body.status !== undefined) allowed.status = body.status as TaskStatus
   if (body.title !== undefined) allowed.title = body.title
   if (body.notes !== undefined) allowed.notes = body.notes
-  allowed.updated_at = new Date().toISOString()
 
   const { data, error } = await supabase
     .from('tasks')
     .update(allowed)
     .eq('id', params.id)
-    .eq('user_id', user.id)
+    .eq('created_by', user.id)
     .select('id, status, updated_at')
     .single()
 
@@ -44,7 +43,7 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
     .from('tasks')
     .delete()
     .eq('id', params.id)
-    .eq('user_id', user.id)
+    .eq('created_by', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 

@@ -2,12 +2,8 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Task, RoleCategory, TaskStatus } from '@/types'
+import type { Task, Category, TaskStatus } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
-
-interface TaskWithRoles extends Task {
-  task_roles: { role_category_id: string }[]
-}
 
 const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
   not_started: 'wip',
@@ -35,20 +31,20 @@ const STATUS_ICON: Record<TaskStatus, { icon: string; className: string }> = {
   },
 }
 
-function colourFor(roleId: string, allRoles: RoleCategory[]): string {
-  const role = allRoles.find((r) => r.id === roleId)
-  if (!role) return '#6B7280'
-  if (role.parent_id === null) return role.colour ?? '#6B7280'
-  const parent = allRoles.find((r) => r.id === role.parent_id)
+function colourFor(categoryId: string, allCategories: Category[]): string {
+  const cat = allCategories.find((c) => c.id === categoryId)
+  if (!cat) return '#6B7280'
+  if (cat.parent_id === null) return cat.colour ?? '#6B7280'
+  const parent = allCategories.find((c) => c.id === cat.parent_id)
   return parent?.colour ?? '#6B7280'
 }
 
 export default function TaskRow({
   task: initialTask,
-  allRoles,
+  allCategories,
 }: {
-  task: TaskWithRoles
-  allRoles: RoleCategory[]
+  task: Task
+  allCategories: Category[]
 }) {
   const router = useRouter()
   const [task, setTask] = useState(initialTask)
@@ -57,8 +53,10 @@ export default function TaskRow({
   const [confirmDelete, setConfirmDelete] = useState(false)
 
   const statusConfig = STATUS_ICON[task.status]
-  const taskRoleIds = task.task_roles.map((tr) => tr.role_category_id)
-  const taskRoles = allRoles.filter((r) => taskRoleIds.includes(r.id))
+  const category = task.category_id
+    ? allCategories.find((c) => c.id === task.category_id) ?? null
+    : null
+  const categoryColour = category ? colourFor(category.id, allCategories) : null
   const horizonLabel = formatHorizon(task)
   const isUnplanned = horizonLabel === 'Unplanned'
 
@@ -115,17 +113,16 @@ export default function TaskRow({
         )}
       </div>
 
-      {/* Role chips */}
+      {/* Category chip */}
       <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-        {taskRoles.map((role) => (
+        {category && categoryColour && (
           <span
-            key={role.id}
             className="rounded-full px-2 py-0.5 text-xs text-white font-medium"
-            style={{ backgroundColor: colourFor(role.id, allRoles) }}
+            style={{ backgroundColor: categoryColour }}
           >
-            {role.name}
+            {category.name}
           </span>
-        ))}
+        )}
       </div>
 
       {/* Horizon */}

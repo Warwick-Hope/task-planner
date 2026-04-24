@@ -4,18 +4,14 @@ import { Suspense } from 'react'
 import { horizonSortKey } from '@/lib/horizon'
 import TaskFilters from '@/components/tasks/TaskFilters'
 import TaskRow from '@/components/tasks/TaskRow'
-import type { Task, RoleCategory } from '@/types'
+import type { Task, Category } from '@/types'
 
-export const metadata = { title: 'Tasks — Task Planner' }
-
-interface TaskWithRoles extends Task {
-  task_roles: { role_category_id: string }[]
-}
+export const metadata = { title: 'Tasks — Clarity' }
 
 interface PageProps {
   searchParams: {
     status?: string
-    role?: string
+    category?: string
     view?: string
   }
 }
@@ -26,23 +22,25 @@ export default async function TasksPage({ searchParams }: PageProps) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  // Fetch role categories for filters and display
-  const { data: allRoles } = await supabase
-    .from('role_categories')
-    .select('id, name, colour, parent_id, sort_order')
-    .eq('user_id', user!.id)
+  const { data: allCategories } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('owner_id', user!.id)
     .order('sort_order', { ascending: true })
 
-  const roles: RoleCategory[] = allRoles ?? []
+  const categories: Category[] = (allCategories ?? []) as Category[]
 
-  // Build task query
   let query = supabase
     .from('tasks')
-    .select('*, task_roles(role_category_id)')
-    .eq('user_id', user!.id)
+    .select('*')
+    .eq('created_by', user!.id)
 
   if (searchParams.status && searchParams.status !== 'all') {
     query = query.eq('status', searchParams.status)
+  }
+
+  if (searchParams.category && searchParams.category !== 'all') {
+    query = query.eq('category_id', searchParams.category)
   }
 
   if (searchParams.view === 'unplanned') {
@@ -51,15 +49,8 @@ export default async function TasksPage({ searchParams }: PageProps) {
 
   const { data: rawTasks } = await query
 
-  let tasks: TaskWithRoles[] = (rawTasks as TaskWithRoles[]) ?? []
+  let tasks: Task[] = (rawTasks as Task[]) ?? []
 
-  // Role filter — applied in TypeScript since it's a junction table
-  if (searchParams.role && searchParams.role !== 'all') {
-    const roleId = searchParams.role
-    tasks = tasks.filter((t) => t.task_roles.some((tr) => tr.role_category_id === roleId))
-  }
-
-  // Sort by horizon (earliest first, unplanned last), then by created_at desc within same key
   tasks.sort((a, b) => {
     const ka = horizonSortKey(a)
     const kb = horizonSortKey(b)
@@ -81,9 +72,8 @@ export default async function TasksPage({ searchParams }: PageProps) {
         </Link>
       </div>
 
-      {/* Filters wrapped in Suspense — required for useSearchParams in child */}
       <Suspense fallback={null}>
-        <TaskFilters allRoles={roles} />
+        <TaskFilters allCategories={categories} />
       </Suspense>
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
@@ -99,14 +89,13 @@ export default async function TasksPage({ searchParams }: PageProps) {
           </div>
         ) : (
           <>
-            {/* Column headers */}
             <div className="hidden sm:flex items-center gap-3 px-4 py-2 bg-gray-50 border-b border-gray-200">
               <div className="w-5 shrink-0" />
               <div className="flex-1 text-xs font-medium text-gray-400 uppercase tracking-wide">
                 Task
               </div>
               <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">
-                Role
+                Category
               </div>
               <div className="w-32 text-right text-xs font-medium text-gray-400 uppercase tracking-wide">
                 When
@@ -115,7 +104,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
             </div>
 
             {tasks.map((task) => (
-              <TaskRow key={task.id} task={task} allRoles={roles} />
+              <TaskRow key={task.id} task={task} allCategories={categories} />
             ))}
           </>
         )}
