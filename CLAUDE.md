@@ -239,7 +239,7 @@ Completed from previous build:
 - [x] 1.6 Task list view — filter by status/category/unplanned, horizon sort, status toggle, delete
 
 Still to build:
-- [ ] 1.7 AI brain dump — text input, submits to `/api/brain-dump`, Sonnet parses to structured tasks, user reviews and confirms before saving
+- [x] 1.7 AI brain dump — text input, submits to `/api/brain-dump`, Sonnet parses to structured tasks, user reviews and confirms before saving
 - [ ] 1.8 Horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
 - [ ] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
 - [ ] 1.10 Non-negotiables — set 3 per day per user, visible on dashboard, completion tracking, resets daily
