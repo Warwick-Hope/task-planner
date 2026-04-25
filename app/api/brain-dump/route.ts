@@ -4,8 +4,6 @@ import Anthropic from '@anthropic-ai/sdk'
 import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import type { Category } from '@/types'
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
 export interface ParsedTask {
   title: string
   notes: string
@@ -41,6 +39,8 @@ export async function POST(request: Request) {
     .order('sort_order', { ascending: true })
 
   const categoryList = (categories ?? []) as Pick<Category, 'id' | 'name' | 'parent_id'>[]
+  const anthropic = new Anthropic()
+
   const today = new Date().toISOString().split('T')[0]
 
   const systemPrompt = `You are a task extraction assistant for a personal planning app.
@@ -79,7 +79,7 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
   let parsed: ParsedTask[]
   try {
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-5',
+      model: 'claude-sonnet-4-6',
       max_tokens: 2048,
       messages: [
         {
@@ -91,12 +91,17 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
     })
 
     const raw = message.content[0].type === 'text' ? message.content[0].text : ''
-    parsed = JSON.parse(raw)
+
+    // Strip markdown code fences if Claude wrapped the JSON despite instructions
+    const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '').trim()
+
+    parsed = JSON.parse(jsonStr)
 
     if (!Array.isArray(parsed)) throw new Error('Response was not an array')
   } catch (err) {
-    console.error('Brain dump parse error:', err)
-    return NextResponse.json({ error: 'Failed to parse tasks from text' }, { status: 500 })
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('Brain dump parse error:', msg)
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 
   // Validate category_ids against real user categories
