@@ -53,7 +53,7 @@ export default async function DashboardPage() {
       .select('*')
       .eq('created_by', user!.id)
       .in('status', ['not_started', 'wip'])
-      .or(`horizon_day.eq.${today},due_date.eq.${today}`)
+      .eq('horizon_day', today)
       .order('created_at', { ascending: true }),
     // Upcoming: due_date in next 6 days (not today)
     supabase

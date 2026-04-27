@@ -202,9 +202,6 @@ export default function TaskForm({
   const [dayStr, setDayStr] = useState(initialHorizon?.dayStr ?? todayStr())
   const [timeStr, setTimeStr] = useState(initialHorizon?.timeStr ?? nowLocalStr())
 
-  // Due date (for calendar + recurrence)
-  const [dueDate, setDueDate] = useState<string>(task?.due_date ?? '')
-
   // Recurrence
   const [isRecurring, setIsRecurring] = useState(task?.is_recurring ?? false)
   const [recurrenceOpts, setRecurrenceOpts] = useState<RecurrenceOptions>(
@@ -349,7 +346,6 @@ export default function TaskForm({
         notes: notes || null,
         status,
         category_id: selectedCategoryId,
-        due_date: dueDate || null,
         is_recurring: isRecurring,
         recurrence_rule: recurrenceRule,
         recurrence_end_date: isRecurring ? (recurrenceOpts.endDate ?? null) : null,
@@ -615,29 +611,6 @@ export default function TaskForm({
             </button>
           ))}
         </div>
-      </div>
-
-      {/* Due date */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Due date
-          <span className="ml-1 text-xs font-normal text-gray-400">(shows on calendar)</span>
-        </label>
-        <input
-          type="date"
-          value={dueDate}
-          onChange={e => setDueDate(e.target.value)}
-          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-        />
-        {dueDate && (
-          <button
-            type="button"
-            onClick={() => setDueDate('')}
-            className="ml-2 text-xs text-gray-400 hover:text-red-500 transition-colors"
-          >
-            clear
-          </button>
-        )}
       </div>
 
       {/* Recurrence */}

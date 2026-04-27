@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { horizonSortKey } from '@/lib/horizon'
 import TaskFilters from '@/components/tasks/TaskFilters'
-import TaskRow from '@/components/tasks/TaskRow'
+import TaskListClient from '@/components/tasks/TaskListClient'
 import ReviewPromptsPanel from '@/components/tasks/ReviewPromptsPanel'
 import type { Task, Category } from '@/types'
 
@@ -109,9 +109,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
               <div className="w-10 shrink-0" />
             </div>
 
-            {tasks.map((task) => (
-              <TaskRow key={task.id} task={task} allCategories={categories} />
-            ))}
+            <TaskListClient tasks={tasks} categories={categories} />
           </>
         )}
       </div>

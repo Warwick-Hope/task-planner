@@ -43,9 +43,11 @@ function colourFor(categoryId: string, allCategories: Category[]): string {
 export default function TaskRow({
   task: initialTask,
   allCategories,
+  onTitleClick,
 }: {
   task: Task
   allCategories: Category[]
+  onTitleClick?: () => void
 }) {
   const router = useRouter()
   const [task, setTask] = useState(initialTask)
@@ -104,14 +106,21 @@ export default function TaskRow({
 
       {/* Title + notes */}
       <div className="flex-1 min-w-0">
-        <p
-          className={`text-sm text-gray-900 ${task.status === 'done' ? 'line-through text-gray-400' : ''}`}
+        <button
+          onClick={onTitleClick}
+          className={`text-left text-sm w-full truncate ${
+            task.status === 'done'
+              ? 'line-through text-gray-400'
+              : onTitleClick
+              ? 'text-gray-900 hover:text-blue-600 transition-colors cursor-pointer'
+              : 'text-gray-900'
+          }`}
         >
           {task.title}
           {task.is_recurring && (
             <span className="ml-1.5 text-gray-300 text-xs" title="Recurring">↻</span>
           )}
-        </p>
+        </button>
         {task.notes && (
           <p className="mt-0.5 text-xs text-gray-400 truncate">{task.notes}</p>
         )}
