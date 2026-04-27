@@ -5,6 +5,7 @@ import { horizonSortKey } from '@/lib/horizon'
 import TaskFilters from '@/components/tasks/TaskFilters'
 import TaskRow from '@/components/tasks/TaskRow'
 import ReviewPromptsPanel from '@/components/tasks/ReviewPromptsPanel'
+import NonNegotiablesPanel from '@/components/tasks/NonNegotiablesPanel'
 import type { Task, Category } from '@/types'
 
 export const metadata = { title: 'Tasks — Clarity' }
@@ -22,6 +23,8 @@ export default async function TasksPage({ searchParams }: PageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
+  const today = new Date().toISOString().split('T')[0]
 
   const { data: allCategories } = await supabase
     .from('categories')
@@ -75,6 +78,10 @@ export default async function TasksPage({ searchParams }: PageProps) {
 
       <Suspense fallback={null}>
         <TaskFilters allCategories={categories} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <NonNegotiablesPanel userId={user!.id} today={today} />
       </Suspense>
 
       <Suspense fallback={null}>
