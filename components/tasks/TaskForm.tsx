@@ -13,6 +13,12 @@ import {
   monthFromDate,
   yearFromDate,
 } from '@/lib/horizon'
+import {
+  type RecurrenceOptions,
+  buildRrule,
+  parseRrule,
+} from '@/lib/recurrence'
+import RecurrencePicker from './RecurrencePicker'
 
 const PRECISIONS: HorizonPrecision[] = [
   'unplanned',
@@ -196,6 +202,17 @@ export default function TaskForm({
   const [dayStr, setDayStr] = useState(initialHorizon?.dayStr ?? todayStr())
   const [timeStr, setTimeStr] = useState(initialHorizon?.timeStr ?? nowLocalStr())
 
+  // Due date (for calendar + recurrence)
+  const [dueDate, setDueDate] = useState<string>(task?.due_date ?? '')
+
+  // Recurrence
+  const [isRecurring, setIsRecurring] = useState(task?.is_recurring ?? false)
+  const [recurrenceOpts, setRecurrenceOpts] = useState<RecurrenceOptions>(
+    task?.recurrence_rule
+      ? (parseRrule(task.recurrence_rule) ?? { frequency: 'weekly', interval: 1, weekdays: [0,1,2,3,4], endDate: null })
+      : { frequency: 'weekly', interval: 1, weekdays: [0,1,2,3,4], endDate: null },
+  )
+
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -322,6 +339,8 @@ export default function TaskForm({
     const url    = isEdit ? `/api/tasks/${task!.id}` : '/api/tasks'
     const method = isEdit ? 'PATCH' : 'POST'
 
+    const recurrenceRule = isRecurring ? buildRrule(recurrenceOpts) : null
+
     const res = await fetch(url, {
       method,
       headers: { 'Content-Type': 'application/json' },
@@ -330,6 +349,10 @@ export default function TaskForm({
         notes: notes || null,
         status,
         category_id: selectedCategoryId,
+        due_date: dueDate || null,
+        is_recurring: isRecurring,
+        recurrence_rule: recurrenceRule,
+        recurrence_end_date: isRecurring ? (recurrenceOpts.endDate ?? null) : null,
         ...horizonFields,
       }),
     })
@@ -592,6 +615,56 @@ export default function TaskForm({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Due date */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 mb-1">
+          Due date
+          <span className="ml-1 text-xs font-normal text-gray-400">(shows on calendar)</span>
+        </label>
+        <input
+          type="date"
+          value={dueDate}
+          onChange={e => setDueDate(e.target.value)}
+          className="rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+        />
+        {dueDate && (
+          <button
+            type="button"
+            onClick={() => setDueDate('')}
+            className="ml-2 text-xs text-gray-400 hover:text-red-500 transition-colors"
+          >
+            clear
+          </button>
+        )}
+      </div>
+
+      {/* Recurrence */}
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <button
+            type="button"
+            role="switch"
+            aria-checked={isRecurring}
+            onClick={() => setIsRecurring(r => !r)}
+            className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+              isRecurring ? 'bg-blue-600' : 'bg-gray-200'
+            }`}
+          >
+            <span
+              className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                isRecurring ? 'translate-x-4' : 'translate-x-0'
+              }`}
+            />
+          </button>
+          <span className="text-sm font-medium text-gray-700">Recurring task</span>
+        </div>
+        {isRecurring && (
+          <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+            <RecurrencePicker value={recurrenceOpts} onChange={setRecurrenceOpts} />
+          </div>
+        )}
       </div>
 
       {error && (

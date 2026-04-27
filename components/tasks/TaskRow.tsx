@@ -108,6 +108,9 @@ export default function TaskRow({
           className={`text-sm text-gray-900 ${task.status === 'done' ? 'line-through text-gray-400' : ''}`}
         >
           {task.title}
+          {task.is_recurring && (
+            <span className="ml-1.5 text-gray-300 text-xs" title="Recurring">↻</span>
+          )}
         </p>
         {task.notes && (
           <p className="mt-0.5 text-xs text-gray-400 truncate">{task.notes}</p>

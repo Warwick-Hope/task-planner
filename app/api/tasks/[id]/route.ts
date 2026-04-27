@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
-import type { TaskStatus } from '@/types'
+import { nextOccurrence } from '@/lib/recurrence'
+import type { TaskStatus, Task } from '@/types'
 
 const HORIZON_FIELDS = [
   'horizon_year',
@@ -27,12 +28,23 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (body.title     !== undefined) allowed.title       = body.title
   if (body.notes     !== undefined) allowed.notes       = body.notes
   if ('category_id'  in body)       allowed.category_id = body.category_id ?? null
-  if ('due_date'     in body)       allowed.due_date    = body.due_date ?? null
+  if ('due_date'          in body) allowed.due_date           = body.due_date ?? null
+  if ('is_recurring'      in body) allowed.is_recurring       = body.is_recurring ?? false
+  if ('recurrence_rule'   in body) allowed.recurrence_rule    = body.recurrence_rule ?? null
+  if ('recurrence_end_date' in body) allowed.recurrence_end_date = body.recurrence_end_date ?? null
 
   // Allow all horizon fields to be set/cleared explicitly
   for (const field of HORIZON_FIELDS) {
     if (field in body) allowed[field] = body[field] ?? null
   }
+
+  // Fetch the current task so we can detect a done transition on a recurring task
+  const { data: existing } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', params.id)
+    .eq('created_by', user.id)
+    .single()
 
   const { data, error } = await supabase
     .from('tasks')
@@ -44,6 +56,41 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Auto-generate next occurrence when a recurring task is marked done
+  if (
+    existing &&
+    (existing as Task).is_recurring &&
+    (existing as Task).recurrence_rule &&
+    (existing as Task).status !== 'done' &&
+    allowed.status === 'done'
+  ) {
+    const task = existing as Task
+    const afterDate = task.due_date ?? new Date().toISOString().split('T')[0]
+    const nextDate  = nextOccurrence(task.recurrence_rule!, afterDate)
+
+    if (nextDate) {
+      await supabase.from('tasks').insert({
+        workspace_id:       task.workspace_id,
+        created_by:         task.created_by,
+        title:              task.title,
+        notes:              task.notes,
+        status:             'not_started',
+        category_id:        task.category_id,
+        due_date:           nextDate,
+        is_recurring:       true,
+        recurrence_rule:    task.recurrence_rule,
+        recurrence_end_date: task.recurrence_end_date,
+        horizon_year:       task.horizon_year,
+        horizon_half:       task.horizon_half,
+        horizon_quarter:    task.horizon_quarter,
+        horizon_month:      task.horizon_month,
+        horizon_week:       task.horizon_week,
+        horizon_day:        task.horizon_day,
+        source:             task.source,
+      })
+    }
+  }
 
   return NextResponse.json(data)
 }
