@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { Task, Category, TaskStatus } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
 
@@ -134,8 +135,15 @@ export default function TaskRow({
         {horizonLabel}
       </span>
 
-      {/* Delete */}
-      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+      {/* Actions (edit + delete) */}
+      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        <Link
+          href={`/tasks/${task.id}/edit`}
+          className="text-xs text-gray-300 hover:text-blue-500 transition-colors px-1"
+          title="Edit task"
+        >
+          ✎
+        </Link>
         {confirmDelete ? (
           <div className="flex items-center gap-1">
             <button

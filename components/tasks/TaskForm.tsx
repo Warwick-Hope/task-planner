@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Category, TaskStatus } from '@/types'
+import type { Category, Task, TaskStatus } from '@/types'
 import {
   type HorizonPrecision,
   HORIZON_PRECISION_LABELS,
@@ -64,23 +64,137 @@ function currentHalf(): 1 | 2 {
   return quarterToHalf(currentQuarter())
 }
 
-export default function TaskForm({ categories }: { categories: Category[] }) {
-  const router = useRouter()
+/** Derive the finest precision label and individual picker values from a saved task. */
+function taskToHorizonState(task: Task) {
+  if (task.horizon_time_slot) {
+    const ts = new Date(task.horizon_time_slot)
+    return {
+      precision: 'time' as HorizonPrecision,
+      year: task.horizon_year ?? currentYear(),
+      half: (task.horizon_half as 1 | 2) ?? currentHalf(),
+      quarter: (task.horizon_quarter as 1 | 2 | 3 | 4) ?? currentQuarter(),
+      month: task.horizon_month ?? currentMonth(),
+      weekStr: task.horizon_week ?? todayStr(),
+      dayStr: task.horizon_day ?? todayStr(),
+      timeStr: ts.toISOString().slice(0, 16),
+    }
+  }
+  if (task.horizon_day) {
+    return {
+      precision: 'day' as HorizonPrecision,
+      year: task.horizon_year ?? currentYear(),
+      half: (task.horizon_half as 1 | 2) ?? currentHalf(),
+      quarter: (task.horizon_quarter as 1 | 2 | 3 | 4) ?? currentQuarter(),
+      month: task.horizon_month ?? currentMonth(),
+      weekStr: task.horizon_week ?? getMondayOfWeek(task.horizon_day),
+      dayStr: task.horizon_day,
+      timeStr: nowLocalStr(),
+    }
+  }
+  if (task.horizon_week) {
+    return {
+      precision: 'week' as HorizonPrecision,
+      year: task.horizon_year ?? currentYear(),
+      half: (task.horizon_half as 1 | 2) ?? currentHalf(),
+      quarter: (task.horizon_quarter as 1 | 2 | 3 | 4) ?? currentQuarter(),
+      month: task.horizon_month ?? currentMonth(),
+      weekStr: task.horizon_week,
+      dayStr: todayStr(),
+      timeStr: nowLocalStr(),
+    }
+  }
+  if (task.horizon_month != null) {
+    return {
+      precision: 'month' as HorizonPrecision,
+      year: task.horizon_year ?? currentYear(),
+      half: (task.horizon_half as 1 | 2) ?? currentHalf(),
+      quarter: (task.horizon_quarter as 1 | 2 | 3 | 4) ?? currentQuarter(),
+      month: task.horizon_month,
+      weekStr: todayStr(),
+      dayStr: todayStr(),
+      timeStr: nowLocalStr(),
+    }
+  }
+  if (task.horizon_quarter != null) {
+    return {
+      precision: 'quarter' as HorizonPrecision,
+      year: task.horizon_year ?? currentYear(),
+      half: (task.horizon_half as 1 | 2) ?? currentHalf(),
+      quarter: task.horizon_quarter as 1 | 2 | 3 | 4,
+      month: currentMonth(),
+      weekStr: todayStr(),
+      dayStr: todayStr(),
+      timeStr: nowLocalStr(),
+    }
+  }
+  if (task.horizon_half != null) {
+    return {
+      precision: 'half' as HorizonPrecision,
+      year: task.horizon_year ?? currentYear(),
+      half: task.horizon_half as 1 | 2,
+      quarter: currentQuarter(),
+      month: currentMonth(),
+      weekStr: todayStr(),
+      dayStr: todayStr(),
+      timeStr: nowLocalStr(),
+    }
+  }
+  if (task.horizon_year != null) {
+    return {
+      precision: 'year' as HorizonPrecision,
+      year: task.horizon_year,
+      half: currentHalf(),
+      quarter: currentQuarter(),
+      month: currentMonth(),
+      weekStr: todayStr(),
+      dayStr: todayStr(),
+      timeStr: nowLocalStr(),
+    }
+  }
+  return {
+    precision: 'unplanned' as HorizonPrecision,
+    year: currentYear(),
+    half: currentHalf(),
+    quarter: currentQuarter(),
+    month: currentMonth(),
+    weekStr: todayStr(),
+    dayStr: todayStr(),
+    timeStr: nowLocalStr(),
+  }
+}
 
-  const [title, setTitle] = useState('')
-  const [notes, setNotes] = useState('')
-  const [status, setStatus] = useState<TaskStatus>('not_started')
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null)
+export default function TaskForm({
+  categories,
+  task,
+}: {
+  categories: Category[]
+  task?: Task
+}) {
+  const router = useRouter()
+  const isEdit = !!task
+
+  const initialHorizon = task ? taskToHorizonState(task) : null
+
+  const [title, setTitle] = useState(task?.title ?? '')
+  const [notes, setNotes] = useState(task?.notes ?? '')
+  const [status, setStatus] = useState<TaskStatus>(task?.status ?? 'not_started')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(
+    task?.category_id ?? null,
+  )
 
   // Horizon state
-  const [precision, setPrecision] = useState<HorizonPrecision>('unplanned')
-  const [year, setYear] = useState(currentYear())
-  const [half, setHalf] = useState<1 | 2>(currentHalf())
-  const [quarter, setQuarter] = useState<1 | 2 | 3 | 4>(currentQuarter())
-  const [month, setMonth] = useState(currentMonth())
-  const [weekStr, setWeekStr] = useState(todayStr())
-  const [dayStr, setDayStr] = useState(todayStr())
-  const [timeStr, setTimeStr] = useState(nowLocalStr())
+  const [precision, setPrecision] = useState<HorizonPrecision>(
+    initialHorizon?.precision ?? 'unplanned',
+  )
+  const [year, setYear] = useState(initialHorizon?.year ?? currentYear())
+  const [half, setHalf] = useState<1 | 2>(initialHorizon?.half ?? currentHalf())
+  const [quarter, setQuarter] = useState<1 | 2 | 3 | 4>(
+    initialHorizon?.quarter ?? currentQuarter(),
+  )
+  const [month, setMonth] = useState(initialHorizon?.month ?? currentMonth())
+  const [weekStr, setWeekStr] = useState(initialHorizon?.weekStr ?? todayStr())
+  const [dayStr, setDayStr] = useState(initialHorizon?.dayStr ?? todayStr())
+  const [timeStr, setTimeStr] = useState(initialHorizon?.timeStr ?? nowLocalStr())
 
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -205,12 +319,15 @@ export default function TaskForm({ categories }: { categories: Category[] }) {
       timeStr,
     })
 
-    const res = await fetch('/api/tasks', {
-      method: 'POST',
+    const url    = isEdit ? `/api/tasks/${task!.id}` : '/api/tasks'
+    const method = isEdit ? 'PATCH' : 'POST'
+
+    const res = await fetch(url, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         title,
-        notes: notes || undefined,
+        notes: notes || null,
         status,
         category_id: selectedCategoryId,
         ...horizonFields,
@@ -487,7 +604,7 @@ export default function TaskForm({ categories }: { categories: Category[] }) {
           disabled={!title.trim() || saving}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          {saving ? 'Saving…' : 'Create task'}
+          {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create task'}
         </button>
         <button
           type="button"

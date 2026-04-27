@@ -4,6 +4,7 @@ import { Suspense } from 'react'
 import { horizonSortKey } from '@/lib/horizon'
 import TaskFilters from '@/components/tasks/TaskFilters'
 import TaskRow from '@/components/tasks/TaskRow'
+import ReviewPromptsPanel from '@/components/tasks/ReviewPromptsPanel'
 import type { Task, Category } from '@/types'
 
 export const metadata = { title: 'Tasks — Clarity' }
@@ -74,6 +75,10 @@ export default async function TasksPage({ searchParams }: PageProps) {
 
       <Suspense fallback={null}>
         <TaskFilters allCategories={categories} />
+      </Suspense>
+
+      <Suspense fallback={null}>
+        <ReviewPromptsPanel userId={user!.id} categories={categories} />
       </Suspense>
 
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
