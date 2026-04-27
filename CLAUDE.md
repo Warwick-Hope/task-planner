@@ -241,7 +241,7 @@ Completed from previous build:
 Still to build:
 - [x] 1.7 AI brain dump — text input, submits to `/api/brain-dump`, Sonnet parses to structured tasks, user reviews and confirms before saving
 - [x] 1.8 Horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
-- [ ] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
+- [x] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
 - [ ] 1.10 Non-negotiables — set 3 per day per user, visible on dashboard, completion tracking, resets daily
 - [ ] 1.11 Calendar view — tasks with due_date on calendar, drag to move/assign due_date
 - [ ] 1.12 Recurring tasks — rrule-based recurrence, UI to set pattern, auto-generate next occurrence on completion
