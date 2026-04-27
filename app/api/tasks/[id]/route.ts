@@ -27,6 +27,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (body.title     !== undefined) allowed.title       = body.title
   if (body.notes     !== undefined) allowed.notes       = body.notes
   if ('category_id'  in body)       allowed.category_id = body.category_id ?? null
+  if ('due_date'     in body)       allowed.due_date    = body.due_date ?? null
 
   // Allow all horizon fields to be set/cleared explicitly
   for (const field of HORIZON_FIELDS) {
