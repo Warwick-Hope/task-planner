@@ -9,6 +9,9 @@ import {
   buildHorizonFields,
   monthToQuarter,
   quarterToHalf,
+  getMondayOfWeek,
+  monthFromDate,
+  yearFromDate,
 } from '@/lib/horizon'
 
 const PRECISIONS: HorizonPrecision[] = [
@@ -95,6 +98,97 @@ export default function TaskForm({ categories }: { categories: Category[] }) {
     }))
   })()
 
+  /**
+   * Changing precision snaps the visible pickers to consistent values:
+   * - Moving to a coarser level: derive from whatever fine value is currently set
+   * - Moving to a finer level: seed from the coarser value already shown, defaulting to "now"
+   */
+  function handlePrecisionChange(next: HorizonPrecision) {
+    const today = todayStr()
+
+    // Helper: month of the currently-shown week picker
+    const weekMonth = () => monthFromDate(getMondayOfWeek(weekStr))
+    const weekYear  = () => yearFromDate(getMondayOfWeek(weekStr))
+    // Helper: month of the currently-shown day picker
+    const dayMonth  = () => monthFromDate(dayStr)
+    const dayYear   = () => yearFromDate(dayStr)
+    // Helper: month of the currently-shown time picker
+    const timeDay   = () => timeStr.split('T')[0]
+    const timeMonth = () => monthFromDate(timeDay())
+    const timeYear  = () => yearFromDate(timeDay())
+
+    if (next === 'unplanned') {
+      setPrecision(next)
+      return
+    }
+
+    if (next === 'year') {
+      // Derive year from finest currently-set field
+      if (precision === 'time')    setYear(timeYear())
+      else if (precision === 'day')  setYear(dayYear())
+      else if (precision === 'week') setYear(weekYear())
+      // For month/quarter/half/year the year input is already visible — leave it
+      else if (precision === 'unplanned') setYear(currentYear())
+    }
+
+    if (next === 'half') {
+      if (precision === 'time')    { setYear(timeYear());  setHalf(quarterToHalf(monthToQuarter(timeMonth()))) }
+      else if (precision === 'day')  { setYear(dayYear());   setHalf(quarterToHalf(monthToQuarter(dayMonth()))) }
+      else if (precision === 'week') { setYear(weekYear());  setHalf(quarterToHalf(monthToQuarter(weekMonth()))) }
+      else if (precision === 'month') setHalf(quarterToHalf(monthToQuarter(month)))
+      else if (precision === 'quarter') setHalf(quarterToHalf(quarter))
+      else if (precision === 'unplanned') { setYear(currentYear()); setHalf(currentHalf()) }
+      // year → half: keep year, default half to current
+      else if (precision === 'year') setHalf(currentHalf())
+    }
+
+    if (next === 'quarter') {
+      if (precision === 'time')    { setYear(timeYear());  setQuarter(monthToQuarter(timeMonth())) }
+      else if (precision === 'day')  { setYear(dayYear());   setQuarter(monthToQuarter(dayMonth())) }
+      else if (precision === 'week') { setYear(weekYear());  setQuarter(monthToQuarter(weekMonth())) }
+      else if (precision === 'month') setQuarter(monthToQuarter(month))
+      else if (precision === 'half') setQuarter(half === 1 ? currentQuarter() <= 2 ? currentQuarter() : 1 : currentQuarter() >= 3 ? currentQuarter() : 3)
+      else if (precision === 'unplanned') { setYear(currentYear()); setQuarter(currentQuarter()) }
+      else if (precision === 'year') setQuarter(currentQuarter())
+    }
+
+    if (next === 'month') {
+      if (precision === 'time')    { setYear(timeYear());  setMonth(timeMonth()) }
+      else if (precision === 'day')  { setYear(dayYear());   setMonth(dayMonth()) }
+      else if (precision === 'week') { setYear(weekYear());  setMonth(weekMonth()) }
+      else if (precision === 'quarter') setMonth(currentMonth())   // stay in same quarter if possible
+      else if (precision === 'half')    setMonth(currentMonth())
+      else if (precision === 'year')    setMonth(currentMonth())
+      else if (precision === 'unplanned') { setYear(currentYear()); setMonth(currentMonth()) }
+    }
+
+    if (next === 'week') {
+      if (precision === 'time')   setWeekStr(getMondayOfWeek(timeDay()))
+      else if (precision === 'day') setWeekStr(getMondayOfWeek(dayStr))
+      else setWeekStr(getMondayOfWeek(today)) // coarser → finer: default to current week
+    }
+
+    if (next === 'day') {
+      if (precision === 'time')   setDayStr(timeDay())
+      else if (precision === 'week') setDayStr(getMondayOfWeek(weekStr)) // snap to Monday of selected week
+      else setDayStr(today) // coarser → finer: default to today
+    }
+
+    if (next === 'time') {
+      if (precision === 'day') {
+        // Keep the date, snap time to next hour
+        const d = new Date(dayStr + 'T12:00:00')
+        d.setMinutes(0, 0, 0)
+        d.setHours(d.getHours() + 1)
+        setTimeStr(d.toISOString().slice(0, 16))
+      } else if (precision !== 'time') {
+        setTimeStr(nowLocalStr())
+      }
+    }
+
+    setPrecision(next)
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!title.trim()) return
@@ -172,7 +266,7 @@ export default function TaskForm({ categories }: { categories: Category[] }) {
             <button
               key={p}
               type="button"
-              onClick={() => setPrecision(p)}
+              onClick={() => handlePrecisionChange(p)}
               className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
                 precision === p
                   ? 'bg-blue-600 text-white'
@@ -272,10 +366,12 @@ export default function TaskForm({ categories }: { categories: Category[] }) {
                 <input
                   type="date"
                   value={weekStr}
-                  onChange={(e) => setWeekStr(e.target.value)}
+                  onChange={(e) => {
+                    if (e.target.value) setWeekStr(getMondayOfWeek(e.target.value))
+                  }}
                   className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
-                <span className="text-xs text-gray-400">rounded to Monday</span>
+                <span className="text-xs text-gray-400">snapped to Monday</span>
               </div>
             )}
 
