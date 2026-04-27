@@ -243,7 +243,7 @@ Still to build:
 - [x] 1.8 Horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
 - [x] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
 - [x] 1.10 Non-negotiables — set 3 per day per user, visible on dashboard, completion tracking, resets daily
-- [ ] 1.11 Calendar view — tasks with due_date on calendar, drag to move/assign due_date
+- [x] 1.11 Calendar view — tasks with due_date on calendar, drag to move/assign due_date
 - [ ] 1.12 Recurring tasks — rrule-based recurrence, UI to set pattern, auto-generate next occurrence on completion
 - [ ] 1.13 Mission and values UI — read/write personal mission statement and values list
 - [ ] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
