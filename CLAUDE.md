@@ -246,7 +246,7 @@ Still to build:
 - [x] 1.11 Calendar view — tasks with due_date on calendar, drag to move/assign due_date
 - [x] 1.12 Recurring tasks — rrule-based recurrence, UI to set pattern, auto-generate next occurrence on completion
 - [x] 1.13 Mission and values UI — read/write personal mission statement and values list
-- [ ] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
+- [x] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
 - [ ] 1.15 AI planning assistant — conversational assistant with read access to personal workspace (tasks, horizons, categories, mission/values); surfaces insights, proposes changes (move task, set horizon, flag stale items), user approves before any write; build after dashboard so there's meaningful context to reason over
 
 ---
