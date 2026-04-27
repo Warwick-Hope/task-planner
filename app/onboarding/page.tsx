@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import OnboardingWizard from '@/components/onboarding/OnboardingWizard'
 
-export const metadata = { title: 'Get started — Task Planner' }
+export const metadata = { title: 'Get started — Clarity' }
 
 export default async function OnboardingPage() {
   const supabase = createClient()
