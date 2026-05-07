@@ -55,6 +55,7 @@ ANTHROPIC_API_KEY=your_anthropic_key
 - **Assignment flow** — assigning a task to another adult member requires their acceptance (pending → accepted/declined). Assigning to a child profile (non-auth) requires no approval. Either adult owner/member can assign to children.
 - **Child/restricted profiles** — non-auth household members (children) stored as household_profiles. Name and avatar only. Cannot log in. Tasks can be assigned to them.
 - **Membership tiers** — owner and adult members see all shared household content. Restricted members have limited visibility (for older children with their own login, future use).
+- **Minimum horizon** — every task should eventually have at least a quarter-level horizon; fully unplanned tasks (all horizon fields null) are a transient state, not a permanent one. The review prompt system (1.9) surfaces these. Future hardening may enforce a default of "this quarter" on save.
 - **Subtasks** — one level deep via parent_task_id. No recursive nesting.
 - **Mission/Values** — personal workspace only. Reference layer, not per-task metadata.
 - **AI parsing** — Anthropic API called server-side via Next.js API route only.
@@ -250,6 +251,8 @@ Still to build:
 - [x] 1.13 Mission and values UI — read/write personal mission statement and values list
 - [x] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
 - [ ] 1.15 AI planning assistant — conversational assistant with read access to personal workspace (tasks, horizons, categories, mission/values); surfaces insights, proposes changes (move task, set horizon, flag stale items), user approves before any write; build after dashboard so there's meaningful context to reason over
+- [ ] 1.16 Brain dump AI steering — prime the Sonnet prompt with user's categories, horizon preferences, and workspace context per request so suggestions are smarter and more personalised; also richer per-task editing in the review step before confirm
+- [ ] 1.17 Calendar time slots — tasks can have a time + duration; day view shows 15-min interval slots; drag to extend duration; tasks with only a date appear as all-day
 
 ---
 
