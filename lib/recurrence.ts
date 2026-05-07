@@ -1,0 +1,94 @@
+import { RRule, RRuleSet, Weekday } from 'rrule'
+
+export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
+
+export interface RecurrenceOptions {
+  frequency: Frequency
+  interval: number          // every N days/weeks/months/years
+  weekdays?: number[]       // 0=Mon…6=Sun, only for weekly
+  endDate?: string | null   // YYYY-MM-DD
+}
+
+const FREQ_MAP: Record<Frequency, number> = {
+  daily:   RRule.DAILY,
+  weekly:  RRule.WEEKLY,
+  monthly: RRule.MONTHLY,
+  yearly:  RRule.YEARLY,
+}
+
+const RRULE_WEEKDAYS = [
+  RRule.MO, RRule.TU, RRule.WE, RRule.TH, RRule.FR, RRule.SA, RRule.SU,
+]
+
+/** Build an rrule string from structured options. */
+export function buildRrule(opts: RecurrenceOptions): string {
+  const byweekday = opts.frequency === 'weekly' && opts.weekdays?.length
+    ? opts.weekdays.map(i => RRULE_WEEKDAYS[i])
+    : undefined
+
+  const rule = new RRule({
+    freq:      FREQ_MAP[opts.frequency],
+    interval:  opts.interval,
+    byweekday,
+    until:     opts.endDate ? new Date(opts.endDate + 'T00:00:00Z') : undefined,
+    dtstart:   new Date(Date.UTC(2000, 0, 1)), // placeholder; adjusted at generation time
+  })
+
+  return rule.toString()
+}
+
+/** Parse an rrule string back into structured options. */
+export function parseRrule(rruleStr: string): RecurrenceOptions | null {
+  try {
+    const rule = RRule.fromString(rruleStr)
+    const opts = rule.origOptions
+
+    const freqReverse: Record<number, Frequency> = {
+      [RRule.DAILY]:   'daily',
+      [RRule.WEEKLY]:  'weekly',
+      [RRule.MONTHLY]: 'monthly',
+      [RRule.YEARLY]:  'yearly',
+    }
+    const frequency = freqReverse[opts.freq as number] ?? 'daily'
+    const interval  = (opts.interval as number) ?? 1
+
+    const weekdays = Array.isArray(opts.byweekday)
+      ? (opts.byweekday as Weekday[]).map(w => w.weekday)
+      : []
+
+    const until = opts.until as Date | undefined
+    const endDate = until ? until.toISOString().split('T')[0] : null
+
+    return { frequency, interval, weekdays, endDate }
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Given an rrule string and the date a task was completed,
+ * returns the next due date after completedDate, or null if no more occurrences.
+ */
+export function nextOccurrence(rruleStr: string, afterDate: string): string | null {
+  try {
+    const rule = RRule.fromString(rruleStr)
+    const after = new Date(afterDate + 'T12:00:00Z')
+
+    // Generate the next occurrence after the completed date
+    const next = rule.after(after, false)
+    if (!next) return null
+    return next.toISOString().split('T')[0]
+  } catch {
+    return null
+  }
+}
+
+/** Human-readable summary of a recurrence rule. */
+export function describeRrule(rruleStr: string): string {
+  try {
+    const rule = RRule.fromString(rruleStr)
+    return rule.toText()
+  } catch {
+    return 'Repeats'
+  }
+}

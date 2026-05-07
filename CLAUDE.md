@@ -17,7 +17,7 @@ Built for personal and household use first. Architected for multi-tenant from da
 - **AI:** Anthropic API, Claude Sonnet (server-side only — never expose key client-side)
 - **Hosting:** Vercel
 - **Key libraries:** `rrule` (recurring tasks), `date-fns` (date logic), `@dnd-kit/core` (drag and drop), `shadcn/ui` (components)
-- **Repo:** https://github.com/WarwickHope/task-planner
+- **Repo:** https://github.com/Warwick-Hope/task-planner
 
 ---
 
@@ -239,14 +239,15 @@ Completed from previous build:
 - [x] 1.6 Task list view — filter by status/category/unplanned, horizon sort, status toggle, delete
 
 Still to build:
-- [ ] 1.7 AI brain dump — text input, submits to `/api/brain-dump`, Sonnet parses to structured tasks, user reviews and confirms before saving
-- [ ] 1.8 Horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
-- [ ] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
-- [ ] 1.10 Non-negotiables — set 3 per day per user, visible on dashboard, completion tracking, resets daily
-- [ ] 1.11 Calendar view — tasks with due_date on calendar, drag to move/assign due_date
-- [ ] 1.12 Recurring tasks — rrule-based recurrence, UI to set pattern, auto-generate next occurrence on completion
-- [ ] 1.13 Mission and values UI — read/write personal mission statement and values list
-- [ ] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
+- [x] 1.7 AI brain dump — text input, submits to `/api/brain-dump`, Sonnet parses to structured tasks, user reviews and confirms before saving
+- [x] 1.8 Horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
+- [x] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
+- [x] 1.10 Non-negotiables — set 3 per day per user, visible on dashboard, completion tracking, resets daily
+- [x] 1.11 Calendar view — tasks with due_date on calendar, drag to move/assign due_date
+- [x] 1.12 Recurring tasks — rrule-based recurrence, UI to set pattern, auto-generate next occurrence on completion
+- [x] 1.13 Mission and values UI — read/write personal mission statement and values list
+- [x] 1.14 Dashboard — daily home screen: today's tasks, non-negotiables, upcoming, quick links
+- [ ] 1.15 AI planning assistant — conversational assistant with read access to personal workspace (tasks, horizons, categories, mission/values); surfaces insights, proposes changes (move task, set horizon, flag stale items), user approves before any write; build after dashboard so there's meaningful context to reason over
 
 ---
 
@@ -314,12 +315,12 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 
 ## Current state
 
-- [x] Repo created: https://github.com/WarwickHope/task-planner
+- [x] Repo migrated to: https://github.com/Warwick-Hope/task-planner
 - [x] Next.js 14 scaffold — TypeScript, Tailwind, Supabase client, ESLint, Prettier
-- [x] Supabase dev and prod projects created
+- [x] Supabase dev and prod projects migrated to Warwick-Hope org (project IDs unchanged)
 - [x] Phase 0 complete — new combined schema live on dev, smoke test passed
-- [x] Phase 1.1–1.6 complete on new schema
-- [ ] **Next: Phase 1.7 — AI brain dump**
+- [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
+- [ ] **Next: Phase 2.1 — Household creation**
 
 ---
 

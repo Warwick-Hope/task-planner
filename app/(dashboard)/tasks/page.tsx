@@ -3,7 +3,8 @@ import Link from 'next/link'
 import { Suspense } from 'react'
 import { horizonSortKey } from '@/lib/horizon'
 import TaskFilters from '@/components/tasks/TaskFilters'
-import TaskRow from '@/components/tasks/TaskRow'
+import TaskListClient from '@/components/tasks/TaskListClient'
+import ReviewPromptsPanel from '@/components/tasks/ReviewPromptsPanel'
 import type { Task, Category } from '@/types'
 
 export const metadata = { title: 'Tasks — Clarity' }
@@ -21,6 +22,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
   const {
     data: { user },
   } = await supabase.auth.getUser()
+
 
   const { data: allCategories } = await supabase
     .from('categories')
@@ -76,6 +78,10 @@ export default async function TasksPage({ searchParams }: PageProps) {
         <TaskFilters allCategories={categories} />
       </Suspense>
 
+      <Suspense fallback={null}>
+        <ReviewPromptsPanel userId={user!.id} categories={categories} />
+      </Suspense>
+
       <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
         {isEmpty ? (
           <div className="px-4 py-12 text-center">
@@ -103,9 +109,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
               <div className="w-10 shrink-0" />
             </div>
 
-            {tasks.map((task) => (
-              <TaskRow key={task.id} task={task} allCategories={categories} />
-            ))}
+            <TaskListClient tasks={tasks} categories={categories} />
           </>
         )}
       </div>

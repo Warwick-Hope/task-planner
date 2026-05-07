@@ -29,7 +29,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
       <header className="bg-white border-b border-gray-200">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
           <div className="flex items-center gap-6">
-            <span className="text-sm font-semibold text-gray-900">Task Planner</span>
+            <Link href="/dashboard" className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors">
+                Clarity
+              </Link>
             <nav className="flex items-center gap-4">
               <Link
                 href="/dashboard"
@@ -44,10 +46,28 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Tasks
               </Link>
               <Link
+                href="/calendar"
+                className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                Calendar
+              </Link>
+              <Link
+                href="/brain-dump"
+                className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                Brain dump
+              </Link>
+              <Link
                 href="/roles"
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
-                Roles
+                Categories
+              </Link>
+              <Link
+                href="/mission"
+                className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                Mission
               </Link>
             </nav>
           </div>

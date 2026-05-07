@@ -165,6 +165,90 @@ export function buildHorizonFields(
   return empty
 }
 
+export type HorizonReviewStatus = 'approaching' | 'overdue'
+
+/**
+ * Returns whether a task needs horizon review.
+ *
+ * 'overdue'    — the horizon period has already passed at the coarse precision set
+ * 'approaching' — the horizon period is ending soon (no specific date set yet)
+ * undefined    — no review needed (task has a specific day/time, or is unplanned)
+ *
+ * Only active tasks (not done/cancelled) should be passed in.
+ */
+export function getHorizonReviewStatus(
+  task: Task,
+  today: Date = new Date(),
+): HorizonReviewStatus | undefined {
+  // Already pinned to a specific date → no nudge needed
+  if (task.horizon_day || task.horizon_time_slot) return undefined
+  // Unplanned → no nudge needed
+  if (!task.horizon_year) return undefined
+
+  const todayYear  = today.getFullYear()
+  const todayMonth = today.getMonth() + 1 // 1-based
+  const todayDay   = today.getDate()
+
+  // ── Week precision ────────────────────────────────────────────────────────
+  if (task.horizon_week) {
+    const monday  = new Date(task.horizon_week + 'T12:00:00')
+    const sunday  = new Date(monday); sunday.setDate(monday.getDate() + 6)
+    const wednesday = new Date(monday); wednesday.setDate(monday.getDate() + 2)
+    // Strip time for day-level comparison
+    const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    const sunMidnight   = new Date(sunday.getFullYear(), sunday.getMonth(), sunday.getDate())
+    const wedMidnight   = new Date(wednesday.getFullYear(), wednesday.getMonth(), wednesday.getDate())
+    if (todayMidnight > sunMidnight)  return 'overdue'
+    if (todayMidnight >= wedMidnight) return 'approaching'
+    return undefined
+  }
+
+  // ── Month precision ───────────────────────────────────────────────────────
+  if (task.horizon_month != null) {
+    const ty = task.horizon_year, tm = task.horizon_month
+    if (ty < todayYear || (ty === todayYear && tm < todayMonth)) return 'overdue'
+    if (ty === todayYear && tm === todayMonth) {
+      const lastDay = new Date(todayYear, todayMonth, 0).getDate()
+      if (todayDay >= lastDay - 6) return 'approaching'
+    }
+    return undefined
+  }
+
+  // ── Quarter precision ─────────────────────────────────────────────────────
+  if (task.horizon_quarter != null) {
+    const ty = task.horizon_year, tq = task.horizon_quarter
+    const todayQ = monthToQuarter(todayMonth)
+    if (ty < todayYear || (ty === todayYear && tq < todayQ)) return 'overdue'
+    if (ty === todayYear && tq === todayQ) {
+      // Last month of quarter: Q1→3, Q2→6, Q3→9, Q4→12
+      if (todayMonth === tq * 3) return 'approaching'
+    }
+    return undefined
+  }
+
+  // ── Half precision ────────────────────────────────────────────────────────
+  if (task.horizon_half != null) {
+    const ty = task.horizon_year, th = task.horizon_half
+    const todayH = quarterToHalf(monthToQuarter(todayMonth))
+    if (ty < todayYear || (ty === todayYear && th < todayH)) return 'overdue'
+    if (ty === todayYear && th === todayH) {
+      // Last month of half: H1→6, H2→12
+      if (todayMonth === th * 6) return 'approaching'
+    }
+    return undefined
+  }
+
+  // ── Year precision ────────────────────────────────────────────────────────
+  if (task.horizon_year != null) {
+    const ty = task.horizon_year
+    if (ty < todayYear) return 'overdue'
+    if (ty === todayYear && monthToQuarter(todayMonth) === 4) return 'approaching'
+    return undefined
+  }
+
+  return undefined
+}
+
 /**
  * Returns a sortable string key for a task's horizon.
  * Earlier horizons sort first; unplanned tasks sort last.

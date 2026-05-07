@@ -8,6 +8,10 @@ interface CreateTaskBody {
   notes?: string
   status?: TaskStatus
   category_id?: string | null
+  due_date?: string | null
+  is_recurring?: boolean
+  recurrence_rule?: string | null
+  recurrence_end_date?: string | null
   horizon_year?: number | null
   horizon_half?: number | null
   horizon_quarter?: number | null
@@ -35,7 +39,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
   }
 
-  const { title, notes, status, category_id, ...horizonFields } = body
+  const {
+    title,
+    notes,
+    status,
+    category_id,
+    due_date,
+    is_recurring,
+    recurrence_rule,
+    recurrence_end_date,
+    ...horizonFields
+  } = body
 
   if (!title?.trim()) {
     return NextResponse.json({ error: 'Title is required' }, { status: 400 })
@@ -50,6 +64,10 @@ export async function POST(request: Request) {
       notes: notes?.trim() || null,
       status: status ?? 'not_started',
       category_id: category_id ?? null,
+      due_date: due_date ?? null,
+      is_recurring: is_recurring ?? false,
+      recurrence_rule: recurrence_rule ?? null,
+      recurrence_end_date: recurrence_end_date ?? null,
       horizon_year: horizonFields.horizon_year ?? null,
       horizon_half: horizonFields.horizon_half ?? null,
       horizon_quarter: horizonFields.horizon_quarter ?? null,

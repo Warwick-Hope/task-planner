@@ -14,8 +14,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Task Planner",
-  description: "Personal task and horizon planning",
+  title: "Clarity",
+  description: "Personal planning and household coordination",
 };
 
 export default function RootLayout({
