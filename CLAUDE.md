@@ -17,7 +17,7 @@ Built for personal and household use first. Architected for multi-tenant from da
 - **AI:** Anthropic API, Claude Sonnet (server-side only — never expose key client-side)
 - **Hosting:** Vercel
 - **Key libraries:** `rrule` (recurring tasks), `date-fns` (date logic), `@dnd-kit/core` (drag and drop), `shadcn/ui` (components)
-- **Repo:** https://github.com/WarwickHope/task-planner
+- **Repo:** https://github.com/Warwick-Hope/task-planner
 
 ---
 
@@ -315,12 +315,12 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 
 ## Current state
 
-- [x] Repo created: https://github.com/WarwickHope/task-planner
+- [x] Repo migrated to: https://github.com/Warwick-Hope/task-planner
 - [x] Next.js 14 scaffold — TypeScript, Tailwind, Supabase client, ESLint, Prettier
-- [x] Supabase dev and prod projects created
+- [x] Supabase dev and prod projects migrated to Warwick-Hope org (project IDs unchanged)
 - [x] Phase 0 complete — new combined schema live on dev, smoke test passed
-- [x] Phase 1.1–1.6 complete on new schema
-- [ ] **Next: Phase 1.7 — AI brain dump**
+- [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
+- [ ] **Next: Phase 2.1 — Household creation**
 
 ---
 
