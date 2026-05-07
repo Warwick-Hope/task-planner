@@ -134,9 +134,13 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
       </div>
 
       {/* Notes */}
-      {task.notes && (
-        <p className="text-xs text-gray-500 leading-relaxed">{task.notes}</p>
-      )}
+      <textarea
+        rows={task.notes ? 2 : 1}
+        value={task.notes ?? ''}
+        onChange={e => setField('notes', e.target.value || null)}
+        placeholder="Add notes…"
+        className="w-full rounded-md border border-transparent bg-gray-50 px-2 py-1 text-xs text-gray-500 placeholder-gray-300 focus:border-gray-200 focus:outline-none focus:bg-white resize-none transition-colors"
+      />
 
       {/* Footer: category + horizon */}
       <div className="flex flex-wrap items-center gap-3 pt-1">
@@ -161,7 +165,7 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
               )
             })}
           </select>
-          {task.category_id && (
+          {task.category_id && selectedCat && (
             <span
               className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 w-2.5 h-2.5 rounded-full"
               style={{ backgroundColor: dotColour }}

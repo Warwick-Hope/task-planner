@@ -17,6 +17,7 @@ import {
   type RecurrenceOptions,
   buildRrule,
   parseRrule,
+  firstOccurrence,
 } from '@/lib/recurrence'
 import RecurrencePicker from './RecurrencePicker'
 
@@ -323,13 +324,26 @@ export default function TaskForm({
     setSaving(true)
     setError(null)
 
-    const horizonFields = buildHorizonFields(precision, {
+    let effectivePrecision = precision
+    let effectiveDayStr = dayStr
+
+    // Recurring tasks must have a start date — default to first occurrence from today
+    if (isRecurring && precision === 'unplanned') {
+      const rrule = buildRrule(recurrenceOpts)
+      const first = firstOccurrence(rrule, todayStr())
+      if (first) {
+        effectivePrecision = 'day'
+        effectiveDayStr = first
+      }
+    }
+
+    const horizonFields = buildHorizonFields(effectivePrecision, {
       year,
       half,
       quarter,
       month,
       weekStr,
-      dayStr,
+      dayStr: effectiveDayStr,
       timeStr,
     })
 

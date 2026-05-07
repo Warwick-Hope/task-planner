@@ -66,8 +66,8 @@ function tasksForWeek(tasks: Task[], weekStr: string) {
   return tasks.filter(t => t.horizon_week === weekStr && !t.horizon_day)
 }
 
-function unplannedTasks(tasks: Task[]) {
-  return tasks.filter(t => !t.horizon_year)
+function tasksWithoutDay(tasks: Task[]) {
+  return tasks.filter(t => !t.horizon_day)
 }
 
 function getHorizonFieldsForDay(dateStr: string) {
@@ -391,27 +391,22 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
 
   // ── Side pane content ───────────────────────────────────────────────────────
 
-  let sidePaneLabel = 'Unplanned'
-  let sidePaneTasks: Task[] = []
+  let sidePaneLabel: string
+  let sidePaneTasks: Task[]
 
   if (view === 'month') {
-    sidePaneLabel = 'Unplanned'
-    sidePaneTasks = unplannedTasks(tasks)
+    sidePaneLabel = 'Unscheduled'
+    sidePaneTasks = tasksWithoutDay(tasks)
   } else if (view === 'week') {
-    const weekStr = toDateStr(anchor)
-    sidePaneLabel = 'This week (unscheduled)'
-    sidePaneTasks = [
-      ...tasksForWeek(tasks, weekStr),
-      ...unplannedTasks(tasks),
-    ]
+    sidePaneLabel = `Unscheduled — w/c ${anchor.getDate()} ${MONTH_NAMES[anchor.getMonth()]}`
+    sidePaneTasks = tasksWithoutDay(tasks)
   } else {
-    const ds = toDateStr(anchor)
-    sidePaneLabel = 'Unscheduled today'
-    sidePaneTasks = tasks.filter(t => t.horizon_day === ds && !t.horizon_time_slot)
-      .concat(unplannedTasks(tasks))
+    const anchorLabel = anchor.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    sidePaneLabel = `Unscheduled — ${anchorLabel}`
+    sidePaneTasks = tasksWithoutDay(tasks)
   }
 
-  // De-dupe
+  // De-dupe (shouldn't be needed now but keep for safety)
   sidePaneTasks = sidePaneTasks.filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
   return (

@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { nextOccurrence } from '@/lib/recurrence'
 import type { TaskStatus, Task } from '@/types'
+import { buildHorizonFields, getMondayOfWeek, monthFromDate, yearFromDate, monthToQuarter, quarterToHalf } from '@/lib/horizon'
 
 const HORIZON_FIELDS = [
   'horizon_year',
@@ -70,24 +71,29 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     const nextDate  = nextOccurrence(task.recurrence_rule!, afterDate)
 
     if (nextDate) {
+      const m = monthFromDate(nextDate)
+      const q = monthToQuarter(m)
+      const nextHorizon = buildHorizonFields('day', {
+        year: yearFromDate(nextDate),
+        half: quarterToHalf(q),
+        quarter: q,
+        month: m,
+        weekStr: getMondayOfWeek(nextDate),
+        dayStr: nextDate,
+      })
       await supabase.from('tasks').insert({
-        workspace_id:       task.workspace_id,
-        created_by:         task.created_by,
-        title:              task.title,
-        notes:              task.notes,
-        status:             'not_started',
-        category_id:        task.category_id,
-        due_date:           nextDate,
-        is_recurring:       true,
-        recurrence_rule:    task.recurrence_rule,
-        recurrence_end_date: task.recurrence_end_date,
-        horizon_year:       task.horizon_year,
-        horizon_half:       task.horizon_half,
-        horizon_quarter:    task.horizon_quarter,
-        horizon_month:      task.horizon_month,
-        horizon_week:       task.horizon_week,
-        horizon_day:        task.horizon_day,
-        source:             task.source,
+        workspace_id:         task.workspace_id,
+        created_by:           task.created_by,
+        title:                task.title,
+        notes:                task.notes,
+        status:               'not_started',
+        category_id:          task.category_id,
+        due_date:             nextDate,
+        is_recurring:         true,
+        recurrence_rule:      task.recurrence_rule,
+        recurrence_end_date:  task.recurrence_end_date,
+        source:               task.source,
+        ...nextHorizon,
       })
     }
   }

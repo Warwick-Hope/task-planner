@@ -43,17 +43,17 @@ function colourFor(categoryId: string, allCategories: Category[]): string {
 export default function TaskRow({
   task: initialTask,
   allCategories,
-  onTitleClick,
 }: {
   task: Task
   allCategories: Category[]
-  onTitleClick?: () => void
 }) {
   const router = useRouter()
   const [task, setTask] = useState(initialTask)
   const [toggling, setToggling] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const [pinning, setPinning] = useState(false)
+  const [pinError, setPinError] = useState<string | null>(null)
 
   const statusConfig = STATUS_ICON[task.status]
   const category = task.category_id
@@ -88,6 +88,26 @@ export default function TaskRow({
     router.refresh()
   }
 
+  async function pinAsNN() {
+    if (pinning) return
+    setPinning(true)
+    setPinError(null)
+    const today = new Date().toISOString().split('T')[0]
+    const res = await fetch('/api/non-negotiables', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ task_id: task.id, date: today, sort_order: 0 }),
+    })
+    setPinning(false)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setPinError(data.error ?? 'Could not pin')
+      setTimeout(() => setPinError(null), 3000)
+      return
+    }
+    router.refresh()
+  }
+
   return (
     <div
       className={`group flex items-start gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
@@ -106,21 +126,19 @@ export default function TaskRow({
 
       {/* Title + notes */}
       <div className="flex-1 min-w-0">
-        <button
-          onClick={onTitleClick}
-          className={`text-left text-sm w-full truncate ${
+        <Link
+          href={`/tasks/${task.id}/edit`}
+          className={`text-left text-sm w-full truncate block ${
             task.status === 'done'
               ? 'line-through text-gray-400'
-              : onTitleClick
-              ? 'text-gray-900 hover:text-blue-600 transition-colors cursor-pointer'
-              : 'text-gray-900'
+              : 'text-gray-900 hover:text-blue-600 transition-colors'
           }`}
         >
           {task.title}
           {task.is_recurring && (
             <span className="ml-1.5 text-gray-300 text-xs" title="Recurring">↻</span>
           )}
-        </button>
+        </Link>
         {task.notes && (
           <p className="mt-0.5 text-xs text-gray-400 truncate">{task.notes}</p>
         )}
@@ -147,14 +165,26 @@ export default function TaskRow({
         {horizonLabel}
       </span>
 
-      {/* Actions (edit + delete) */}
+      {/* Actions (pin + edit + delete) */}
       <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+        <button
+          onClick={pinAsNN}
+          disabled={pinning}
+          title={pinError ?? "Set as today's focus"}
+          className={`text-xs px-1 transition-colors ${
+            pinError
+              ? 'text-red-400'
+              : 'text-gray-300 hover:text-amber-500'
+          }`}
+        >
+          {pinError ? '!' : '◎'}
+        </button>
         <Link
           href={`/tasks/${task.id}/edit`}
-          className="text-xs text-gray-300 hover:text-blue-500 transition-colors px-1"
+          className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors px-1"
           title="Edit task"
         >
-          ✎
+          Edit
         </Link>
         {confirmDelete ? (
           <div className="flex items-center gap-1">
