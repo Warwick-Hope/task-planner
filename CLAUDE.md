@@ -17,14 +17,16 @@ Built for personal and household use first. Architected for multi-tenant from da
 - **AI:** Anthropic API, Claude Sonnet (server-side only — never expose key client-side)
 - **Hosting:** Vercel
 - **Key libraries:** `rrule` (recurring tasks), `date-fns` (date logic), `@dnd-kit/core` (drag and drop), `shadcn/ui` (components)
-- **Repo:** https://github.com/Warwick-Hope/task-planner
+- **Repo:** https://github.com/Warwick-Hope/task-planner (personal GitHub account)
 
 ---
 
-## Supabase projects
+## Accounts
 
-- **Dev:** fxczpsznrcxykfsiyvty
-- **Prod:** ialovkohwdlkpgsrqrjo
+- **GitHub:** https://github.com/Warwick-Hope/task-planner (personal account — Warwick-Hope)
+- **Supabase:** Personal account — both projects transferred from Plant Plan org, project IDs unchanged
+  - **Dev:** fxczpsznrcxykfsiyvty
+  - **Prod:** ialovkohwdlkpgsrqrjo
 - MCP points at dev only — never touch prod directly
 - Never run destructive operations on prod
 
@@ -209,9 +211,9 @@ created_at
 
 Goal: rebuild dev database on the new combined schema. Wipe dev, do not touch prod.
 
-- [ ] 0.1 Drop existing dev tables and recreate enums: `task_status`, `workspace_type`, `member_role`, `task_source`, `assignment_status`
-- [ ] 0.2 Create `workspaces` and `workspace_members` tables with RLS
-- [ ] 0.3 Create `household_profiles` table with RLS
+- [x] 0.1 Drop existing dev tables and recreate enums: `task_status`, `workspace_type`, `member_role`, `task_source`, `assignment_status`
+- [x] 0.2 Create `workspaces` and `workspace_members` tables with RLS
+- [x] 0.3 Create `household_profiles` table with RLS
 - [x] 0.4 Create `profiles` table (unchanged structure, updated RLS)
 - [x] 0.5 Create `categories` table (replaces `role_categories`) with RLS
 - [x] 0.6 Create `tasks` table with all new fields and RLS
@@ -315,9 +317,8 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 
 ## Current state
 
-- [x] Repo migrated to: https://github.com/Warwick-Hope/task-planner
+- [x] Project moved to personal accounts (GitHub: Warwick-Hope, Supabase: personal org) — project IDs unchanged
 - [x] Next.js 14 scaffold — TypeScript, Tailwind, Supabase client, ESLint, Prettier
-- [x] Supabase dev and prod projects migrated to Warwick-Hope org (project IDs unchanged)
 - [x] Phase 0 complete — new combined schema live on dev, smoke test passed
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
 - [ ] **Next: Phase 2.1 — Household creation**
