@@ -137,7 +137,7 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
       <textarea
         rows={task.notes ? 2 : 1}
         value={task.notes ?? ''}
-        onChange={e => setField('notes', e.target.value || null)}
+        onChange={e => setField('notes', e.target.value)}
         placeholder="Add notes…"
         className="w-full rounded-md border border-transparent bg-gray-50 px-2 py-1 text-xs text-gray-500 placeholder-gray-300 focus:border-gray-200 focus:outline-none focus:bg-white resize-none transition-colors"
       />

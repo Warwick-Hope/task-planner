@@ -41,22 +41,36 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
     pushParams({ category: ids.length ? ids.join(',') : null })
   }
 
-  function toggleChildId(childId: string) {
+  function toggleId(id: string) {
     const next = new Set(selectedIds)
-    if (next.has(childId)) next.delete(childId)
-    else next.add(childId)
-    setIds([...next])
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    setIds(Array.from(next))
   }
 
-  function handleParentClick(parent: Category) {
+  /** Clicking the parent pill body toggles ALL its children (or itself if no children). */
+  function handleParentToggle(parent: Category) {
     const children = allCategories.filter(c => c.parent_id === parent.id)
     if (children.length === 0) {
-      // Leaf parent — toggle directly
-      toggleChildId(parent.id)
+      toggleId(parent.id)
       return
     }
-    // Toggle expand
-    setExpandedParent(prev => prev === parent.id ? null : parent.id)
+    const childIds = children.map(c => c.id)
+    const allSelected = childIds.every(id => selectedIds.includes(id))
+    if (allSelected) {
+      // Deselect all children of this parent
+      setIds(selectedIds.filter(id => !childIds.includes(id)))
+    } else {
+      // Select all children of this parent (merge with existing)
+      const next = new Set([...selectedIds, ...childIds])
+      setIds(Array.from(next))
+    }
+  }
+
+  /** Clicking the ▼ arrow toggles the subcategory expand row independently. */
+  function handleParentExpand(parentId: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    setExpandedParent(prev => prev === parentId ? null : parentId)
   }
 
   function isParentActive(parent: Category): boolean {
@@ -110,23 +124,37 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
               const hasChildren = allCategories.some(c => c.parent_id === parent.id)
               const active = isParentActive(parent)
               const expanded = expandedParent === parent.id
-              const highlight = active || expanded
+              const colour = parent.colour ?? '#6B7280'
               return (
-                <button
-                  key={parent.id}
-                  onClick={() => handleParentClick(parent)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition-colors flex items-center gap-1 ${
-                    highlight ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                  style={highlight ? { backgroundColor: parent.colour ?? '#6B7280' } : {}}
-                >
-                  {parent.name}
+                <div key={parent.id} className="flex items-stretch rounded-full overflow-hidden text-xs font-medium transition-colors">
+                  {/* Name — click to toggle all children (multi-select) */}
+                  <button
+                    onClick={() => handleParentToggle(parent)}
+                    className={`px-3 py-1 transition-colors ${
+                      active ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                    }`}
+                    style={active ? { backgroundColor: colour } : {}}
+                  >
+                    {parent.name}
+                  </button>
+                  {/* Arrow — click to expand/collapse subcategory row independently */}
                   {hasChildren && (
-                    <span className={`text-[10px] ${highlight ? 'text-white/70' : 'text-gray-400'}`}>
+                    <button
+                      onClick={(e) => handleParentExpand(parent.id, e)}
+                      className={`px-1.5 transition-colors border-l ${
+                        active
+                          ? 'text-white/80 border-white/20 hover:bg-black/10'
+                          : expanded
+                          ? 'bg-gray-200 text-gray-600 border-gray-300'
+                          : 'bg-gray-100 text-gray-400 border-gray-200 hover:bg-gray-200'
+                      }`}
+                      style={active ? { backgroundColor: colour } : {}}
+                      title="Show subcategories"
+                    >
                       {expanded ? '▲' : '▼'}
-                    </span>
+                    </button>
                   )}
-                </button>
+                </div>
               )
             })}
           </div>
@@ -154,7 +182,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
             return (
               <button
                 key={child.id}
-                onClick={() => toggleChildId(child.id)}
+                onClick={() => toggleId(child.id)}
                 className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
                   selected
                     ? 'border-transparent text-white'

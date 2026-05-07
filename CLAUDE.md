@@ -253,6 +253,7 @@ Still to build:
 - [ ] 1.15 AI planning assistant — conversational assistant with read access to personal workspace (tasks, horizons, categories, mission/values); surfaces insights, proposes changes (move task, set horizon, flag stale items), user approves before any write; build after dashboard so there's meaningful context to reason over
 - [ ] 1.16 Brain dump AI steering — prime the Sonnet prompt with user's categories, horizon preferences, and workspace context per request so suggestions are smarter and more personalised; also richer per-task editing in the review step before confirm
 - [ ] 1.17 Calendar time slots — tasks can have a time + duration; day view shows 15-min interval slots; drag to extend duration; tasks with only a date appear as all-day
+- [ ] 1.18 UI density pass — action buttons on task rows (Edit, pin ◎, delete) are small; review touch target sizes and visual weight throughout; consider larger hit areas and clearer hover states
 
 ---
 

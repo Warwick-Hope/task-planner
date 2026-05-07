@@ -395,18 +395,27 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
   let sidePaneTasks: Task[]
 
   if (view === 'month') {
+    // Month: anything without a specific day — drag to place on a day cell
     sidePaneLabel = 'Unscheduled'
     sidePaneTasks = tasksWithoutDay(tasks)
   } else if (view === 'week') {
-    sidePaneLabel = `Unscheduled — w/c ${anchor.getDate()} ${MONTH_NAMES[anchor.getMonth()]}`
-    sidePaneTasks = tasksWithoutDay(tasks)
+    // Week: tasks assigned to this week but not yet pinned to a day
+    // + fully unplanned tasks (no horizon at all)
+    const weekStr = toDateStr(anchor)
+    sidePaneLabel = `w/c ${anchor.getDate()} ${MONTH_NAMES[anchor.getMonth()]} — drag to a day`
+    sidePaneTasks = [
+      ...tasks.filter(t => t.horizon_week === weekStr && !t.horizon_day),
+      ...tasks.filter(t => !t.horizon_year),
+    ]
   } else {
+    // Day: tasks on this day but not yet given a time slot
+    const ds = toDateStr(anchor)
     const anchorLabel = anchor.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
-    sidePaneLabel = `Unscheduled — ${anchorLabel}`
-    sidePaneTasks = tasksWithoutDay(tasks)
+    sidePaneLabel = `${anchorLabel} — drag to schedule`
+    sidePaneTasks = tasks.filter(t => t.horizon_day === ds && !t.horizon_time_slot)
   }
 
-  // De-dupe (shouldn't be needed now but keep for safety)
+  // De-dupe
   sidePaneTasks = sidePaneTasks.filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
   return (
