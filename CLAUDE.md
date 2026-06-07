@@ -254,6 +254,7 @@ Still to build:
 - [ ] 1.16 Brain dump AI steering — prime the Sonnet prompt with user's categories, horizon preferences, and workspace context per request so suggestions are smarter and more personalised; also richer per-task editing in the review step before confirm
 - [ ] 1.17 Calendar time slots — tasks can have a time + duration; day view shows 15-min interval slots; drag to extend duration; tasks with only a date appear as all-day
 - [ ] 1.18 UI density pass — action buttons on task rows (Edit, pin ◎, delete) are small; review touch target sizes and visual weight throughout; consider larger hit areas and clearer hover states
+- [ ] 1.19 Horizon Planner — new `/plan` page; the central planning screen. Replaces/extends the current calendar sidebar concept. Views: Year → Quarter → Month → Week; each view shows subdivisions as droppable buckets; sidebar shows tasks "unplanned at this level" (i.e. assigned to the current period but not yet broken down to the next precision); unplanned pool (no `horizon_year`) pinned at the bottom of the sidebar at every level; drag from sidebar onto a bucket to advance that task's horizon; click a bucket to drill into it (e.g. click Q2 → navigates to Quarter view for Q2); breadcrumb navigation back up; Week view links to Calendar for time-slot scheduling. H1/H2 views dropped for now (add as settings toggle later). Build before Phase 2.
 
 ---
 
@@ -325,7 +326,7 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Next.js 14 scaffold — TypeScript, Tailwind, Supabase client, ESLint, Prettier
 - [x] Phase 0 complete — new combined schema live on dev, smoke test passed
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
-- [ ] **Next: Phase 2.1 — Household creation**
+- [ ] **Next: Phase 1.19 — Horizon Planner** (before Phase 2)
 
 ---
 
