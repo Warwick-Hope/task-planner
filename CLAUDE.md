@@ -17,13 +17,13 @@ Built for personal and household use first. Architected for multi-tenant from da
 - **AI:** Anthropic API, Claude Sonnet (server-side only — never expose key client-side)
 - **Hosting:** Vercel
 - **Key libraries:** `rrule` (recurring tasks), `date-fns` (date logic), `@dnd-kit/core` (drag and drop), `shadcn/ui` (components)
-- **Repo:** https://github.com/Warwick-Hope/task-planner (personal GitHub account)
+- **Repo:** https://github.com/Warwick-Hope/task-planner
 
 ---
 
 ## Accounts
 
-- **GitHub:** https://github.com/Warwick-Hope/task-planner (personal account — Warwick-Hope)
+- **GitHub:** https://github.com/Warwick-Hope/task-planner (personal account — Warwick-Hope, two GitHub accounts on this machine: active = Warwick-Hope, secondary = WarwickHope)
 - **Supabase:** Personal account — both projects transferred from Plant Plan org, project IDs unchanged
   - **Dev:** fxczpsznrcxykfsiyvty
   - **Prod:** ialovkohwdlkpgsrqrjo
