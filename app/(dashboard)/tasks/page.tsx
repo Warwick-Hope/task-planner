@@ -42,7 +42,12 @@ export default async function TasksPage({ searchParams }: PageProps) {
   }
 
   if (searchParams.category && searchParams.category !== 'all') {
-    query = query.eq('category_id', searchParams.category)
+    const ids = searchParams.category.split(',').filter(Boolean)
+    if (ids.length === 1) {
+      query = query.eq('category_id', ids[0])
+    } else if (ids.length > 1) {
+      query = query.in('category_id', ids)
+    }
   }
 
   if (searchParams.view === 'unplanned') {

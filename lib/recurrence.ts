@@ -83,6 +83,21 @@ export function nextOccurrence(rruleStr: string, afterDate: string): string | nu
   }
 }
 
+/**
+ * Returns the first occurrence of an rrule on or after fromDate.
+ */
+export function firstOccurrence(rruleStr: string, fromDate: string): string | null {
+  try {
+    const rule = RRule.fromString(rruleStr)
+    const from = new Date(fromDate + 'T12:00:00Z')
+    const next = rule.after(from, true) // true = inclusive (on or after)
+    if (!next) return null
+    return next.toISOString().split('T')[0]
+  } catch {
+    return null
+  }
+}
+
 /** Human-readable summary of a recurrence rule. */
 export function describeRrule(rruleStr: string): string {
   try {

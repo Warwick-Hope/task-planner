@@ -66,8 +66,8 @@ function tasksForWeek(tasks: Task[], weekStr: string) {
   return tasks.filter(t => t.horizon_week === weekStr && !t.horizon_day)
 }
 
-function unplannedTasks(tasks: Task[]) {
-  return tasks.filter(t => !t.horizon_year)
+function tasksWithoutDay(tasks: Task[]) {
+  return tasks.filter(t => !t.horizon_day)
 }
 
 function getHorizonFieldsForDay(dateStr: string) {
@@ -391,24 +391,28 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
 
   // ── Side pane content ───────────────────────────────────────────────────────
 
-  let sidePaneLabel = 'Unplanned'
-  let sidePaneTasks: Task[] = []
+  let sidePaneLabel: string
+  let sidePaneTasks: Task[]
 
   if (view === 'month') {
-    sidePaneLabel = 'Unplanned'
-    sidePaneTasks = unplannedTasks(tasks)
+    // Month: anything without a specific day — drag to place on a day cell
+    sidePaneLabel = 'Unscheduled'
+    sidePaneTasks = tasksWithoutDay(tasks)
   } else if (view === 'week') {
+    // Week: tasks assigned to this week but not yet pinned to a day
+    // + fully unplanned tasks (no horizon at all)
     const weekStr = toDateStr(anchor)
-    sidePaneLabel = 'This week (unscheduled)'
+    sidePaneLabel = `w/c ${anchor.getDate()} ${MONTH_NAMES[anchor.getMonth()]} — drag to a day`
     sidePaneTasks = [
-      ...tasksForWeek(tasks, weekStr),
-      ...unplannedTasks(tasks),
+      ...tasks.filter(t => t.horizon_week === weekStr && !t.horizon_day),
+      ...tasks.filter(t => !t.horizon_year),
     ]
   } else {
+    // Day: tasks on this day but not yet given a time slot
     const ds = toDateStr(anchor)
-    sidePaneLabel = 'Unscheduled today'
+    const anchorLabel = anchor.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })
+    sidePaneLabel = `${anchorLabel} — drag to schedule`
     sidePaneTasks = tasks.filter(t => t.horizon_day === ds && !t.horizon_time_slot)
-      .concat(unplannedTasks(tasks))
   }
 
   // De-dupe

@@ -4,6 +4,28 @@ import { useState, useTransition, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Task, NonNegotiableWithTask } from '@/types'
 
+/** Build full horizon fields for a given date string (YYYY-MM-DD) */
+function horizonFieldsForDate(dateStr: string) {
+  const d = new Date(dateStr + 'T12:00:00')
+  const year  = d.getFullYear()
+  const month = d.getMonth() + 1
+  const quarter = Math.ceil(month / 3) as 1 | 2 | 3 | 4
+  const half  = quarter <= 2 ? 1 : 2
+  const monday = new Date(d)
+  const dow = monday.getDay()
+  monday.setDate(monday.getDate() + (dow === 0 ? -6 : 1 - dow))
+  const weekStr = monday.toISOString().split('T')[0]
+  return {
+    horizon_year: year,
+    horizon_half: half,
+    horizon_quarter: quarter,
+    horizon_month: month,
+    horizon_week: weekStr,
+    horizon_day: dateStr,
+    horizon_time_slot: null,
+  }
+}
+
 const SLOTS = [0, 1, 2]
 
 interface Props {
@@ -23,6 +45,13 @@ export default function NonNegotiablesWidget({ date, initialItems, availableTask
   const unpinned = availableTasks.filter(t => !pinned.has(t.id))
 
   async function pinTask(taskId: string) {
+    // Set the task's horizon_day to today so it appears in the calendar
+    await fetch(`/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(horizonFieldsForDate(date)),
+    })
+
     const res = await fetch('/api/non-negotiables', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
