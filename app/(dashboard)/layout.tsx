@@ -46,6 +46,12 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 Tasks
               </Link>
               <Link
+                href="/plan"
+                className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
+              >
+                Plan
+              </Link>
+              <Link
                 href="/calendar"
                 className="text-sm text-gray-500 hover:text-gray-900 transition-colors"
               >
