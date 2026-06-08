@@ -326,7 +326,26 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Next.js 14 scaffold — TypeScript, Tailwind, Supabase client, ESLint, Prettier
 - [x] Phase 0 complete — new combined schema live on dev, smoke test passed
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
-- [ ] **Next: Phase 1.19 — Horizon Planner** (before Phase 2)
+- [x] Phase 1.19 complete — Horizon Planner live at `/plan`
+- [ ] **Next: fix lint build failures (see below), then Phase 1.15 or Phase 2**
+
+---
+
+## Known lint build failures
+
+`next build` fails on ESLint errors introduced during Phase 1 development. Fix these before the next production deploy. All are trivial — unused vars, one `let`→`const`, two unescaped quote chars.
+
+| File | Line | Rule | Fix |
+|------|------|------|-----|
+| `app/(dashboard)/tasks/page.tsx` | 59 | `prefer-const` | Change `let tasks` → `const tasks` |
+| `app/api/brain-dump/route.ts` | 4 | `no-unused-vars` | Remove unused import `getPersonalWorkspaceId` |
+| `components/calendar/CalendarClient.tsx` | 27 | `no-unused-vars` | Remove unused `DAY_NAMES_FULL` constant |
+| `components/calendar/CalendarClient.tsx` | 65 | `no-unused-vars` | Remove unused `tasksForWeek` variable |
+| `components/calendar/CalendarClient.tsx` | 196 | `no-unused-vars` | Remove unused loop variable `di` (rename to `_di` or restructure) |
+| `components/tasks/NonNegotiablesWidget.tsx` | 224 | `no-unused-vars` | Remove unused `slot` variable |
+| `components/tasks/NonNegotiablesWidget.tsx` | 267 | `no-unescaped-entities` | Escape `"` chars as `&quot;` or use curly-quote `"…"` |
+| `components/tasks/TaskPreviewPanel.tsx` | 35 | `no-unused-vars` | Remove unused `[saving, setSaving]` state |
+| `lib/recurrence.ts` | 1 | `no-unused-vars` | Remove unused `RRuleSet` import |
 
 ---
 
