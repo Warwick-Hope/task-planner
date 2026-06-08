@@ -21,8 +21,12 @@
       "Bash(npx markdownlint-cli2 *)",
       "Bash(git add *)",
       "Bash(git commit *)",
+      "Bash(git fetch *)",
       "Bash(git rebase *)",
-      "Bash(GIT_EDITOR=true git rebase --continue)"
+      "Bash(GIT_EDITOR=true git rebase --continue)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git push *)"
     ]
   }
 }
