@@ -56,7 +56,7 @@ export default async function TasksPage({ searchParams }: PageProps) {
 
   const { data: rawTasks } = await query
 
-  let tasks: Task[] = (rawTasks as Task[]) ?? []
+  const tasks: Task[] = (rawTasks as Task[]) ?? []
 
   tasks.sort((a, b) => {
     const ka = horizonSortKey(a)

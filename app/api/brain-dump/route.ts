@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
-import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import type { Category } from '@/types'
 
 export interface ParsedTask {

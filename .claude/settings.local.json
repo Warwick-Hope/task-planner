@@ -16,7 +16,13 @@
       "mcp__e5271fa6-ff94-4317-9b2d-d15242be3d81__get_logs",
       "mcp__e5271fa6-ff94-4317-9b2d-d15242be3d81__apply_migration",
       "Bash(node -e \"require\\('@anthropic-ai/sdk'\\); console.log\\('ok'\\)\")",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(npx markdownlint *)",
+      "Bash(npx markdownlint-cli2 *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git rebase *)",
+      "Bash(GIT_EDITOR=true git rebase --continue)"
     ]
   }
 }

@@ -17,13 +17,13 @@ Built for personal and household use first. Architected for multi-tenant from da
 - **AI:** Anthropic API, Claude Sonnet (server-side only — never expose key client-side)
 - **Hosting:** Vercel
 - **Key libraries:** `rrule` (recurring tasks), `date-fns` (date logic), `@dnd-kit/core` (drag and drop), `shadcn/ui` (components)
-- **Repo:** https://github.com/Warwick-Hope/task-planner
+- **Repo:** <https://github.com/Warwick-Hope/task-planner>
 
 ---
 
 ## Accounts
 
-- **GitHub:** https://github.com/Warwick-Hope/task-planner (personal account — Warwick-Hope, two GitHub accounts on this machine: active = Warwick-Hope, secondary = WarwickHope)
+- **GitHub:** <https://github.com/Warwick-Hope/task-planner> (personal account — Warwick-Hope, two GitHub accounts on this machine: active = Warwick-Hope, secondary = WarwickHope)
 - **Supabase:** Personal account — both projects transferred from Plant Plan org, project IDs unchanged
   - **Dev:** fxczpsznrcxykfsiyvty
   - **Prod:** ialovkohwdlkpgsrqrjo
@@ -94,7 +94,8 @@ assignment_status: none | pending | accepted | declined
 `id (ref auth.users), display_name, created_at, updated_at`
 
 **categories** — replaces role_categories
-```
+
+```text
 id
 workspace_id
 owner_id          — null = household-level category; set = personal category for that user
@@ -106,8 +107,9 @@ parent_id         — self-ref, two levels max
 created_at
 ```
 
-**tasks**
-```
+#### tasks
+
+```text
 id
 workspace_id
 created_by
@@ -159,8 +161,9 @@ updated_at
 **ingredients**
 `id, meal_id, name, quantity, unit, created_at`
 
-**shopping_list**
-```
+#### shopping_list
+
+```text
 id
 workspace_id
 name
@@ -234,6 +237,7 @@ Goal: rebuild dev database on the new combined schema. Wipe dev, do not touch pr
 Goal: everything the original task planner was building, on the new schema. Personal workspace fully functional for one user.
 
 Completed from previous build:
+
 - [x] 1.1 Auth — email/password sign up and sign in, protected routes, session handling
 - [x] 1.2 RLS — all tables have policies (will be rewritten in Phase 0)
 - [x] 1.3 Onboarding — 3-step wizard: display name, categories, mission
@@ -242,6 +246,7 @@ Completed from previous build:
 - [x] 1.6 Task list view — filter by status/category/unplanned, horizon sort, status toggle, delete
 
 Still to build:
+
 - [x] 1.7 AI brain dump — text input, submits to `/api/brain-dump`, Sonnet parses to structured tasks, user reviews and confirms before saving
 - [x] 1.8 Horizon logic — cascade clear on horizon change, derive upward fields from most precise set field
 - [x] 1.9 Review prompts — surface tasks needing horizon resolution as dates approach
@@ -327,25 +332,8 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Phase 0 complete — new combined schema live on dev, smoke test passed
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
 - [x] Phase 1.19 complete — Horizon Planner live at `/plan`
-- [ ] **Next: fix lint build failures (see below), then Phase 1.15 or Phase 2**
-
----
-
-## Known lint build failures
-
-`next build` fails on ESLint errors introduced during Phase 1 development. Fix these before the next production deploy. All are trivial — unused vars, one `let`→`const`, two unescaped quote chars.
-
-| File | Line | Rule | Fix |
-|------|------|------|-----|
-| `app/(dashboard)/tasks/page.tsx` | 59 | `prefer-const` | Change `let tasks` → `const tasks` |
-| `app/api/brain-dump/route.ts` | 4 | `no-unused-vars` | Remove unused import `getPersonalWorkspaceId` |
-| `components/calendar/CalendarClient.tsx` | 27 | `no-unused-vars` | Remove unused `DAY_NAMES_FULL` constant |
-| `components/calendar/CalendarClient.tsx` | 65 | `no-unused-vars` | Remove unused `tasksForWeek` variable |
-| `components/calendar/CalendarClient.tsx` | 196 | `no-unused-vars` | Remove unused loop variable `di` (rename to `_di` or restructure) |
-| `components/tasks/NonNegotiablesWidget.tsx` | 224 | `no-unused-vars` | Remove unused `slot` variable |
-| `components/tasks/NonNegotiablesWidget.tsx` | 267 | `no-unescaped-entities` | Escape `"` chars as `&quot;` or use curly-quote `"…"` |
-| `components/tasks/TaskPreviewPanel.tsx` | 35 | `no-unused-vars` | Remove unused `[saving, setSaving]` state |
-| `lib/recurrence.ts` | 1 | `no-unused-vars` | Remove unused `RRuleSet` import |
+- [x] ESLint clean — all lint errors resolved; `.markdownlint.json` added to suppress line-length rule on docs
+- [ ] **Next: Phase 1.15 or Phase 2**
 
 ---
 

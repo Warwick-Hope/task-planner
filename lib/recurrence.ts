@@ -1,4 +1,4 @@
-import { RRule, RRuleSet, Weekday } from 'rrule'
+import { RRule, Weekday } from 'rrule'
 
 export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly'
 

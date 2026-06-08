@@ -24,7 +24,6 @@ type CalView = 'month' | 'week' | 'day'
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December']
 const DAY_NAMES_SHORT = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun']
-const DAY_NAMES_FULL  = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday']
 const HOURS = Array.from({ length: 17 }, (_, i) => i + 7) // 07:00 – 23:00
 
 function toDateStr(d: Date) { return d.toISOString().split('T')[0] }
@@ -60,10 +59,6 @@ function getMonthGrid(year: number, month: number): (Date | null)[] {
 
 function tasksForDay(tasks: Task[], dateStr: string) {
   return tasks.filter(t => t.horizon_day === dateStr)
-}
-
-function tasksForWeek(tasks: Task[], weekStr: string) {
-  return tasks.filter(t => t.horizon_week === weekStr && !t.horizon_day)
 }
 
 function tasksWithoutDay(tasks: Task[]) {
@@ -193,7 +188,7 @@ function WeekView({ monday, tasks, categories, today }: {
 
       {/* Time grid */}
       <div className="grid grid-cols-7">
-        {days.map((d, di) => {
+        {days.map((d) => {
           const ds = toDateStr(d)
           const dayTasks = tasksForDay(tasks, ds)
           const allDay = dayTasks.filter(t => !t.horizon_time_slot)

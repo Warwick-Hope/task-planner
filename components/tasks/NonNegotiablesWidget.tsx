@@ -221,7 +221,6 @@ export default function NonNegotiablesWidget({ date, initialItems, availableTask
 // ── Empty slot input ──────────────────────────────────────────────────────────
 
 function EmptySlotInput({
-  slot,
   unpinned,
   onCreate,
   onPick,
@@ -264,7 +263,7 @@ function EmptySlotInput({
             onClick={() => onCreate(text)}
             className="text-xs text-blue-600 hover:text-blue-700 font-medium"
           >
-            Create "{text.trim()}"
+            Create &ldquo;{text.trim()}&rdquo;
           </button>
         )}
         {unpinned.length > 0 && (

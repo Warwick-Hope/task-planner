@@ -32,8 +32,6 @@ export default function TaskPreviewPanel({
 }) {
   const router = useRouter()
   const [task, setTask] = useState(initial)
-  const [saving, setSaving] = useState(false)
-
   // Re-sync if the task prop changes (e.g. after a refresh)
   useEffect(() => { setTask(initial) }, [initial])
 
