@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import SignOutButton from '@/components/auth/SignOutButton'
 import WorkspaceSwitcher from '@/components/nav/WorkspaceSwitcher'
+import NotificationBell from '@/components/nav/NotificationBell'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -39,6 +40,24 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ...households.map((h) => ({ id: h.id, name: h.name, type: 'household' as const, href: `/household/${h.id}` })),
   ]
 
+  // Pending assignment notifications across all household workspaces
+  const householdIds = households.map((h) => h.id)
+  let pendingAssignments: { taskId: string; taskTitle: string; workspaceId: string; workspaceName: string }[] = []
+  if (householdIds.length > 0) {
+    const { data: pendingTasks } = await supabase
+      .from('tasks')
+      .select('id, title, workspace_id')
+      .in('workspace_id', householdIds)
+      .eq('assigned_to_user_id', user.id)
+      .eq('assignment_status', 'pending')
+      .not('status', 'in', '("done","cancelled")')
+
+    pendingAssignments = (pendingTasks ?? []).map((t) => {
+      const ws = households.find((h) => h.id === t.workspace_id)
+      return { taskId: t.id, taskTitle: t.title, workspaceId: t.workspace_id, workspaceName: ws?.name ?? 'Household' }
+    })
+  }
+
   const currentWorkspace = personal
     ? { id: personal.id, name: 'Personal', type: 'personal' as const, href: '/dashboard' }
     : { id: '', name: 'Personal', type: 'personal' as const, href: '/dashboard' }
@@ -63,6 +82,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
             </nav>
           </div>
           <div className="flex items-center gap-3">
+            <NotificationBell initial={pendingAssignments} />
             <span className="text-xs text-gray-400">{profile?.display_name ?? user.email}</span>
             <SignOutButton />
           </div>
