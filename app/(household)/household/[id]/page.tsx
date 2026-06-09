@@ -53,14 +53,22 @@ export default async function HouseholdDashboardPage({ params }: { params: { id:
           <h1 className="text-2xl font-bold text-gray-900">{workspace.name}</h1>
           <p className="text-sm text-gray-500 mt-1">Household workspace</p>
         </div>
-        {isOwner && (
+        <div className="flex items-center gap-2">
           <Link
-            href={`/household/${params.id}/invite`}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            href={`/household/${params.id}/categories`}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
-            Invite member
+            Categories
           </Link>
-        )}
+          {isOwner && (
+            <Link
+              href={`/household/${params.id}/invite`}
+              className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            >
+              Invite member
+            </Link>
+          )}
+        </div>
       </div>
 
       <section>
