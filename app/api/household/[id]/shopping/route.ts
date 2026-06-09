@@ -37,14 +37,49 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
+  const incomingQty = body.quantity?.toString().trim() || null
+  const incomingUnit = body.unit?.toString().trim() || null
+
+  // Deduplication: if a matching unpurchased item exists with the same name (case-insensitive),
+  // merge by appending quantity rather than creating a duplicate.
+  if (body.source === 'meal') {
+    const { data: existing } = await supabase
+      .from('shopping_list')
+      .select('*')
+      .eq('workspace_id', params.id)
+      .eq('is_purchased', false)
+      .ilike('name', name)
+      .limit(1)
+      .single()
+
+    if (existing) {
+      // Combine quantities if both have numeric quantities and matching units
+      let mergedQty = existing.quantity
+      if (incomingQty && existing.quantity && existing.unit === incomingUnit) {
+        const sum = parseFloat(existing.quantity) + parseFloat(incomingQty)
+        if (!isNaN(sum)) mergedQty = String(sum)
+      } else if (incomingQty && !existing.quantity) {
+        mergedQty = incomingQty
+      }
+      const { data: updated, error: updateError } = await supabase
+        .from('shopping_list')
+        .update({ quantity: mergedQty })
+        .eq('id', existing.id)
+        .select('*')
+        .single()
+      if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 })
+      return NextResponse.json({ item: updated }, { status: 200 })
+    }
+  }
+
   const { data, error } = await supabase
     .from('shopping_list')
     .insert({
       workspace_id: params.id,
       added_by: user.id,
       name,
-      quantity: body.quantity?.toString().trim() || null,
-      unit: body.unit?.toString().trim() || null,
+      quantity: incomingQty,
+      unit: incomingUnit,
       shop_tag: body.shop_tag?.toString().trim() || null,
       source: body.source ?? 'manual',
       source_id: body.source_id ?? null,

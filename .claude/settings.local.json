@@ -36,7 +36,9 @@
       "Bash(mkdir -p \"app/api/household/[id]/meals\")",
       "Bash(mkdir -p \"app/api/household/[id]/meals/[mealId]\")",
       "Bash(mkdir -p \"app/api/household/[id]/meal-plan\")",
-      "Bash(mkdir -p \"app/api/household/[id]/meal-plan/[planId]\")"
+      "Bash(mkdir -p \"app/api/household/[id]/meal-plan/[planId]\")",
+      "Bash(mkdir -p \"app/api/household/[id]/meals/[mealId]/ingredients\")",
+      "Bash(mkdir -p \"app/api/household/[id]/meals/[mealId]/ingredients/[ingredientId]\")"
     ]
   }
 }
