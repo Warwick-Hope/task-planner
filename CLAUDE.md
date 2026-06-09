@@ -284,15 +284,15 @@ Goal: a second user can join a household, share tasks, assign work to each other
 
 Goal: room cleaning schedules and meal/shopping features. The household workspace becomes genuinely useful day-to-day.
 
-- [ ] 3.1 Rooms — add/edit/delete rooms for the household
-- [ ] 3.2 Cleaning tasks — tasks linked to rooms via source_id, assignable, recurring, appear in main task list
-- [ ] 3.3 Cleaning schedule view — tasks by room, upcoming schedule, mark complete, roll-over visibility
-- [ ] 3.4 Shopping list — manual item entry, shop tags (Tesco/Asda etc.), mark purchased, clear purchased
-- [ ] 3.5 Meal planning — assign meal names to days of the week, weekly view
-- [ ] 3.6 Ingredients — add ingredients to a meal, mark each as Have/Need
-- [ ] 3.7 Meal → shopping list — push Need ingredients to shopping list with quantities
-- [ ] 3.8 Shopping list deduplication — merge matching ingredient entries from multiple meals
-- [ ] 3.9 Shopping task — auto-create "Go shopping" task linked to shopping list
+- [x] 3.1 Rooms — add/edit/delete rooms for the household
+- [x] 3.2 Cleaning tasks — tasks linked to rooms via source_id, assignable, recurring, appear in main task list
+- [x] 3.3 Cleaning schedule view — tasks by room, upcoming schedule, mark complete, roll-over visibility
+- [x] 3.4 Shopping list — manual item entry, shop tags (Tesco/Asda etc.), mark purchased, clear purchased
+- [x] 3.5 Meal planning — assign meal names to days of the week, weekly view
+- [x] 3.6 Ingredients — add ingredients to a meal, mark each as Have/Need
+- [x] 3.7 Meal → shopping list — push Need ingredients to shopping list with quantities
+- [x] 3.8 Shopping list deduplication — merge matching ingredient entries from multiple meals
+- [x] 3.9 Shopping task — auto-create "Go shopping" task linked to shopping list
 
 ---
 
@@ -334,7 +334,8 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Phase 1.19 complete — Horizon Planner live at `/plan`
 - [x] ESLint clean — all lint errors resolved; `.markdownlint.json` added to suppress line-length rule on docs
 - [x] Phase 2 complete — household workspace foundation (2.1–2.9 including 2.7 notifications)
-- [ ] **Next: Phase 3 (household features: cleaning and shopping)**
+- [x] Phase 3 complete — cleaning (rooms, tasks, schedule view), shopping list, meal planning, ingredients, meal→shopping push with deduplication, auto shopping task
+- [ ] **Next: Phase 4 (polish, mobile, notifications)**
 
 ---
 

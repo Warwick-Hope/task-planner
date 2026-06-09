@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
-import type { TaskStatus } from '@/types'
+import type { TaskStatus, TaskSource } from '@/types'
 
 interface CreateTaskBody {
   title: string
@@ -11,6 +11,10 @@ interface CreateTaskBody {
   is_recurring?: boolean
   recurrence_rule?: string | null
   recurrence_end_date?: string | null
+  source?: TaskSource
+  source_id?: string | null
+  assigned_to_user_id?: string | null
+  assigned_to_profile_id?: string | null
   horizon_year?: number | null
   horizon_half?: number | null
   horizon_quarter?: number | null
@@ -78,6 +82,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const {
     title, notes, status, category_id, due_date,
     is_recurring, recurrence_rule, recurrence_end_date,
+    source, source_id, assigned_to_user_id, assigned_to_profile_id,
     ...horizonFields
   } = body
 
@@ -96,6 +101,11 @@ export async function POST(request: Request, { params }: { params: { id: string 
       is_recurring: is_recurring ?? false,
       recurrence_rule: recurrence_rule ?? null,
       recurrence_end_date: recurrence_end_date ?? null,
+      source: source ?? 'manual',
+      source_id: source_id ?? null,
+      assigned_to_user_id: assigned_to_user_id ?? null,
+      assigned_to_profile_id: assigned_to_profile_id ?? null,
+      assignment_status: (assigned_to_user_id || assigned_to_profile_id) ? 'pending' : 'none',
       horizon_year: horizonFields.horizon_year ?? null,
       horizon_half: horizonFields.horizon_half ?? null,
       horizon_quarter: horizonFields.horizon_quarter ?? null,
