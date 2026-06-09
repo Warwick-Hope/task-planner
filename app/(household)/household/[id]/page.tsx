@@ -132,6 +132,9 @@ export default async function HouseholdDashboardPage({ params }: { params: { id:
           <Link href={`/household/${params.id}/categories`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
             Categories
           </Link>
+          <Link href={`/household/${params.id}/rooms`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+            Rooms
+          </Link>
           {isOwner && (
             <Link href={`/household/${params.id}/invite`} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
               Invite
