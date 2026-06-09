@@ -42,10 +42,6 @@ export default function MealPlanner({ workspaceId, initialMeals, initialPlans, w
   const today = new Date().toISOString().split('T')[0]
   const days = Array.from({ length: 7 }, (_, i) => addDays(week, i))
 
-  function prevWeek() { setWeek(addDays(week, -7)) }
-  function nextWeek() { setWeek(addDays(week, 7)) }
-  function thisWeek() { setWeek(weekStart) }
-
   // Fetch plans for the current week when week changes
   async function loadWeekPlans(ws: string) {
     const from = ws
