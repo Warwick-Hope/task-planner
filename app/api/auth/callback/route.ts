@@ -4,12 +4,13 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = searchParams.get('next') ?? '/dashboard'
 
   if (code) {
     // Must create the client here with cookies wired to the response directly.
     // Route Handlers cannot set cookies via next/headers on a redirect —
     // cookies must be set on the NextResponse object itself.
-    const response = NextResponse.redirect(`${origin}/dashboard`)
+    const response = NextResponse.redirect(`${origin}${next}`)
 
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,

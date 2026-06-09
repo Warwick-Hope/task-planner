@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function SignUpForm() {
+export default function SignUpForm({ next }: { next?: string }) {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -21,7 +21,7 @@ export default function SignUpForm() {
       email,
       password,
       options: {
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`,
+        emailRedirectTo: `${window.location.origin}/api/auth/callback${next ? `?next=${encodeURIComponent(next)}` : ''}`,
       },
     })
 

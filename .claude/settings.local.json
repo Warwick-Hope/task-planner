@@ -26,7 +26,9 @@
       "Bash(GIT_EDITOR=true git rebase --continue)",
       "Bash(git checkout *)",
       "Bash(git merge *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(cp \"C:\\\\Dev\\\\task-planner\\\\.env.local\" \"C:\\\\Dev\\\\task-planner\\\\.claude\\\\worktrees\\\\nervous-darwin-dc333c\\\\.env.local\" && echo \"Done\")",
+      "Bash(npx next *)"
     ]
   }
 }
