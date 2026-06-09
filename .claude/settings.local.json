@@ -30,7 +30,9 @@
       "Bash(cp \"C:\\\\Dev\\\\task-planner\\\\.env.local\" \"C:\\\\Dev\\\\task-planner\\\\.claude\\\\worktrees\\\\nervous-darwin-dc333c\\\\.env.local\" && echo \"Done\")",
       "Bash(npx next *)",
       "Bash(cp \"C:\\\\Dev\\\\task-planner\\\\.env.local\" \"C:\\\\Dev\\\\task-planner\\\\.claude\\\\worktrees\\\\tender-pike-99fb1a\\\\.env.local\" && echo \"done\")",
-      "Bash(mkdir -p \"app/\\(household\\)/household/[id]/cleaning\")"
+      "Bash(mkdir -p \"app/\\(household\\)/household/[id]/cleaning\")",
+      "Bash(mkdir -p \"app/api/household/[id]/shopping\")",
+      "Bash(mkdir -p \"app/api/household/[id]/shopping/[itemId]\")"
     ]
   }
 }
