@@ -276,7 +276,7 @@ Goal: a second user can join a household, share tasks, assign work to each other
 - [x] 2.7 Assignment notifications — in-app notification on assignment, accept/decline flow for adult assignments
 - [x] 2.8 Household dashboard — shared view: today's household tasks, assigned-to-me, upcoming
 - [x] 2.9 Workspace switcher — navigate between personal and household workspaces in one UI
-- [ ] 2.10 Horizon model in household — same horizon fields available on household tasks, same UI component
+- [x] 2.10 Horizon model in household — same horizon fields available on household tasks, same UI component
 
 ---
 
@@ -333,7 +333,7 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
 - [x] Phase 1.19 complete — Horizon Planner live at `/plan`
 - [x] ESLint clean — all lint errors resolved; `.markdownlint.json` added to suppress line-length rule on docs
-- [x] Phase 2 complete — household workspace foundation (2.1–2.9 including 2.7 notifications)
+- [x] Phase 2 complete — household workspace foundation (2.1–2.10)
 - [x] Phase 3 complete — cleaning (rooms, tasks, schedule view), shopping list, meal planning, ingredients, meal→shopping push with deduplication, auto shopping task
 - [ ] **Next: Phase 4 (polish, mobile, notifications)**
 

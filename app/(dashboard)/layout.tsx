@@ -4,6 +4,7 @@ import Link from 'next/link'
 import SignOutButton from '@/components/auth/SignOutButton'
 import WorkspaceSwitcher from '@/components/nav/WorkspaceSwitcher'
 import NotificationBell from '@/components/nav/NotificationBell'
+import PersonalNav from '@/components/nav/PersonalNav'
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -71,15 +72,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
               Clarity
             </Link>
             <WorkspaceSwitcher current={currentWorkspace} all={switcherWorkspaces} />
-            <nav className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Dashboard</Link>
-              <Link href="/tasks" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Tasks</Link>
-              <Link href="/plan" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Plan</Link>
-              <Link href="/calendar" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Calendar</Link>
-              <Link href="/brain-dump" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Brain dump</Link>
-              <Link href="/roles" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Categories</Link>
-              <Link href="/mission" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Mission</Link>
-            </nav>
+            <PersonalNav />
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell initial={pendingAssignments} />

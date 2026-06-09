@@ -126,27 +126,14 @@ export default async function HouseholdDashboardPage({ params }: { params: { id:
           <p className="text-sm text-gray-500 mt-1">Household workspace</p>
         </div>
         <div className="flex items-center gap-2">
-          <Link href={`/household/${params.id}/tasks`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            All tasks
-          </Link>
-          <Link href={`/household/${params.id}/categories`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            Categories
-          </Link>
-          <Link href={`/household/${params.id}/cleaning`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            Cleaning
-          </Link>
-          <Link href={`/household/${params.id}/shopping`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            Shopping
-          </Link>
-          <Link href={`/household/${params.id}/meals`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            Meals
-          </Link>
-          <Link href={`/household/${params.id}/rooms`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-            Rooms
-          </Link>
+          {canManage && (
+            <Link href={`/household/${params.id}/tasks/new`} className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors">
+              + Add task
+            </Link>
+          )}
           {isOwner && (
             <Link href={`/household/${params.id}/invite`} className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors">
-              Invite
+              Invite member
             </Link>
           )}
         </div>
@@ -154,13 +141,8 @@ export default async function HouseholdDashboardPage({ params }: { params: { id:
 
       {/* Today */}
       <section>
-        <div className="flex items-center justify-between mb-3">
+        <div className="mb-3">
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Today</h2>
-          {canManage && (
-            <Link href={`/household/${params.id}/tasks/new`} className="text-xs text-blue-600 hover:text-blue-800 transition-colors">
-              + Add task
-            </Link>
-          )}
         </div>
         <div className="rounded-xl border border-gray-200 bg-white overflow-hidden">
           {todayTasks.length === 0 ? (
