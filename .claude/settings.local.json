@@ -32,7 +32,11 @@
       "Bash(cp \"C:\\\\Dev\\\\task-planner\\\\.env.local\" \"C:\\\\Dev\\\\task-planner\\\\.claude\\\\worktrees\\\\tender-pike-99fb1a\\\\.env.local\" && echo \"done\")",
       "Bash(mkdir -p \"app/\\(household\\)/household/[id]/cleaning\")",
       "Bash(mkdir -p \"app/api/household/[id]/shopping\")",
-      "Bash(mkdir -p \"app/api/household/[id]/shopping/[itemId]\")"
+      "Bash(mkdir -p \"app/api/household/[id]/shopping/[itemId]\")",
+      "Bash(mkdir -p \"app/api/household/[id]/meals\")",
+      "Bash(mkdir -p \"app/api/household/[id]/meals/[mealId]\")",
+      "Bash(mkdir -p \"app/api/household/[id]/meal-plan\")",
+      "Bash(mkdir -p \"app/api/household/[id]/meal-plan/[planId]\")"
     ]
   }
 }
