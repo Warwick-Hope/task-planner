@@ -34,12 +34,38 @@ Built for personal and household use first. Architected for multi-tenant from da
 
 ## Environment variables
 
-Required in `.env.local` — never commit this file:
+Never commit `.env.local`. The same variable names are used in both environments — the values differ.
+
+### `.env.local` (local dev — points at DEV Supabase project `fxczpsznrcxykfsiyvty`)
 
 ```env
+# Dev Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://fxczpsznrcxykfsiyvty.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_publishable_key
-ANTHROPIC_API_KEY=your_anthropic_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<dev anon key>
+
+# AI — same key for dev and prod
+ANTHROPIC_API_KEY=<anthropic key>
+
+# Local URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Supabase CLI only — NOT used by the app
+# Personal account token, works for both projects via --project-ref
+# NOTE: The CLI stored login is Plant Plan account. Always pass --token explicitly:
+#   supabase db push --project-ref <id> --token <SUPABASE_ACCESS_TOKEN value>
+# This avoids disrupting the Plant Plan CLI login.
+SUPABASE_ACCESS_TOKEN=<token from supabase.com → Account → Access Tokens>
+```
+
+### Vercel environment variables (prod — points at PROD Supabase project `ialovkohwdlkpgsrqrjo`)
+
+Set these in Vercel → Project → Settings → Environment Variables (Production only):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://ialovkohwdlkpgsrqrjo.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<prod anon key from Supabase dashboard → Settings → API>
+ANTHROPIC_API_KEY=<same anthropic key>
+NEXT_PUBLIC_APP_URL=https://<your-vercel-url>.vercel.app
 ```
 
 ---
@@ -276,7 +302,7 @@ Goal: a second user can join a household, share tasks, assign work to each other
 - [x] 2.7 Assignment notifications — in-app notification on assignment, accept/decline flow for adult assignments
 - [x] 2.8 Household dashboard — shared view: today's household tasks, assigned-to-me, upcoming
 - [x] 2.9 Workspace switcher — navigate between personal and household workspaces in one UI
-- [ ] 2.10 Horizon model in household — same horizon fields available on household tasks, same UI component
+- [x] 2.10 Horizon model in household — same horizon fields available on household tasks, same UI component
 
 ---
 
@@ -333,9 +359,23 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
 - [x] Phase 1.19 complete — Horizon Planner live at `/plan`
 - [x] ESLint clean — all lint errors resolved; `.markdownlint.json` added to suppress line-length rule on docs
-- [x] Phase 2 complete — household workspace foundation (2.1–2.9 including 2.7 notifications)
+- [x] Phase 2 complete — household workspace foundation (2.1–2.10)
 - [x] Phase 3 complete — cleaning (rooms, tasks, schedule view), shopping list, meal planning, ingredients, meal→shopping push with deduplication, auto shopping task
-- [ ] **Next: Phase 4 (polish, mobile, notifications)**
+- [x] Household nav — section nav added to household layout (Dashboard, Tasks, Cleaning, Shopping, Meals, Rooms, Categories) with active-state highlighting; matches personal layout pattern
+- [x] Personal nav — active-state highlighting added
+- [ ] **Next: deploy to Vercel (prod) and push migrations to prod Supabase, then Phase 4**
+
+### Deployment checklist (first deploy)
+- [x] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
+- [x] Set Vercel env vars (Production): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (prod), ANTHROPIC_API_KEY, NEXT_PUBLIC_APP_URL
+- [x] Push migrations to prod: link CLI → push → re-link to dev
+- [ ] Set Supabase prod Auth → URL Configuration: Site URL + Redirect URLs → https://task-planner-nine-sigma.vercel.app
+
+**Live URL:** https://task-planner-nine-sigma.vercel.app
+
+### Future deploys
+Vercel auto-deploys on every push to `main`. No manual steps needed.
+For new migrations: link to prod, push, re-link to dev (see env vars section for token pattern).
 
 ---
 

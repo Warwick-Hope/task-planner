@@ -4,6 +4,7 @@ import Link from 'next/link'
 import SignOutButton from '@/components/auth/SignOutButton'
 import WorkspaceSwitcher from '@/components/nav/WorkspaceSwitcher'
 import NotificationBell from '@/components/nav/NotificationBell'
+import HouseholdNav from '@/components/nav/HouseholdNav'
 
 export default async function HouseholdLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
@@ -67,6 +68,7 @@ export default async function HouseholdLayout({ children }: { children: React.Re
               Clarity
             </Link>
             <WorkspaceSwitcher current={currentHint} all={switcherWorkspaces} />
+            <HouseholdNav />
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell initial={pendingAssignments} />
