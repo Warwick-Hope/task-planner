@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import CleaningView from '@/components/household/CleaningView'
+import CleaningTabs from '@/components/household/CleaningTabs'
 import type { Room, Task, Category } from '@/types'
 
 export const metadata = { title: 'Cleaning — Clarity' }
@@ -43,6 +43,7 @@ export default async function CleaningPage({ params }: { params: { id: string } 
   ])
 
   const canManage = membership.role !== 'restricted'
+  const today = new Date().toISOString().split('T')[0]
 
   const members = (rawMembers ?? []).map((m) => ({
     id: m.id,
@@ -67,7 +68,7 @@ export default async function CleaningPage({ params }: { params: { id: string } 
           </Link>
         </div>
 
-        <div className="flex items-center justify-between mb-1">
+        <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-gray-900">Cleaning</h1>
           <Link
             href={`/household/${params.id}/rooms`}
@@ -76,9 +77,8 @@ export default async function CleaningPage({ params }: { params: { id: string } 
             Manage rooms →
           </Link>
         </div>
-        <p className="text-sm text-gray-500 mb-6">Cleaning tasks organised by room.</p>
 
-        <CleaningView
+        <CleaningTabs
           workspaceId={params.id}
           rooms={(rooms ?? []) as Room[]}
           tasks={(tasks ?? []) as Task[]}
@@ -86,6 +86,7 @@ export default async function CleaningPage({ params }: { params: { id: string } 
           members={members}
           childProfiles={childProfiles}
           canManage={canManage}
+          today={today}
         />
       </div>
     </div>
