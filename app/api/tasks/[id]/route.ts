@@ -33,25 +33,39 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if ('is_recurring'      in body) allowed.is_recurring       = body.is_recurring ?? false
   if ('recurrence_rule'   in body) allowed.recurrence_rule    = body.recurrence_rule ?? null
   if ('recurrence_end_date' in body) allowed.recurrence_end_date = body.recurrence_end_date ?? null
+  if ('source_id'              in body) allowed.source_id              = body.source_id ?? null
+  if ('assigned_to_user_id'    in body) allowed.assigned_to_user_id    = body.assigned_to_user_id ?? null
+  if ('assigned_to_profile_id' in body) allowed.assigned_to_profile_id = body.assigned_to_profile_id ?? null
 
   // Allow all horizon fields to be set/cleared explicitly
   for (const field of HORIZON_FIELDS) {
     if (field in body) allowed[field] = body[field] ?? null
   }
 
-  // Fetch the current task so we can detect a done transition on a recurring task
+  // Fetch the current task — owner or any workspace member may edit
   const { data: existing } = await supabase
     .from('tasks')
     .select('*')
     .eq('id', params.id)
-    .eq('created_by', user.id)
     .single()
+
+  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  // Verify user has access: either they created it, or they're a member of its workspace
+  if (existing.created_by !== user.id) {
+    const { data: membership } = await supabase
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', existing.workspace_id)
+      .eq('user_id', user.id)
+      .single()
+    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
 
   const { data, error } = await supabase
     .from('tasks')
     .update(allowed)
     .eq('id', params.id)
-    .eq('created_by', user.id)
     .select('id, status, updated_at')
     .single()
 
@@ -109,11 +123,29 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
+  // Allow deletion by creator or any workspace member
+  const { data: taskToDelete } = await supabase
+    .from('tasks')
+    .select('created_by, workspace_id')
+    .eq('id', params.id)
+    .single()
+
+  if (!taskToDelete) return new NextResponse(null, { status: 204 })
+
+  if (taskToDelete.created_by !== user.id) {
+    const { data: membership } = await supabase
+      .from('workspace_members')
+      .select('id')
+      .eq('workspace_id', taskToDelete.workspace_id)
+      .eq('user_id', user.id)
+      .single()
+    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const { error } = await supabase
     .from('tasks')
     .delete()
     .eq('id', params.id)
-    .eq('created_by', user.id)
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
