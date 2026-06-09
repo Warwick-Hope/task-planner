@@ -34,12 +34,35 @@ Built for personal and household use first. Architected for multi-tenant from da
 
 ## Environment variables
 
-Required in `.env.local` — never commit this file:
+Never commit `.env.local`. The same variable names are used in both environments — the values differ.
+
+### `.env.local` (local dev — points at DEV Supabase project `fxczpsznrcxykfsiyvty`)
 
 ```env
+# Dev Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://fxczpsznrcxykfsiyvty.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_publishable_key
-ANTHROPIC_API_KEY=your_anthropic_key
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<dev anon key>
+
+# AI — same key for dev and prod
+ANTHROPIC_API_KEY=<anthropic key>
+
+# Local URL
+NEXT_PUBLIC_APP_URL=http://localhost:3000
+
+# Supabase CLI only — NOT used by the app
+# Personal account token, works for both projects via --project-ref
+SUPABASE_ACCESS_TOKEN=<token from supabase.com → Account → Access Tokens>
+```
+
+### Vercel environment variables (prod — points at PROD Supabase project `ialovkohwdlkpgsrqrjo`)
+
+Set these in Vercel → Project → Settings → Environment Variables (Production only):
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://ialovkohwdlkpgsrqrjo.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<prod anon key from Supabase dashboard → Settings → API>
+ANTHROPIC_API_KEY=<same anthropic key>
+NEXT_PUBLIC_APP_URL=https://<your-vercel-url>.vercel.app
 ```
 
 ---
