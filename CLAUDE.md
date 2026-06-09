@@ -51,6 +51,9 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 
 # Supabase CLI only — NOT used by the app
 # Personal account token, works for both projects via --project-ref
+# NOTE: The CLI stored login is Plant Plan account. Always pass --token explicitly:
+#   supabase db push --project-ref <id> --token <SUPABASE_ACCESS_TOKEN value>
+# This avoids disrupting the Plant Plan CLI login.
 SUPABASE_ACCESS_TOKEN=<token from supabase.com → Account → Access Tokens>
 ```
 
@@ -358,7 +361,15 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] ESLint clean — all lint errors resolved; `.markdownlint.json` added to suppress line-length rule on docs
 - [x] Phase 2 complete — household workspace foundation (2.1–2.10)
 - [x] Phase 3 complete — cleaning (rooms, tasks, schedule view), shopping list, meal planning, ingredients, meal→shopping push with deduplication, auto shopping task
-- [ ] **Next: Phase 4 (polish, mobile, notifications)**
+- [x] Household nav — section nav added to household layout (Dashboard, Tasks, Cleaning, Shopping, Meals, Rooms, Categories) with active-state highlighting; matches personal layout pattern
+- [x] Personal nav — active-state highlighting added
+- [ ] **Next: deploy to Vercel (prod) and push migrations to prod Supabase, then Phase 4**
+
+### Deployment checklist (first deploy)
+- [ ] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
+- [ ] Set Vercel env vars (Production): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (prod), ANTHROPIC_API_KEY, NEXT_PUBLIC_APP_URL
+- [ ] Push migrations to prod: `supabase db push --project-ref ialovkohwdlkpgsrqrjo --token <SUPABASE_ACCESS_TOKEN>`
+- [ ] Set Supabase prod Auth → URL Configuration: Site URL + Redirect URLs → Vercel URL
 
 ---
 
