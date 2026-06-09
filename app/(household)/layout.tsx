@@ -5,7 +5,7 @@ import SignOutButton from '@/components/auth/SignOutButton'
 import WorkspaceSwitcher from '@/components/nav/WorkspaceSwitcher'
 import NotificationBell from '@/components/nav/NotificationBell'
 
-export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+export default async function HouseholdLayout({ children }: { children: React.ReactNode }) {
   const supabase = createClient()
   const {
     data: { user },
@@ -15,7 +15,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('id, display_name')
+    .select('display_name')
     .eq('id', user.id)
     .single()
 
@@ -27,10 +27,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq('user_id', user.id)
 
   type WsRow = { id: string; name: string; type: 'personal' | 'household' }
-  const allWorkspaces = (memberships ?? []).map((m) => {
-    const ws = m.workspaces as unknown as WsRow
-    return ws
-  })
+  const allWorkspaces = (memberships ?? []).map((m) => m.workspaces as unknown as WsRow)
 
   const personal = allWorkspaces.find((w) => w.type === 'personal')
   const households = allWorkspaces.filter((w) => w.type === 'household')
@@ -40,7 +37,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     ...households.map((h) => ({ id: h.id, name: h.name, type: 'household' as const, href: `/household/${h.id}` })),
   ]
 
-  // Pending assignment notifications across all household workspaces
+  // Pending assignment notifications
   const householdIds = households.map((h) => h.id)
   let pendingAssignments: { taskId: string; taskTitle: string; workspaceId: string; workspaceName: string }[] = []
   if (householdIds.length > 0) {
@@ -58,9 +55,8 @@ export default async function DashboardLayout({ children }: { children: React.Re
     })
   }
 
-  const currentWorkspace = personal
-    ? { id: personal.id, name: 'Personal', type: 'personal' as const, href: '/dashboard' }
-    : { id: '', name: 'Personal', type: 'personal' as const, href: '/dashboard' }
+  // Fallback current — switcher will override from pathname
+  const currentHint = switcherWorkspaces[0] ?? { id: '', name: 'Household', type: 'household' as const, href: '/dashboard' }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -70,20 +66,11 @@ export default async function DashboardLayout({ children }: { children: React.Re
             <Link href="/dashboard" className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors">
               Clarity
             </Link>
-            <WorkspaceSwitcher current={currentWorkspace} all={switcherWorkspaces} />
-            <nav className="flex items-center gap-4">
-              <Link href="/dashboard" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Dashboard</Link>
-              <Link href="/tasks" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Tasks</Link>
-              <Link href="/plan" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Plan</Link>
-              <Link href="/calendar" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Calendar</Link>
-              <Link href="/brain-dump" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Brain dump</Link>
-              <Link href="/roles" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Categories</Link>
-              <Link href="/mission" className="text-sm text-gray-500 hover:text-gray-900 transition-colors">Mission</Link>
-            </nav>
+            <WorkspaceSwitcher current={currentHint} all={switcherWorkspaces} />
           </div>
           <div className="flex items-center gap-3">
             <NotificationBell initial={pendingAssignments} />
-            <span className="text-xs text-gray-400">{profile?.display_name ?? user.email}</span>
+            <span className="text-xs text-gray-400">{profile.display_name}</span>
             <SignOutButton />
           </div>
         </div>

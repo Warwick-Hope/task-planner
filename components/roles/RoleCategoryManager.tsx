@@ -42,8 +42,10 @@ function ColourPicker({
 
 export default function CategoryManager({
   initialCategories,
+  apiBase = '/api/roles',
 }: {
   initialCategories: Category[]
+  apiBase?: string
 }) {
   const [categories, setCategories] = useState<Category[]>(initialCategories)
   const [editing, setEditing] = useState<EditState | null>(null)
@@ -84,7 +86,7 @@ export default function CategoryManager({
     const cat = categories.find((c) => c.id === editing.id)
     const isTopLevel = cat?.parent_id === null
 
-    const res = await fetch(`/api/roles/${editing.id}`, {
+    const res = await fetch(`${apiBase}/${editing.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -112,7 +114,7 @@ export default function CategoryManager({
     setSaving(true)
     setError(null)
 
-    const res = await fetch(`/api/roles/${id}`, { method: 'DELETE' })
+    const res = await fetch(`${apiBase}/${id}`, { method: 'DELETE' })
 
     if (!res.ok) {
       const data = await res.json()
@@ -140,7 +142,7 @@ export default function CategoryManager({
     setSaving(true)
     setError(null)
 
-    const res = await fetch('/api/roles', {
+    const res = await fetch(apiBase, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

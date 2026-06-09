@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
-export default function LoginForm() {
+export default function LoginForm({ next }: { next?: string }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -26,7 +26,7 @@ export default function LoginForm() {
       return
     }
 
-    router.push('/dashboard')
+    router.push(next ?? '/dashboard')
     router.refresh()
   }
 
