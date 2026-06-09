@@ -259,7 +259,7 @@ Still to build:
 - [ ] 1.16 Brain dump AI steering — prime the Sonnet prompt with user's categories, horizon preferences, and workspace context per request so suggestions are smarter and more personalised; also richer per-task editing in the review step before confirm
 - [ ] 1.17 Calendar time slots — tasks can have a time + duration; day view shows 15-min interval slots; drag to extend duration; tasks with only a date appear as all-day
 - [ ] 1.18 UI density pass — action buttons on task rows (Edit, pin ◎, delete) are small; review touch target sizes and visual weight throughout; consider larger hit areas and clearer hover states
-- [ ] 1.19 Horizon Planner — new `/plan` page; the central planning screen. Replaces/extends the current calendar sidebar concept. Views: Year → Quarter → Month → Week; each view shows subdivisions as droppable buckets; sidebar shows tasks "unplanned at this level" (i.e. assigned to the current period but not yet broken down to the next precision); unplanned pool (no `horizon_year`) pinned at the bottom of the sidebar at every level; drag from sidebar onto a bucket to advance that task's horizon; click a bucket to drill into it (e.g. click Q2 → navigates to Quarter view for Q2); breadcrumb navigation back up; Week view links to Calendar for time-slot scheduling. H1/H2 views dropped for now (add as settings toggle later). Build before Phase 2.
+- [x] 1.19 Horizon Planner — new `/plan` page; the central planning screen. Replaces/extends the current calendar sidebar concept. Views: Year → Quarter → Month → Week; each view shows subdivisions as droppable buckets; sidebar shows tasks "unplanned at this level" (i.e. assigned to the current period but not yet broken down to the next precision); unplanned pool (no `horizon_year`) pinned at the bottom of the sidebar at every level; drag from sidebar onto a bucket to advance that task's horizon; click a bucket to drill into it (e.g. click Q2 → navigates to Quarter view for Q2); breadcrumb navigation back up; Week view links to Calendar for time-slot scheduling. H1/H2 views dropped for now (add as settings toggle later). Build before Phase 2.
 
 ---
 
@@ -267,15 +267,15 @@ Still to build:
 
 Goal: a second user can join a household, share tasks, assign work to each other and to child profiles.
 
-- [ ] 2.1 Household creation — create household workspace, set name, become owner
-- [ ] 2.2 Invitation flow — invite by email, token link, accept/decline, join as adult member
-- [ ] 2.3 Child profiles — add non-auth household members (name + avatar colour), manageable by adult members
-- [ ] 2.4 Household categories — create shared categories visible to all members (owner_id null, is_shared true)
-- [ ] 2.5 Shared task visibility — tasks in shared categories appear in all household members' views
-- [ ] 2.6 Task assignment — assign to household member; adult-to-adult requires acceptance, adult-to-child does not
-- [ ] 2.7 Assignment notifications — in-app notification on assignment, accept/decline flow for adult assignments
-- [ ] 2.8 Household dashboard — shared view: today's household tasks, assigned-to-me, upcoming
-- [ ] 2.9 Workspace switcher — navigate between personal and household workspaces in one UI
+- [x] 2.1 Household creation — create household workspace, set name, become owner
+- [x] 2.2 Invitation flow — invite by email, token link, accept/decline, join as adult member
+- [x] 2.3 Child profiles — add non-auth household members (name + avatar colour), manageable by adult members
+- [x] 2.4 Household categories — create shared categories visible to all members (owner_id null, is_shared true)
+- [x] 2.5 Shared task visibility — tasks in shared categories appear in all household members' views
+- [x] 2.6 Task assignment — assign to household member; adult-to-adult requires acceptance, adult-to-child does not
+- [x] 2.7 Assignment notifications — in-app notification on assignment, accept/decline flow for adult assignments
+- [x] 2.8 Household dashboard — shared view: today's household tasks, assigned-to-me, upcoming
+- [x] 2.9 Workspace switcher — navigate between personal and household workspaces in one UI
 - [ ] 2.10 Horizon model in household — same horizon fields available on household tasks, same UI component
 
 ---
