@@ -1,7 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
-import TaskListClient from '@/components/tasks/TaskListClient'
+import HouseholdTaskList from '@/components/household/HouseholdTaskList'
 import { horizonSortKey } from '@/lib/horizon'
 import type { Task, Category } from '@/types'
 
@@ -32,15 +32,41 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
     .eq('id', params.id)
     .single()
 
-  // Household categories (owner_id null)
-  const { data: allCategories } = await supabase
-    .from('categories')
-    .select('*')
-    .eq('workspace_id', params.id)
-    .is('owner_id', null)
-    .order('sort_order', { ascending: true })
+  const [
+    { data: allCategories },
+    { data: rawMembers },
+    { data: rawProfiles },
+  ] = await Promise.all([
+    supabase
+      .from('categories')
+      .select('*')
+      .eq('workspace_id', params.id)
+      .is('owner_id', null)
+      .order('sort_order', { ascending: true }),
+    supabase
+      .from('workspace_members')
+      .select('id, user_id, display_name, role')
+      .eq('workspace_id', params.id)
+      .not('user_id', 'is', null)
+      .order('joined_at'),
+    supabase
+      .from('household_profiles')
+      .select('id, name, avatar_colour')
+      .eq('workspace_id', params.id)
+      .order('created_at'),
+  ])
 
   const categories: Category[] = (allCategories ?? []) as Category[]
+  const members = (rawMembers ?? []).map((m) => ({
+    id: m.id,
+    userId: m.user_id as string,
+    displayName: m.display_name,
+  }))
+  const childProfiles = (rawProfiles ?? []).map((p) => ({
+    id: p.id,
+    name: p.name,
+    avatarColour: p.avatar_colour,
+  }))
 
   let query = supabase
     .from('tasks')
@@ -50,7 +76,6 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
   if (searchParams.status && searchParams.status !== 'all') {
     query = query.eq('status', searchParams.status)
   }
-
   if (searchParams.category && searchParams.category !== 'all') {
     const ids = searchParams.category.split(',').filter(Boolean)
     if (ids.length === 1) query = query.eq('category_id', ids[0])
@@ -72,10 +97,7 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
     <div>
       <div className="flex items-center justify-between mb-6">
         <div>
-          <Link
-            href={`/household/${params.id}`}
-            className="text-sm text-gray-400 hover:text-gray-700 transition-colors"
-          >
+          <Link href={`/household/${params.id}`} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
             ← {workspace?.name ?? 'Household'}
           </Link>
           <h1 className="text-xl font-semibold text-gray-900 mt-1">Tasks</h1>
@@ -95,10 +117,7 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
           <div className="px-4 py-12 text-center">
             <p className="text-sm text-gray-400">No tasks yet.</p>
             {canCreate && (
-              <Link
-                href={`/household/${params.id}/tasks/new`}
-                className="mt-3 inline-block text-sm text-blue-600 hover:underline"
-              >
+              <Link href={`/household/${params.id}/tasks/new`} className="mt-3 inline-block text-sm text-blue-600 hover:underline">
                 Create the first household task
               </Link>
             )}
@@ -109,10 +128,18 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
               <div className="w-5 shrink-0" />
               <div className="flex-1 text-xs font-medium text-gray-400 uppercase tracking-wide">Task</div>
               <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">Category</div>
-              <div className="w-32 text-right text-xs font-medium text-gray-400 uppercase tracking-wide">When</div>
-              <div className="w-10 shrink-0" />
+              <div className="w-28 text-right text-xs font-medium text-gray-400 uppercase tracking-wide">When</div>
+              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide">Assigned</div>
+              <div className="w-16 shrink-0" />
             </div>
-            <TaskListClient tasks={tasks} categories={categories} />
+            <HouseholdTaskList
+              tasks={tasks}
+              categories={categories}
+              workspaceId={params.id}
+              currentUserId={user.id}
+              members={members}
+              childProfiles={childProfiles}
+            />
           </>
         )}
       </div>
