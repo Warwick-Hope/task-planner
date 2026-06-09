@@ -55,6 +55,12 @@ export default async function HouseholdDashboardPage({ params }: { params: { id:
         </div>
         <div className="flex items-center gap-2">
           <Link
+            href={`/household/${params.id}/tasks`}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+          >
+            Tasks
+          </Link>
+          <Link
             href={`/household/${params.id}/categories`}
             className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
           >
@@ -96,16 +102,6 @@ export default async function HouseholdDashboardPage({ params }: { params: { id:
         />
       </section>
 
-      <section>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-          Coming soon
-        </h2>
-        <div className="rounded-lg border border-dashed border-gray-300 bg-white px-6 py-10 text-center">
-          <p className="text-sm text-gray-400">
-            Shared tasks, cleaning schedules, meal planning, and shopping lists are on the way.
-          </p>
-        </div>
-      </section>
     </div>
   )
 }

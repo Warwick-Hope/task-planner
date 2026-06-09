@@ -173,9 +173,13 @@ function taskToHorizonState(task: Task) {
 export default function TaskForm({
   categories,
   task,
+  submitUrl,
+  redirectTo,
 }: {
   categories: Category[]
   task?: Task
+  submitUrl?: string
+  redirectTo?: string
 }) {
   const router = useRouter()
   const isEdit = !!task
@@ -347,7 +351,7 @@ export default function TaskForm({
       timeStr,
     })
 
-    const url    = isEdit ? `/api/tasks/${task!.id}` : '/api/tasks'
+    const url    = isEdit ? `/api/tasks/${task!.id}` : (submitUrl ?? '/api/tasks')
     const method = isEdit ? 'PATCH' : 'POST'
 
     const recurrenceRule = isRecurring ? buildRrule(recurrenceOpts) : null
@@ -374,7 +378,7 @@ export default function TaskForm({
       return
     }
 
-    router.push('/tasks')
+    router.push(redirectTo ?? '/tasks')
     router.refresh()
   }
 
