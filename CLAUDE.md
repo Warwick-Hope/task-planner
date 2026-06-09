@@ -333,7 +333,8 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Phase 1 complete — personal workspace fully functional (1.1–1.14 + feedback polish)
 - [x] Phase 1.19 complete — Horizon Planner live at `/plan`
 - [x] ESLint clean — all lint errors resolved; `.markdownlint.json` added to suppress line-length rule on docs
-- [ ] **Next: Phase 1.15 or Phase 2**
+- [x] Phase 2 complete — household workspace foundation (2.1–2.9 including 2.7 notifications)
+- [ ] **Next: Phase 3 (household features: cleaning and shopping)**
 
 ---
 
