@@ -366,10 +366,16 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [ ] **Next: deploy to Vercel (prod) and push migrations to prod Supabase, then Phase 4**
 
 ### Deployment checklist (first deploy)
-- [ ] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
-- [ ] Set Vercel env vars (Production): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (prod), ANTHROPIC_API_KEY, NEXT_PUBLIC_APP_URL
-- [ ] Push migrations to prod: `supabase db push --project-ref ialovkohwdlkpgsrqrjo --token <SUPABASE_ACCESS_TOKEN>`
-- [ ] Set Supabase prod Auth → URL Configuration: Site URL + Redirect URLs → Vercel URL
+- [x] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
+- [x] Set Vercel env vars (Production): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (prod), ANTHROPIC_API_KEY, NEXT_PUBLIC_APP_URL
+- [x] Push migrations to prod: link CLI → push → re-link to dev
+- [ ] Set Supabase prod Auth → URL Configuration: Site URL + Redirect URLs → https://task-planner-nine-sigma.vercel.app
+
+**Live URL:** https://task-planner-nine-sigma.vercel.app
+
+### Future deploys
+Vercel auto-deploys on every push to `main`. No manual steps needed.
+For new migrations: link to prod, push, re-link to dev (see env vars section for token pattern).
 
 ---
 
