@@ -439,13 +439,17 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Phase 3 complete — cleaning (rooms, tasks, schedule view), shopping list, meal planning, ingredients, meal→shopping push with deduplication, auto shopping task
 - [x] Household nav — section nav added to household layout (Dashboard, Tasks, Cleaning, Shopping, Meals, Rooms, Categories) with active-state highlighting; matches personal layout pattern
 - [x] Personal nav — active-state highlighting added
-- [ ] **Next: deploy to Vercel (prod) and push migrations to prod Supabase, then Phase 4**
+- [x] First deploy complete — live on Vercel, prod migrations pushed, prod auth URLs configured
+- [x] Git process — pre-push main guard, PR-only flow with squash merges, CI verify (lint + build) on PRs
+- [ ] **Next: security hardening before Phase 4 — fix `using (true)` policy on household_invitations, add FK indexes, shared `requireMember` helper across household API routes, brain-dump input cap**
 
 ### Deployment checklist (first deploy)
 - [x] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
 - [x] Set Vercel env vars (Production): NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY (prod), ANTHROPIC_API_KEY, NEXT_PUBLIC_APP_URL
 - [x] Push migrations to prod: link CLI → push → re-link to dev
-- [ ] Set Supabase prod Auth → URL Configuration: Site URL + Redirect URLs → https://task-planner-nine-sigma.vercel.app
+- [x] Set Supabase prod Auth → URL Configuration: Site URL → https://task-planner-nine-sigma.vercel.app, Redirect URLs → https://task-planner-nine-sigma.vercel.app/** (wildcard needed — signup redirects to /api/auth/callback and the allow-list is exact-match)
+
+Note: prod Supabase is on the free tier and pauses after ~7 days without traffic — a paused project takes the live app down until manually restored from the dashboard. Fine once in daily use; upgrade or add a keep-alive if it recurs.
 
 **Live URL:** https://task-planner-nine-sigma.vercel.app
 
