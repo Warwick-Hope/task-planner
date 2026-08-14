@@ -35,3 +35,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .claude/worktrees
+
+# local Claude settings (permission entries can embed access tokens)
+.claude/settings.local.json

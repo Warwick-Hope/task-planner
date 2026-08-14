@@ -1,5 +1,31 @@
 # Clarity — Project Intelligence Document
 
+## Commands
+
+```bash
+npm run dev      # start dev server (localhost:3000)
+npm run build    # production build (also type-checks, since noEmit + strict)
+npm run lint     # next lint (ESLint: next/core-web-vitals, next/typescript, prettier)
+npm run format   # prettier --write .
+```
+
+No test suite exists in this repo — don't assume Jest/Vitest are configured.
+
+Supabase CLI migrations (dev): `supabase db push --project-ref fxczpsznrcxykfsiyvty --token <SUPABASE_ACCESS_TOKEN>`. The CLI's stored login is a different (Plant Plan) account, so always pass `--token` explicitly rather than relying on `supabase login`. To push to prod, re-link/target `ialovkohwdlkpgsrqrjo`, push, then re-link back to dev — never leave the CLI pointed at prod.
+
+## Code architecture
+
+- **Route groups mirror the personal/household split**: `app/(auth)`, `app/(dashboard)` (personal workspace pages: tasks, calendar, plan, brain-dump, mission, roles), `app/(household)` (household workspace pages). API routes live under `app/api/**`, one folder per resource, matching REST-ish conventions (`app/api/tasks/[id]`).
+- **Auth/session refresh happens in [middleware.ts](middleware.ts)** — calls `supabase.auth.getUser()` (never `getSession()`, per Supabase SSR guidance) on every request, redirects unauthenticated users to `/login` and authenticated users away from `/login`/`/signup`.
+- **Two Supabase client helpers, not interchangeable**: [lib/supabase.ts](lib/supabase.ts) is the browser client (auth only, per the locked architecture rule below); [lib/supabase-server.ts](lib/supabase-server.ts) creates a cookie-aware server client for use in Server Components and API routes. All non-auth DB access must go through the server client.
+- **[lib/workspace-server.ts](lib/workspace-server.ts)** resolves a user's personal workspace id — the entry point for scoping any query to "this user's personal data" versus a household workspace id passed explicitly.
+- **[lib/horizon.ts](lib/horizon.ts)** is the single source of truth for the 7-level horizon model shared by personal and household tasks: `buildHorizonFields()` derives all coarser fields (year/half/quarter/month/week) from whichever precision the user actually set, `getHorizonReviewStatus()` flags tasks approaching/overdue for re-planning, `horizonSortKey()`/`formatHorizon()` back the list and calendar views. Any new UI that touches horizons should build fields through this module rather than setting horizon_* columns directly, so cascading stays consistent.
+- **[lib/recurrence.ts](lib/recurrence.ts)** wraps `rrule` for recurring task patterns and next-occurrence generation on completion.
+- **Types**: [types/index.ts](types/index.ts) is the single shared TypeScript source for all DB table shapes — update it alongside any migration.
+- **Migrations**: [supabase/migrations/](supabase/migrations/) — every schema change is a committed migration file, applied to dev first (see Commands above), never hand-edited on the dashboard.
+
+See "Architecture decisions (locked — ask before changing)" and the full database schema below for the product-level model (workspaces, categories, task assignment/visibility rules, etc.) before writing code that touches multi-tenancy or RLS.
+
 ## What this is
 
 A unified personal planning and household coordination app. One login, one planning system. Personal workspace for individual task planning (horizon-based, AI brain dump, role categories). Household workspace for shared family tasks, cleaning schedules, meal planning, and shopping. The distinction between personal and household is visibility and permissions — not separate modes or apps.
@@ -230,8 +256,36 @@ created_at
 - **Claude names the branch** at the start of each new phase — never use auto-generated worktree names
 - **Commit after each completed phase step** — use the commit format above; don't batch multiple steps into one commit
 - **Migration files always committed** — every Supabase migration in `supabase/migrations/` is committed immediately after it runs successfully on dev
-- **Merge to `main` when phase is complete** — after smoke test passes, not mid-phase
+- **Merge to `main` when phase step is done and tested locally** — not mid-step
 - **No force push, no direct commits to `main`** — all work goes through a named branch
+- **Git identity** — repo is configured with `user.email = warwickhope93@gmail.com`, `user.name = Warwick-Hope`; global git config is Plant Plan — never change global, always use local repo config
+
+---
+
+## Deployment workflow
+
+**Flow:** feature branch → test locally → merge to main → `git push origin main` → Vercel auto-deploys (~2 min)
+
+- `main` branch = production. Only merge when tested and happy.
+- Vercel project: `task-planner-nine-sigma.vercel.app` (team: warwick-hope-pvt-projects)
+- Vercel auto-deploys on every push to `main` — no manual steps needed
+- ESLint and TypeScript errors will fail the build — run `npx tsc --noEmit` locally before merging if in doubt
+
+### New database migrations
+Always test on dev first, then push to prod when merging to main:
+
+```
+# 1. Link to prod
+supabase link --project-ref ialovkohwdlkpgsrqrjo
+
+# 2. Push migrations (SUPABASE_ACCESS_TOKEN is the personal account token in .env.local)
+supabase db push --linked
+
+# 3. Re-link back to dev — always do this after
+supabase link --project-ref fxczpsznrcxykfsiyvty
+```
+
+Set `$env:SUPABASE_ACCESS_TOKEN = "<value from .env.local>"` before running these commands (the stored CLI login is Plant Plan — the env var overrides it for that session).
 
 ---
 
