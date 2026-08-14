@@ -1,0 +1,6 @@
+# Normalise line endings: text is stored LF in the repo and checked out LF.
+# The pre-push hook in .githooks/ is a sh script — CRLF breaks it under git's
+# shell, so LF checkout is required, not just preferred.
+* text=auto eol=lf
+
+package-lock.json linguist-generated=true
