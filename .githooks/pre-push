@@ -1,0 +1,47 @@
+#!/bin/sh
+#
+# Refuse a push to main.
+#
+# A push to main is a production deploy — Vercel publishes
+# https://task-planner-nine-sigma.vercel.app on every push. The repo is
+# private on a free personal plan, so server-side branch protection is
+# unavailable; this hook is the substitute.
+#
+# Installed by `npm run setup:hooks`, which sets core.hooksPath to .githooks.
+# Git will not run a hook nobody opted into, so a fresh clone needs that once.
+#
+# Emergency override, for a revert that should not wait for a PR round-trip:
+#   TP_ALLOW_MAIN_PUSH=1 git push origin main
+#
+# stdin gives one line per ref being pushed:
+#   <local ref> <local sha> <remote ref> <remote sha>
+
+if [ "$TP_ALLOW_MAIN_PUSH" = "1" ]; then
+	echo "pre-push: TP_ALLOW_MAIN_PUSH=1 — allowing a push to main. Say why in the commit message."
+	exit 0
+fi
+
+while read -r _local_ref _local_sha remote_ref _remote_sha; do
+	if [ "$remote_ref" = "refs/heads/main" ]; then
+		cat >&2 <<-'EOF'
+
+			✗ pre-push: refusing to push to main.
+
+			  A push to main deploys to production immediately. Work on a branch
+			  and merge through a pull request:
+
+			    git switch -c <type>/<slug> origin/main
+			    git push -u origin <type>/<slug>
+			    gh pr create --fill
+			    gh pr merge --squash
+
+			  See CLAUDE.md § Git workflow. If this really is an emergency revert:
+
+			    TP_ALLOW_MAIN_PUSH=1 git push origin main
+
+		EOF
+		exit 1
+	fi
+done
+
+exit 0

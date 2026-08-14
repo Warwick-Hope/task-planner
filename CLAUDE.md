@@ -252,24 +252,46 @@ created_at
 
 ## Git workflow
 
-- **One branch per phase** — named `feat/phase-N-description` (e.g. `feat/phase-0-schema`, `feat/phase-1-personal`)
-- **Claude names the branch** at the start of each new phase — never use auto-generated worktree names
-- **Commit after each completed phase step** — use the commit format above; don't batch multiple steps into one commit
-- **Migration files always committed** — every Supabase migration in `supabase/migrations/` is committed immediately after it runs successfully on dev
-- **Merge to `main` when phase step is done and tested locally** — not mid-step
-- **No force push, no direct commits to `main`** — all work goes through a named branch
-- **Git identity** — repo is configured with `user.email = warwickhope93@gmail.com`, `user.name = Warwick-Hope`; global git config is Plant Plan — never change global, always use local repo config
+A push to `main` is a production deploy — Vercel publishes `task-planner-nine-sigma.vercel.app` on every push, with no staging step. The repo is private on a free personal plan, so server-side branch protection is unavailable; a local pre-push hook is the substitute.
+
+### One-time setup, per clone
+
+```bash
+npm run setup:hooks   # core.hooksPath → .githooks (pre-push refuses main); core.longpaths true
+```
+
+### The flow
+
+- **Branch per piece of work** — `<type>/<slug>`: `feat/` `fix/` `docs/` `chore/`, lower case, hyphenated. Phase work keeps the `feat/phase-N-description` convention. Claude names the branch — never auto-generated worktree names.
+- **Never commit or push to `main` directly** — everything merges through a PR, docs included.
+- **Parallel Claude chats each get a worktree OUTSIDE the repo**: `git worktree add C:/Dev/.worktrees/task-planner/<slug> -b <type>/<slug> origin/main`. Never nest a worktree inside the repository (`.claude/worktrees` is the harness's own — leave it gitignored, clean it up when sessions end). Copy `.env.local` into a new worktree — it's untracked and dev + CLI need it.
+- **Update from `main` by rebasing** (`git pull --rebase origin main`), never by merging.
+- **Commit after each completed phase step** — `type: short description` format; don't batch steps.
+- **Migration files always committed** immediately after they run successfully on dev.
+
+### Opening and merging a PR
+
+```bash
+git push -u origin <type>/<slug>
+gh pr create --fill
+gh pr merge --squash        # remote branch auto-deletes
+```
+
+- The `verify` check (lint + build) runs on every PR. It cannot be *required* on a free plan, so **wait for it to go green before merging** — a red verify merged to `main` goes straight to production.
+- The repo is squash-only and takes the **PR title as the squash-commit subject, PR body as its message** — write the title as an imperative commit subject.
+- After the squash merge: `git branch -D <type>/<slug>` locally (`-d` refuses — squash commits aren't ancestors of `main`), then `git worktree remove` + delete the folder if one was used.
+- **No force push.** Emergency direct push to `main` (broken prod needing an instant revert): `TP_ALLOW_MAIN_PUSH=1 git push origin main` — say why in the commit message. Reaching for it twice means the branch model is wrong; fix it instead.
+- **Git identity** — repo-local config: `user.email = warwickhope93@gmail.com`, `user.name = Warwick-Hope`; credential helper is repo-local `gh` with active account Warwick-Hope. Global git config is Plant Plan — never change global.
 
 ---
 
 ## Deployment workflow
 
-**Flow:** feature branch → test locally → merge to main → `git push origin main` → Vercel auto-deploys (~2 min)
+**Flow:** branch → test locally → PR → verify green → squash merge → Vercel auto-deploys `main` (~2 min)
 
 - `main` branch = production. Only merge when tested and happy.
 - Vercel project: `task-planner-nine-sigma.vercel.app` (team: warwick-hope-pvt-projects)
-- Vercel auto-deploys on every push to `main` — no manual steps needed
-- ESLint and TypeScript errors will fail the build — run `npx tsc --noEmit` locally before merging if in doubt
+- ESLint and TypeScript errors will fail the build — run `npx tsc --noEmit` locally before pushing if in doubt
 
 ### New database migrations
 Always test on dev first, then push to prod when merging to main:
