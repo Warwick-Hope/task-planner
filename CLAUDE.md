@@ -441,7 +441,7 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Personal nav — active-state highlighting added
 - [x] First deploy complete — live on Vercel, prod migrations pushed, prod auth URLs configured
 - [x] Git process — pre-push main guard, PR-only flow with squash merges, CI verify (lint + build) on PRs
-- [ ] **Next: security hardening before Phase 4 — fix `using (true)` policy on household_invitations, add FK indexes, shared `requireMember` helper across household API routes, brain-dump input cap**
+- [ ] **Next: security hardening before Phase 4 — full spec with findings and file references in [SECURITY_HARDENING.md](SECURITY_HARDENING.md)** (invitations RLS fix, FK indexes, `requireMember` helper, brain-dump input cap; then smoke tests and the pre-4.1 consolidation refactor listed at the end of that doc)
 
 ### Deployment checklist (first deploy)
 - [x] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
