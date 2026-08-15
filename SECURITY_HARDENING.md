@@ -10,10 +10,8 @@ pushed to prod on merge (see CLAUDE.md § Deployment workflow).
 
 ## Status — 15 Aug 2026 (branch `feat/security-hardening`)
 
-Code for tiers 1 and 2 is written; `npm run lint` and `npm run build` are green. Three
-migrations are committed but **not yet applied to either database** — pushing them needs the
-dev Postgres password, which the CLI prompts for and the Supabase MCP has no permission to
-supply:
+Code for tiers 1 and 2 is written; `npm run lint` and `npm run build` are green. All three
+migrations are **applied to dev**; prod gets them on merge.
 
 ```
 supabase/migrations/20260815000001_sec_invitation_token_rpc.sql
@@ -24,6 +22,12 @@ supabase/migrations/20260815000003_sec_rls_tighten.sql
 Migration 1 and `app/invite/[token]/page.tsx` must land together — the page now reads the
 invitation through the new RPC, so the page is broken until the migration runs, and the table
 stays anon-readable until it does.
+
+**Bug found while verifying 1.1:** `middleware.ts` redirected *every* unauthenticated request
+to `/login`, so `/invite/[token]` never rendered for a logged-out visitor — the emailed link
+was unusable, and the page's own "sign in to accept" branch was dead code. The invite path is
+now exempt, and the redirect carries `?next=` so a sign-in returns the visitor to the invite
+rather than dumping them on the dashboard (same-origin paths only).
 
 One finding beyond the original spec, fixed in migration 3: the four `household_profiles`
 policies compared `wm.workspace_id` to an unqualified `workspace_id`, which Postgres resolves

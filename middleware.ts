@@ -32,18 +32,28 @@ export async function middleware(request: NextRequest) {
 
   const isAuthRoute = pathname === '/login' || pathname === '/signup'
   const isCallbackRoute = pathname.startsWith('/api/auth/callback')
+  // The invite landing page has to render for a logged-out visitor — that is
+  // the entire point of the emailed token link. It reads nothing but the
+  // get_invitation_by_token RPC, and accepting still requires a session.
+  const isInviteRoute = pathname.startsWith('/invite/')
 
   // Redirect unauthenticated users away from protected routes
-  if (!user && !isAuthRoute && !isCallbackRoute) {
+  if (!user && !isAuthRoute && !isCallbackRoute && !isInviteRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
+    url.search = ''
+    url.searchParams.set('next', pathname)
     return NextResponse.redirect(url)
   }
 
   // Redirect authenticated users away from auth pages
   if (user && isAuthRoute) {
+    const next = request.nextUrl.searchParams.get('next')
+    // Only same-origin paths — never bounce to an attacker-supplied host
+    const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '/dashboard'
     const url = request.nextUrl.clone()
-    url.pathname = '/dashboard'
+    url.pathname = safeNext
+    url.search = ''
     return NextResponse.redirect(url)
   }
 
