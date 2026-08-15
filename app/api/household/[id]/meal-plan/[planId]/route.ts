@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden } from '@/lib/api'
 
 export async function DELETE(
   _request: Request,
@@ -7,7 +9,10 @@ export async function DELETE(
 ) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
+
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
   const { error } = await supabase
     .from('meal_plan')

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Category } from '@/types'
 import type { ParsedTask } from '@/app/api/brain-dump/route'
+import { MAX_BRAIN_DUMP_CHARS } from '@/lib/limits'
 
 const HORIZON_LABELS: Record<ParsedTask['horizon_precision'], string> = {
   unplanned: 'Unplanned',
@@ -268,10 +269,16 @@ export default function BrainDumpClient({ categories }: { categories: Category[]
             rows={6}
             value={text}
             onChange={e => setText(e.target.value)}
+            maxLength={MAX_BRAIN_DUMP_CHARS}
             placeholder="Just write — don't worry about structure. 'I need to sort out the car insurance, book the dentist, finish the proposal for Wednesday, and at some point get around to clearing the garage…'"
             className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
             disabled={parsing}
           />
+          {text.length > MAX_BRAIN_DUMP_CHARS * 0.8 && (
+            <p className="mt-1 text-xs text-gray-400 text-right">
+              {text.length.toLocaleString()} / {MAX_BRAIN_DUMP_CHARS.toLocaleString()} characters
+            </p>
+          )}
         </div>
         {parseError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{parseError}</p>

@@ -1,10 +1,15 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody, trimmedString } from '@/lib/api'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
+
+  const membership = await requireMember(supabase, params.id, user.id)
+  if (!membership) return forbidden()
 
   const { data, error } = await supabase
     .from('shopping_list')
@@ -20,25 +25,26 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', params.id)
-    .eq('user_id', user.id)
-    .single()
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
-  if (!membership || membership.role === 'restricted') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const body = await parseJson<{
+    name?: unknown
+    quantity?: unknown
+    unit?: unknown
+    shop_tag?: unknown
+    source?: unknown
+    source_id?: unknown
+  }>(request)
+  if (!body) return badBody()
 
-  const body = await request.json()
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
-  const incomingQty = body.quantity?.toString().trim() || null
-  const incomingUnit = body.unit?.toString().trim() || null
+  const incomingQty = trimmedString(body.quantity)
+  const incomingUnit = trimmedString(body.unit)
 
   // Deduplication: if a matching unpurchased item exists with the same name (case-insensitive),
   // merge by appending quantity rather than creating a duplicate.
@@ -80,9 +86,9 @@ export async function POST(request: Request, { params }: { params: { id: string 
       name,
       quantity: incomingQty,
       unit: incomingUnit,
-      shop_tag: body.shop_tag?.toString().trim() || null,
-      source: body.source ?? 'manual',
-      source_id: body.source_id ?? null,
+      shop_tag: trimmedString(body.shop_tag),
+      source: body.source === 'meal' ? 'meal' : 'manual',
+      source_id: typeof body.source_id === 'string' ? body.source_id : null,
       is_purchased: false,
     })
     .select('*')
@@ -95,7 +101,10 @@ export async function POST(request: Request, { params }: { params: { id: string 
 export async function DELETE(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
+
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
   const { searchParams } = new URL(request.url)
   const clearPurchased = searchParams.get('purchased') === 'true'

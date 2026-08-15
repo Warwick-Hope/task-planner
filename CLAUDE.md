@@ -11,7 +11,15 @@ npm run format   # prettier --write .
 
 No test suite exists in this repo — don't assume Jest/Vitest are configured.
 
-Supabase CLI migrations (dev): `supabase db push --project-ref fxczpsznrcxykfsiyvty --token <SUPABASE_ACCESS_TOKEN>`. The CLI's stored login is a different (Plant Plan) account, so always pass `--token` explicitly rather than relying on `supabase login`. To push to prod, re-link/target `ialovkohwdlkpgsrqrjo`, push, then re-link back to dev — never leave the CLI pointed at prod.
+Supabase CLI migrations (dev):
+
+```powershell
+$env:SUPABASE_ACCESS_TOKEN = "<value from .env.local>"   # personal account; CLI's stored login is Plant Plan
+$env:SUPABASE_DB_PASSWORD  = "<dev database password>"   # else the CLI prompts and hangs in non-interactive shells
+supabase db push --linked                                # CLI is linked to dev (fxczpsznrcxykfsiyvty)
+```
+
+`db push` has no `--project-ref` flag — it pushes to the linked project. To push to prod, `supabase link --project-ref ialovkohwdlkpgsrqrjo`, push, then re-link back to dev — never leave the CLI pointed at prod. The Supabase MCP cannot apply migrations (no permission), so this is always a CLI step run by Warwick.
 
 ## Code architecture
 
@@ -441,7 +449,8 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Personal nav — active-state highlighting added
 - [x] First deploy complete — live on Vercel, prod migrations pushed, prod auth URLs configured
 - [x] Git process — pre-push main guard, PR-only flow with squash merges, CI verify (lint + build) on PRs
-- [ ] **Next: security hardening before Phase 4 — full spec with findings and file references in [SECURITY_HARDENING.md](SECURITY_HARDENING.md)** (invitations RLS fix, FK indexes, `requireMember` helper, brain-dump input cap; then smoke tests and the pre-4.1 consolidation refactor listed at the end of that doc)
+- [x] Security hardening — code complete (tiers 1 and 2 of [SECURITY_HARDENING.md](SECURITY_HARDENING.md)): invitation lookup moved behind a `get_invitation_by_token` RPC, `requireMember`/`parseJson` helpers applied across every household route, brain-dump input capped at 10,000 chars, recurring-task insert errors surfaced, assignee membership validated
+- [ ] **Next: apply the three `20260815*` migrations to dev, smoke test, then push to prod on merge** — see the Status section of [SECURITY_HARDENING.md](SECURITY_HARDENING.md). After that: Playwright smoke suite, then the pre-4.1 consolidation refactor listed at the end of that doc
 
 ### Deployment checklist (first deploy)
 - [x] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)

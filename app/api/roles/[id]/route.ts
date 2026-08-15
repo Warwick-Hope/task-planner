@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { parseJson, badBody } from '@/lib/api'
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -9,7 +10,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  const body = await request.json()
+  const body = await parseJson<{ name?: string; colour?: string }>(request)
+  if (!body) return badBody()
   const { name, colour } = body
 
   if (!name?.trim()) {

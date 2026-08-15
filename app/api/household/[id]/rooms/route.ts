@@ -1,10 +1,15 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
+
+  const membership = await requireMember(supabase, params.id, user.id)
+  if (!membership) return forbidden()
 
   const { data, error } = await supabase
     .from('rooms')
@@ -19,9 +24,13 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const body = await request.json()
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
+
+  const body = await parseJson<{ name?: unknown }>(request)
+  if (!body) return badBody()
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 

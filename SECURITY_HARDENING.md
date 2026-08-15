@@ -8,6 +8,34 @@ tier is fine.
 Every schema change here is a new migration in `supabase/migrations/`, applied to dev first,
 pushed to prod on merge (see CLAUDE.md § Deployment workflow).
 
+## Status — 15 Aug 2026 (branch `feat/security-hardening`)
+
+Code for tiers 1 and 2 is written; `npm run lint` and `npm run build` are green. Three
+migrations are committed but **not yet applied to either database** — pushing them needs the
+dev Postgres password, which the CLI prompts for and the Supabase MCP has no permission to
+supply:
+
+```
+supabase/migrations/20260815000001_sec_invitation_token_rpc.sql
+supabase/migrations/20260815000002_sec_indexes.sql
+supabase/migrations/20260815000003_sec_rls_tighten.sql
+```
+
+Migration 1 and `app/invite/[token]/page.tsx` must land together — the page now reads the
+invitation through the new RPC, so the page is broken until the migration runs, and the table
+stays anon-readable until it does.
+
+One finding beyond the original spec, fixed in migration 3: the four `household_profiles`
+policies compared `wm.workspace_id` to an unqualified `workspace_id`, which Postgres resolves
+to the inner table's own column — a tautology. Membership of any workspace therefore granted
+read/write access to every household's child profiles. Same file also tightens `shopping_list`
+INSERT/DELETE to owner/adult and makes `meal_plan` INSERT check the meal's workspace.
+
+Known limitation recorded rather than fixed: `shopping_list` UPDATE stays open to every member
+at the RLS layer, because row-level policies cannot express "restricted members may change
+`is_purchased` only". The route enforces that column rule; a trigger would be needed to enforce
+it in the database.
+
 ---
 
 ## Tier 1 — prod exposures
@@ -119,13 +147,13 @@ table).
 
 ## Verification
 
-- `npm run lint` + `npm run build` green (CI enforces on the PR).
+- [x] `npm run lint` + `npm run build` green (CI enforces on the PR).
 - Manual smoke on dev: invite landing page still renders for a logged-out visitor (via the
   new RPC); restricted-member write to a room/meal/shopping item now 403s; brain dump still
   parses; oversize brain dump rejected with a clear message.
 - Supabase dashboard → Advisors (Security + Performance) on dev after the migrations — MCP
   lacks permission to run these, so it's a dashboard step.
-- Delete `components/tasks/TaskPreviewPanel.tsx` (168 lines, never imported) while here.
+- [x] Delete `components/tasks/TaskPreviewPanel.tsx` (168 lines, never imported) while here.
 
 ## After this (separate work, in order — from the same review)
 

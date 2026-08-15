@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { unauthorised, parseJson, badBody } from '@/lib/api'
 
 export async function POST(request: Request) {
   const supabase = createClient()
@@ -8,11 +9,11 @@ export async function POST(request: Request) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!user) return unauthorised()
 
-  const body = await request.json()
+  const body = await parseJson<{ name?: unknown }>(request)
+  if (!body) return badBody()
+
   const name = typeof body.name === 'string' ? body.name.trim() : ''
 
   if (!name) {

@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import type { Category } from '@/types'
+import { unauthorised, parseJson, badBody } from '@/lib/api'
+import { MAX_BRAIN_DUMP_CHARS } from '@/lib/limits'
 
 export interface ParsedTask {
   title: string
@@ -18,17 +20,21 @@ export interface ParsedTask {
 export async function POST(request: Request) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  let body: { text: string }
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
+  const body = await parseJson<{ text?: unknown }>(request)
+  if (!body) return badBody()
 
   const { text } = body
-  if (!text?.trim()) return NextResponse.json({ error: 'No text provided' }, { status: 400 })
+  if (typeof text !== 'string' || !text.trim()) {
+    return NextResponse.json({ error: 'No text provided' }, { status: 400 })
+  }
+  if (text.length > MAX_BRAIN_DUMP_CHARS) {
+    return NextResponse.json(
+      { error: `Brain dump is too long — ${text.length.toLocaleString()} characters, limit is ${MAX_BRAIN_DUMP_CHARS.toLocaleString()}. Split it into a couple of dumps.` },
+      { status: 413 }
+    )
+  }
 
   // Fetch user's categories to pass as context
   const { data: categories } = await supabase
@@ -87,6 +93,7 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
         },
       ],
       system: systemPrompt,
+      metadata: { user_id: user.id },
     })
 
     const raw = message.content[0].type === 'text' ? message.content[0].text : ''
