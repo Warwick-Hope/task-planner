@@ -16,6 +16,30 @@ const HORIZON_FIELDS = [
   'horizon_time_slot',
 ] as const
 
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  const { data: task } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', params.id)
+    .single()
+
+  if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (task.created_by !== user.id) {
+    const membership = await requireMember(supabase, task.workspace_id, user.id)
+    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return NextResponse.json({ task })
+}
+
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
