@@ -4,17 +4,83 @@ import Anthropic from '@anthropic-ai/sdk'
 import type { Category } from '@/types'
 import { unauthorised, parseJson, badBody } from '@/lib/api'
 import { MAX_BRAIN_DUMP_CHARS } from '@/lib/limits'
+import {
+  buildHorizonFields,
+  monthFromDate,
+  yearFromDate,
+  monthToQuarter,
+} from '@/lib/horizon'
+
+export type ParsedHorizonPrecision =
+  | 'unplanned' | 'year' | 'quarter' | 'month' | 'week' | 'day'
 
 export interface ParsedTask {
   title: string
   notes: string
   category_id: string | null
-  horizon_precision: 'unplanned' | 'year' | 'quarter' | 'month' | 'week' | 'day'
+  horizon_precision: ParsedHorizonPrecision
   horizon_year: number | null
   horizon_quarter: number | null
   horizon_month: number | null
   horizon_week: string | null   // ISO date of Monday
   horizon_day: string | null    // ISO date YYYY-MM-DD
+}
+
+/**
+ * What the model is asked to return. Deliberately smaller than ParsedTask:
+ * the model picks a precision and one anchor date, and the server does every
+ * piece of calendar arithmetic. Asking a model to keep year/quarter/month/week
+ * mutually consistent is the part it gets wrong, and it is trivial in code.
+ */
+interface ModelTask {
+  title?: unknown
+  notes?: unknown
+  category_id?: unknown
+  horizon_precision?: unknown
+  horizon_date?: unknown
+}
+
+const PRECISIONS: ParsedHorizonPrecision[] =
+  ['unplanned', 'year', 'quarter', 'month', 'week', 'day']
+
+/** True only for a real calendar date in YYYY-MM-DD form. */
+function isIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(value + 'T12:00:00')
+  return !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value)
+}
+
+/**
+ * Derives the full horizon field set from a precision plus any date inside the
+ * intended period — so "next month" only needs the model to name a date in it.
+ */
+function horizonFromAnchor(
+  precision: ParsedHorizonPrecision,
+  anchor: string | null
+): Pick<ParsedTask, 'horizon_year' | 'horizon_quarter' | 'horizon_month' | 'horizon_week' | 'horizon_day'> {
+  const blank = { horizon_year: null, horizon_quarter: null, horizon_month: null, horizon_week: null, horizon_day: null }
+  if (precision === 'unplanned' || !anchor) return blank
+
+  const year = yearFromDate(anchor)
+  const month = monthFromDate(anchor)
+
+  const fields =
+    precision === 'year'    ? buildHorizonFields('year',    { year })
+  : precision === 'quarter' ? buildHorizonFields('quarter', { year, quarter: monthToQuarter(month) })
+  : precision === 'month'   ? buildHorizonFields('month',   { year, month })
+  : precision === 'week'    ? buildHorizonFields('week',    { weekStr: anchor })
+  : precision === 'day'     ? buildHorizonFields('day',     { dayStr: anchor })
+  : null
+
+  if (!fields) return blank
+
+  return {
+    horizon_year: fields.horizon_year,
+    horizon_quarter: fields.horizon_quarter,
+    horizon_month: fields.horizon_month,
+    horizon_week: fields.horizon_week,
+    horizon_day: fields.horizon_day,
+  }
 }
 
 export async function POST(request: Request) {
@@ -57,14 +123,26 @@ ${categoryList.length > 0
   ? categoryList.map(c => `- id: "${c.id}", name: "${c.name}"${c.parent_id ? ' (subcategory)' : ' (top-level)'}`).join('\n')
   : '(no categories set up yet)'}
 
-Extract every distinct task or action item from the user's text. For each task:
-- Write a short, clear, actionable title (verb-first where possible, e.g. "Book dentist appointment")
-- Put any supporting context in notes (keep it brief)
-- Match to one category id if the task clearly fits one; otherwise null
-- Infer a horizon precision and date fields if the text mentions timing ("this week", "by end of month", "next year", "tomorrow", "Friday", etc.); otherwise use "unplanned"
-- For week: return the ISO date of the Monday of that week
-- For day: return the ISO date (YYYY-MM-DD)
-- Derive horizon_year, horizon_quarter, horizon_month consistently with the most precise field set
+Extract every distinct task or action item from the user's text. For each task return four fields:
+
+- "title": short, clear, actionable, verb-first where possible (e.g. "Book dentist appointment")
+- "notes": any supporting context, kept brief. Use "" if there is none.
+- "category_id": one of the exact ids above if the task clearly fits, otherwise null
+- "horizon_precision": how precisely the text pins the timing — one of
+  "day", "week", "month", "quarter", "year", or "unplanned" when no timing is mentioned
+- "horizon_date": any date that falls inside that period, as YYYY-MM-DD, or null when unplanned
+
+You do not need to calculate week starts, quarter numbers, or month numbers — give the
+precision and one date inside the period, and the app works out the rest.
+
+Examples of the timing fields:
+- "tomorrow"            -> precision "day",     date = tomorrow's date
+- "Friday"              -> precision "day",     date = the next Friday
+- "this week"           -> precision "week",    date = any date in this week
+- "by end of the month" -> precision "month",   date = any date in this month
+- "next quarter"        -> precision "quarter", date = any date in that quarter
+- "at some point next year" -> precision "year", date = any date in that year
+- no timing mentioned   -> precision "unplanned", date = null
 
 Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Example shape:
 [
@@ -73,22 +151,20 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
     "notes": "Been putting this off — need a check-up",
     "category_id": null,
     "horizon_precision": "month",
-    "horizon_year": 2026,
-    "horizon_quarter": 2,
-    "horizon_month": 5,
-    "horizon_week": null,
-    "horizon_day": null
+    "horizon_date": "${today}"
   }
 ]`
 
-  let parsed: ParsedTask[]
+  let parsed: ModelTask[]
   try {
-    // A full-length dump extracts dozens of tasks, each ~200 tokens of JSON.
-    // 2048 truncated the array mid-string ("Unterminated string in JSON").
-    // 16000 covers the worst case a 10,000-char dump can produce and stays
-    // under the SDK's non-streaming HTTP timeout.
+    // Haiku is the right tier here: this is extraction and classification, not
+    // reasoning, and all the calendar arithmetic happens server-side.
+    //
+    // A full-length dump extracts dozens of tasks. 2048 truncated the array
+    // mid-string ("Unterminated string in JSON"); 16000 covers the worst case a
+    // 10,000-char dump can produce and stays under the non-streaming HTTP timeout.
     const message = await anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-haiku-4-5',
       max_tokens: 16000,
       messages: [
         {
@@ -122,19 +198,29 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 
-  // Validate category_ids against real user categories
+  // Validate everything the model returned, then derive the horizon fields here.
+  // An unrecognised precision or a malformed date falls back to unplanned rather
+  // than writing a half-set of horizon columns.
   const validIds = new Set(categoryList.map(c => c.id))
-  const sanitised: ParsedTask[] = parsed.map(t => ({
-    title: String(t.title ?? '').trim(),
-    notes: String(t.notes ?? '').trim(),
-    category_id: t.category_id && validIds.has(t.category_id) ? t.category_id : null,
-    horizon_precision: t.horizon_precision ?? 'unplanned',
-    horizon_year: t.horizon_year ?? null,
-    horizon_quarter: t.horizon_quarter ?? null,
-    horizon_month: t.horizon_month ?? null,
-    horizon_week: t.horizon_week ?? null,
-    horizon_day: t.horizon_day ?? null,
-  })).filter(t => t.title.length > 0)
+
+  const sanitised: ParsedTask[] = parsed.map(t => {
+    const precision: ParsedHorizonPrecision =
+      PRECISIONS.includes(t.horizon_precision as ParsedHorizonPrecision)
+        ? (t.horizon_precision as ParsedHorizonPrecision)
+        : 'unplanned'
+
+    const anchor = isIsoDate(t.horizon_date) ? t.horizon_date : null
+    const resolved: ParsedHorizonPrecision = anchor ? precision : 'unplanned'
+
+    return {
+      title: String(t.title ?? '').trim(),
+      notes: String(t.notes ?? '').trim(),
+      category_id:
+        typeof t.category_id === 'string' && validIds.has(t.category_id) ? t.category_id : null,
+      horizon_precision: resolved,
+      ...horizonFromAnchor(resolved, anchor),
+    }
+  }).filter(t => t.title.length > 0)
 
   return NextResponse.json({ tasks: sanitised })
 }
