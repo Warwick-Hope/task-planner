@@ -83,9 +83,13 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
 
   let parsed: ParsedTask[]
   try {
+    // A full-length dump extracts dozens of tasks, each ~200 tokens of JSON.
+    // 2048 truncated the array mid-string ("Unterminated string in JSON").
+    // 16000 covers the worst case a 10,000-char dump can produce and stays
+    // under the SDK's non-streaming HTTP timeout.
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 2048,
+      max_tokens: 16000,
       messages: [
         {
           role: 'user',
@@ -95,6 +99,14 @@ Return ONLY a valid JSON array. No markdown, no explanation, no code fences. Exa
       system: systemPrompt,
       metadata: { user_id: user.id },
     })
+
+    // Truncation would otherwise surface as an unintelligible JSON parse error
+    if (message.stop_reason === 'max_tokens') {
+      return NextResponse.json(
+        { error: 'That dump produced more tasks than one pass can return. Split it into two smaller dumps.' },
+        { status: 422 }
+      )
+    }
 
     const raw = message.content[0].type === 'text' ? message.content[0].text : ''
 
