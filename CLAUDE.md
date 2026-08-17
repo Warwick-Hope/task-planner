@@ -449,8 +449,10 @@ Goal: true Android app. Extended recipe system. Entertaining templates. Market-r
 - [x] Personal nav — active-state highlighting added
 - [x] First deploy complete — live on Vercel, prod migrations pushed, prod auth URLs configured
 - [x] Git process — pre-push main guard, PR-only flow with squash merges, CI verify (lint + build) on PRs
-- [x] Security hardening — code complete (tiers 1 and 2 of [SECURITY_HARDENING.md](SECURITY_HARDENING.md)): invitation lookup moved behind a `get_invitation_by_token` RPC, `requireMember`/`parseJson` helpers applied across every household route, brain-dump input capped at 10,000 chars, recurring-task insert errors surfaced, assignee membership validated
-- [ ] **Next: apply the three `20260815*` migrations to dev, smoke test, then push to prod on merge** — see the Status section of [SECURITY_HARDENING.md](SECURITY_HARDENING.md). After that: Playwright smoke suite, then the pre-4.1 consolidation refactor listed at the end of that doc
+- [x] Security hardening — tiers 1 and 2 of [SECURITY_HARDENING.md](SECURITY_HARDENING.md) code-complete, migrations applied to dev, smoke tested (PR #4). Invitation lookup moved behind a `get_invitation_by_token` RPC; `requireMember`/`parseJson` helpers applied across every household route; `household_profiles` RLS tautology fixed (membership of any workspace granted access to every household's child profiles); first indexes in the schema; brain-dump input capped; recurring-task insert errors surfaced; assignee membership validated
+- [x] Three fixes found while smoke testing, same branch: `/invite/[token]` never rendered for logged-out visitors (middleware redirected every unauthenticated request to `/login`); `GET /api/tasks/[id]` didn't exist, so the cleaning form 405'd; brain dump truncated its own JSON at 2,048 output tokens
+- [x] Brain dump horizon derivation moved server-side into [lib/horizon.ts](lib/horizon.ts) — the model returns a precision plus one date, the app does the calendar arithmetic. Model dropped to `claude-haiku-4-5` (extraction only now)
+- [ ] **Next: merge PR #4, then push the three `20260815*` migrations to prod** (link → push → re-link to dev). Prod keeps both tier-1 database exposures until that runs. Then: Supabase Advisors check on dev, Playwright smoke suite, and the pre-4.1 consolidation refactor listed at the end of [SECURITY_HARDENING.md](SECURITY_HARDENING.md)
 
 ### Deployment checklist (first deploy)
 - [x] Create Vercel project at vercel.com/warwick-hope-pvt-projects → import from GitHub (Warwick-Hope/task-planner)
