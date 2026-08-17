@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 
 export async function POST(
   request: Request,
@@ -7,19 +9,11 @@ export async function POST(
 ) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
   // Caller must be an adult/owner in this workspace
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', params.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!membership || membership.role === 'restricted') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
   // Verify task belongs to this workspace
   const { data: task } = await supabase
@@ -31,8 +25,11 @@ export async function POST(
 
   if (!task) return NextResponse.json({ error: 'Task not found' }, { status: 404 })
 
-  const body = await request.json()
-  const { assignTo, type } = body
+  const body = await parseJson<{ assignTo?: unknown; type?: unknown }>(request)
+  if (!body) return badBody()
+
+  const { type } = body
+  const assignTo = typeof body.assignTo === 'string' ? body.assignTo : null
   // type: 'member' | 'profile' | 'unassign'
 
   if (type === 'unassign') {
@@ -50,15 +47,10 @@ export async function POST(
   }
 
   if (type === 'member') {
-    // assignTo is a user_id
-    // Verify they are a member of the workspace
-    const { data: targetMember } = await supabase
-      .from('workspace_members')
-      .select('user_id, display_name')
-      .eq('workspace_id', params.id)
-      .eq('user_id', assignTo)
-      .single()
+    // assignTo is a user_id — verify they are a member of the workspace
+    if (!assignTo) return NextResponse.json({ error: 'assignTo is required' }, { status: 400 })
 
+    const targetMember = await requireMember(supabase, params.id, assignTo)
     if (!targetMember) return NextResponse.json({ error: 'Member not found' }, { status: 404 })
 
     // Assigning to self: auto-accept
@@ -80,6 +72,8 @@ export async function POST(
 
   if (type === 'profile') {
     // assignTo is a household_profile id — no approval required
+    if (!assignTo) return NextResponse.json({ error: 'assignTo is required' }, { status: 400 })
+
     const { data: profile } = await supabase
       .from('household_profiles')
       .select('id')

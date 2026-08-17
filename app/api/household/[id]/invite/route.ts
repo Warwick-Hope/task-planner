@@ -1,6 +1,8 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -9,21 +11,16 @@ export async function POST(request: Request, { params }: { params: { id: string 
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  // Must be owner
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', params.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (membership?.role !== 'owner') {
+  const membership = await requireMember(supabase, params.id, user.id, { ownerOnly: true })
+  if (!membership) {
     return NextResponse.json({ error: 'Only the owner can invite members' }, { status: 403 })
   }
 
-  const body = await request.json()
+  const body = await parseJson<{ email?: unknown; role?: unknown }>(request)
+  if (!body) return badBody()
+
   const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : ''
   const role = body.role === 'restricted' ? 'restricted' : 'adult'
 
@@ -58,18 +55,10 @@ export async function GET(_request: Request, { params }: { params: { id: string 
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', params.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (membership?.role !== 'owner') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const membership = await requireMember(supabase, params.id, user.id, { ownerOnly: true })
+  if (!membership) return forbidden()
 
   const { data: invitations } = await supabase
     .from('household_invitations')

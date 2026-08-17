@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { unauthorised } from '@/lib/api'
 
 export async function POST(_request: Request, { params }: { params: { token: string } }) {
   const supabase = createClient()
@@ -8,7 +9,7 @@ export async function POST(_request: Request, { params }: { params: { token: str
     data: { user },
   } = await supabase.auth.getUser()
 
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
   const { data, error } = await supabase.rpc('accept_household_invitation', {
     p_token: params.token,

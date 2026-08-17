@@ -4,15 +4,25 @@ import AcceptInviteButton from '@/components/household/AcceptInviteButton'
 
 export const metadata = { title: 'Join household — Clarity' }
 
+interface InvitationSummary {
+  workspace_id: string
+  workspace_name: string
+  invited_email: string
+  invited_role: 'owner' | 'adult' | 'restricted'
+  expired: boolean
+  accepted: boolean
+}
+
 export default async function AcceptInvitePage({ params }: { params: { token: string } }) {
   const supabase = createClient()
 
-  // Look up invitation by token
-  const { data: invitation } = await supabase
-    .from('household_invitations')
-    .select('id, email, role, expires_at, accepted_at, workspace_id, workspaces(name)')
-    .eq('token', params.token)
-    .single()
+  // Look up the invitation through a security definer RPC — the table itself is
+  // owner-only, so a logged-out visitor cannot read it directly.
+  const { data } = await supabase
+    .rpc('get_invitation_by_token', { p_token: params.token })
+    .maybeSingle()
+
+  const invitation = data as InvitationSummary | null
 
   if (!invitation) {
     return (
@@ -30,9 +40,8 @@ export default async function AcceptInvitePage({ params }: { params: { token: st
     )
   }
 
-  const expired = new Date(invitation.expires_at) < new Date()
-  const accepted = !!invitation.accepted_at
-  const workspaceName = (invitation.workspaces as unknown as { name: string } | null)?.name ?? 'a household'
+  const { expired, accepted } = invitation
+  const workspaceName = invitation.workspace_name ?? 'a household'
 
   if (expired || accepted) {
     return (
@@ -70,7 +79,7 @@ export default async function AcceptInvitePage({ params }: { params: { token: st
         </h1>
         <p className="text-sm text-gray-500 mb-6">
           You&apos;ve been invited to join as{' '}
-          <span className="font-medium">{invitation.role === 'restricted' ? 'a restricted member' : 'an adult member'}</span>.
+          <span className="font-medium">{invitation.invited_role === 'restricted' ? 'a restricted member' : 'an adult member'}</span>.
         </p>
 
         {user ? (

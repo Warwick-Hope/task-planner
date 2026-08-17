@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 import type { TaskStatus, TaskSource } from '@/types'
 
 interface CreateTaskBody {
@@ -27,16 +29,10 @@ interface CreateTaskBody {
 export async function GET(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', params.id)
-    .eq('user_id', user.id)
-    .single()
-
-  if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const membership = await requireMember(supabase, params.id, user.id)
+  if (!membership) return forbidden()
 
   const { searchParams } = new URL(request.url)
   const status = searchParams.get('status')
@@ -59,25 +55,13 @@ export async function GET(request: Request, { params }: { params: { id: string }
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const { data: membership } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', params.id)
-    .eq('user_id', user.id)
-    .single()
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
-  if (!membership || membership.role === 'restricted') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  let body: CreateTaskBody
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
+  const body = await parseJson<CreateTaskBody>(request)
+  if (!body) return badBody()
 
   const {
     title, notes, status, category_id, due_date,
@@ -87,6 +71,21 @@ export async function POST(request: Request, { params }: { params: { id: string 
   } = body
 
   if (!title?.trim()) return NextResponse.json({ error: 'Title is required' }, { status: 400 })
+
+  // An assignee must belong to this workspace
+  if (assigned_to_user_id) {
+    const assignee = await requireMember(supabase, params.id, assigned_to_user_id)
+    if (!assignee) return NextResponse.json({ error: 'Assignee is not a member' }, { status: 400 })
+  }
+  if (assigned_to_profile_id) {
+    const { data: profile } = await supabase
+      .from('household_profiles')
+      .select('id')
+      .eq('id', assigned_to_profile_id)
+      .eq('workspace_id', params.id)
+      .single()
+    if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 400 })
+  }
 
   const { data: task, error } = await supabase
     .from('tasks')

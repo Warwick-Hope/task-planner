@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { NextResponse } from 'next/server'
+import { parseJson, badBody } from '@/lib/api'
 
 export async function GET() {
   const supabase = createClient()
@@ -32,7 +33,8 @@ export async function POST(request: Request) {
   const workspaceId = await getPersonalWorkspaceId(supabase, user.id)
   if (!workspaceId) return NextResponse.json({ error: 'No workspace found' }, { status: 400 })
 
-  const body = await request.json()
+  const body = await parseJson<{ name?: string; colour?: string; parent_id?: string | null }>(request)
+  if (!body) return badBody()
   const { name, colour, parent_id } = body
 
   if (!name?.trim()) {

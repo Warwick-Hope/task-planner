@@ -1,23 +1,15 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
-
-async function getMembership(supabase: ReturnType<typeof createClient>, workspaceId: string, userId: string) {
-  const { data } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', userId)
-    .single()
-  return data
-}
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const membership = await getMembership(supabase, params.id, user.id)
-  if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  const membership = await requireMember(supabase, params.id, user.id)
+  if (!membership) return forbidden()
 
   const { data, error } = await supabase
     .from('categories')
@@ -33,17 +25,19 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const membership = await getMembership(supabase, params.id, user.id)
-  if (!membership || membership.role === 'restricted') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
-  const body = await request.json()
-  const { name, colour, parent_id } = body
+  const body = await parseJson<{ name?: unknown; colour?: unknown; parent_id?: unknown }>(request)
+  if (!body) return badBody()
 
-  if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  const colour = typeof body.colour === 'string' ? body.colour : null
+  const parent_id = typeof body.parent_id === 'string' ? body.parent_id : null
+
+  if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
   const { count } = await supabase
     .from('categories')
@@ -57,7 +51,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .insert({
       workspace_id: params.id,
       owner_id: null,
-      name: name.trim(),
+      name,
       colour: parent_id ? '#6B7280' : (colour ?? '#6B7280'),
       is_shared: true,
       parent_id: parent_id ?? null,

@@ -1,15 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
-
-async function getMembership(supabase: ReturnType<typeof createClient>, workspaceId: string, userId: string) {
-  const { data } = await supabase
-    .from('workspace_members')
-    .select('role')
-    .eq('workspace_id', workspaceId)
-    .eq('user_id', userId)
-    .single()
-  return data
-}
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 
 export async function PATCH(
   request: Request,
@@ -17,20 +9,19 @@ export async function PATCH(
 ) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const membership = await getMembership(supabase, params.id, user.id)
-  if (!membership || membership.role === 'restricted') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
-  const body = await request.json()
-  const { name, colour } = body
+  const body = await parseJson<{ name?: unknown; colour?: unknown }>(request)
+  if (!body) return badBody()
 
-  if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+  const name = typeof body.name === 'string' ? body.name.trim() : ''
+  if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
-  const updates: Record<string, unknown> = { name: name.trim() }
-  if (colour !== undefined) updates.colour = colour
+  const updates: Record<string, unknown> = { name }
+  if (typeof body.colour === 'string') updates.colour = body.colour
 
   const { data, error } = await supabase
     .from('categories')
@@ -52,12 +43,10 @@ export async function DELETE(
 ) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const membership = await getMembership(supabase, params.id, user.id)
-  if (!membership || membership.role === 'restricted') {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
   const { count } = await supabase
     .from('categories')

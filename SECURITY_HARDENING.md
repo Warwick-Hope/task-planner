@@ -8,6 +8,70 @@ tier is fine.
 Every schema change here is a new migration in `supabase/migrations/`, applied to dev first,
 pushed to prod on merge (see CLAUDE.md § Deployment workflow).
 
+## Status — 17 Aug 2026 (branch `feat/security-hardening`, PR #4)
+
+Tiers 1 and 2 are code-complete. `npm run lint` and `npm run build` are green, CI `verify`
+passes, and all three migrations are **applied to dev**. Prod gets them on merge.
+
+```
+supabase/migrations/20260815000001_sec_invitation_token_rpc.sql
+supabase/migrations/20260815000002_sec_indexes.sql
+supabase/migrations/20260815000003_sec_rls_tighten.sql
+```
+
+Migration 1 and `app/invite/[token]/page.tsx` must land together — the page now reads the
+invitation through the new RPC, so the page is broken until the migration runs, and the table
+stays anon-readable until it does.
+
+### Still outstanding
+
+- [ ] Merge PR #4, then push the three migrations to prod (link → push → re-link to dev).
+      Until that runs, prod keeps both tier-1 database exposures.
+- [ ] Supabase dashboard → Advisors (Security + Performance) on dev. MCP has no permission
+      for this, so it is a manual dashboard step.
+- [ ] Per-user daily quota on brain dump. Deliberately deferred — the spec scopes it to
+      "before any external user", and the app is still single-user.
+
+### Findings beyond the original spec
+
+All three were found while verifying the spec's own items, and are fixed on this branch.
+
+1. **`household_profiles` RLS was a tautology** (fixed in migration 3). The four policies
+   compared `wm.workspace_id` to an unqualified `workspace_id`, which Postgres resolves to the
+   inner table's own column. Membership of *any* workspace therefore granted read/write access
+   to *every* household's child profiles. The same migration tightens `shopping_list`
+   INSERT/DELETE to owner/adult and makes `meal_plan` INSERT check the meal's workspace.
+2. **The invite link never reached the invite page.** `middleware.ts` redirected every
+   unauthenticated request to `/login`, so `/invite/[token]` never rendered for a logged-out
+   visitor and the page's own "sign in to accept" branch was dead code. The invite path is now
+   exempt, and the redirect carries `?next=` (same-origin paths only) so signing in returns the
+   visitor to the invite rather than the dashboard.
+3. **`GET /api/tasks/[id]` did not exist.** `CleaningTaskForm` fetches a task back after
+   creating it; the route exported only PATCH and DELETE, so Next.js answered 405 with an empty
+   body and the form died on `res.json()`. Pre-existing, unrelated to this spec, surfaced by the
+   smoke test. Added and scoped like the other handlers.
+
+### Brain dump changes (same branch, beyond spec item 1.4)
+
+Item 1.4's cap exposed two further problems, both fixed here:
+
+- `max_tokens` was 2048, so a dump near the new 10,000-character cap truncated the JSON array
+  mid-string and surfaced as `Unterminated string in JSON` to the user. Raised to 16,000, with
+  a `stop_reason: max_tokens` check returning a clear 422 instead of a parse error.
+- The prompt asked the model to keep `horizon_year`/`quarter`/`month`/`week` mutually
+  consistent. That arithmetic now happens server-side through `lib/horizon.ts`: the model
+  returns a precision plus any one date inside the period, and unrecognised precisions or
+  malformed dates fall back to `unplanned` rather than writing a partial field set. With the
+  arithmetic gone the task is extraction only, so the model moved from Sonnet 4.6 to
+  **Haiku 4.5** — a third of the token cost and faster. `ParsedTask` is unchanged, so the
+  review UI and confirm route were untouched.
+
+### Known limitation, recorded rather than fixed
+
+`shopping_list` UPDATE stays open to every member at the RLS layer, because row-level policies
+cannot express "restricted members may change `is_purchased` only". The route enforces that
+column rule; a trigger would be needed to enforce it in the database.
+
 ---
 
 ## Tier 1 — prod exposures
@@ -119,13 +183,17 @@ table).
 
 ## Verification
 
-- `npm run lint` + `npm run build` green (CI enforces on the PR).
-- Manual smoke on dev: invite landing page still renders for a logged-out visitor (via the
-  new RPC); restricted-member write to a room/meal/shopping item now 403s; brain dump still
-  parses; oversize brain dump rejected with a clear message.
-- Supabase dashboard → Advisors (Security + Performance) on dev after the migrations — MCP
-  lacks permission to run these, so it's a dashboard step.
-- Delete `components/tasks/TaskPreviewPanel.tsx` (168 lines, never imported) while here.
+- [x] `npm run lint` + `npm run build` green (CI enforces on the PR).
+- [x] Invite landing page renders for a logged-out visitor via the new RPC — confirmed on dev
+      with a real token, after the middleware fix above.
+- [x] Brain dump parses; the 10,000-character cap holds in the textarea and the server returns
+      413 above it.
+- [ ] Restricted-member write to a room/meal/shopping item returns 403. **Not tested** — needs
+      a second account invited as `restricted`, which does not exist yet. RLS covers it at the
+      database layer regardless.
+- [ ] Supabase dashboard → Advisors (Security + Performance) on dev after the migrations — MCP
+      lacks permission to run these, so it's a dashboard step.
+- [x] Delete `components/tasks/TaskPreviewPanel.tsx` (168 lines, never imported) while here.
 
 ## After this (separate work, in order — from the same review)
 

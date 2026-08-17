@@ -3,6 +3,8 @@ import { NextResponse } from 'next/server'
 import { nextOccurrence } from '@/lib/recurrence'
 import type { TaskStatus, Task } from '@/types'
 import { buildHorizonFields, getMondayOfWeek, monthFromDate, yearFromDate, monthToQuarter, quarterToHalf } from '@/lib/horizon'
+import { parseJson, badBody } from '@/lib/api'
+import { requireMember } from '@/lib/workspace-server'
 
 const HORIZON_FIELDS = [
   'horizon_year',
@@ -14,6 +16,30 @@ const HORIZON_FIELDS = [
   'horizon_time_slot',
 ] as const
 
+export async function GET(_request: Request, { params }: { params: { id: string } }) {
+  const supabase = createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+
+  const { data: task } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('id', params.id)
+    .single()
+
+  if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+
+  if (task.created_by !== user.id) {
+    const membership = await requireMember(supabase, task.workspace_id, user.id)
+    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  return NextResponse.json({ task })
+}
+
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
   const {
@@ -22,7 +48,9 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  const body = await request.json()
+  const body = await parseJson<Record<string, unknown>>(request)
+  if (!body) return badBody()
+
   const allowed: Record<string, unknown> = {}
 
   if (body.status    !== undefined) allowed.status      = body.status as TaskStatus
@@ -53,13 +81,20 @@ export async function PATCH(request: Request, { params }: { params: { id: string
 
   // Verify user has access: either they created it, or they're a member of its workspace
   if (existing.created_by !== user.id) {
-    const { data: membership } = await supabase
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', existing.workspace_id)
-      .eq('user_id', user.id)
-      .single()
+    const membership = await requireMember(supabase, existing.workspace_id, user.id)
     if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
+  // A new assignee must be a member of the task's workspace (mirrors the assign route)
+  if (allowed.assigned_to_user_id) {
+    const assignee = await requireMember(
+      supabase,
+      existing.workspace_id,
+      allowed.assigned_to_user_id as string
+    )
+    if (!assignee) {
+      return NextResponse.json({ error: 'Assignee is not a member of this workspace' }, { status: 400 })
+    }
   }
 
   const { data, error } = await supabase
@@ -95,7 +130,7 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         weekStr: getMondayOfWeek(nextDate),
         dayStr: nextDate,
       })
-      await supabase.from('tasks').insert({
+      const { error: nextError } = await supabase.from('tasks').insert({
         workspace_id:         task.workspace_id,
         created_by:           task.created_by,
         title:                task.title,
@@ -109,6 +144,13 @@ export async function PATCH(request: Request, { params }: { params: { id: string
         source:               task.source,
         ...nextHorizon,
       })
+
+      // The completion itself succeeded — report the failed follow-up rather
+      // than silently dropping the next occurrence.
+      if (nextError) {
+        console.error('Next-occurrence insert failed:', nextError.message)
+        return NextResponse.json({ ...data, recurrenceError: nextError.message })
+      }
     }
   }
 

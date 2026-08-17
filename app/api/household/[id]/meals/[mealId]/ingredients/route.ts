@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember, mealBelongsToWorkspace } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody, trimmedString } from '@/lib/api'
 
 export async function GET(
   _request: Request,
@@ -7,7 +9,14 @@ export async function GET(
 ) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
+
+  const membership = await requireMember(supabase, params.id, user.id)
+  if (!membership) return forbidden()
+
+  if (!(await mealBelongsToWorkspace(supabase, params.id, params.mealId))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
 
   const { data, error } = await supabase
     .from('ingredients')
@@ -25,20 +34,17 @@ export async function POST(
 ) {
   const supabase = createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  // Verify workspace membership
-  const { data: meal } = await supabase
-    .from('meals')
-    .select('workspace_id')
-    .eq('id', params.mealId)
-    .single()
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
-  if (!meal || meal.workspace_id !== params.id) {
+  if (!(await mealBelongsToWorkspace(supabase, params.id, params.mealId))) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   }
 
-  const body = await request.json()
+  const body = await parseJson<{ name?: unknown; quantity?: unknown; unit?: unknown }>(request)
+  if (!body) return badBody()
   const name = typeof body.name === 'string' ? body.name.trim() : ''
   if (!name) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
 
@@ -47,8 +53,8 @@ export async function POST(
     .insert({
       meal_id: params.mealId,
       name,
-      quantity: body.quantity?.toString().trim() || null,
-      unit: body.unit?.toString().trim() || null,
+      quantity: trimmedString(body.quantity),
+      unit: trimmedString(body.unit),
     })
     .select('*')
     .single()

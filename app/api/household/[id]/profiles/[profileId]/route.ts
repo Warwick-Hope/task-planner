@@ -1,5 +1,7 @@
 import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
+import { requireMember } from '@/lib/workspace-server'
+import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
 
 export async function PATCH(
   request: Request,
@@ -9,9 +11,14 @@ export async function PATCH(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
 
-  const body = await request.json()
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
+
+  const body = await parseJson<{ name?: unknown; avatar_colour?: unknown }>(request)
+  if (!body) return badBody()
+
   const updates: Record<string, string> = {}
   if (typeof body.name === 'string' && body.name.trim()) updates.name = body.name.trim()
   if (typeof body.avatar_colour === 'string') updates.avatar_colour = body.avatar_colour
@@ -40,7 +47,10 @@ export async function DELETE(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!user) return unauthorised()
+
+  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  if (!membership) return forbidden()
 
   const { error } = await supabase
     .from('household_profiles')
