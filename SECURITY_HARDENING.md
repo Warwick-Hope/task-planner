@@ -25,12 +25,43 @@ stays anon-readable until it does.
 
 ### Still outstanding
 
-- [ ] Merge PR #4, then push the three migrations to prod (link → push → re-link to dev).
-      Until that runs, prod keeps both tier-1 database exposures.
-- [ ] Supabase dashboard → Advisors (Security + Performance) on dev. MCP has no permission
-      for this, so it is a manual dashboard step.
+- [x] Merge PR #4, then push the three migrations to prod. Done 17 Aug 2026 — dry run first,
+      all three applied, CLI re-linked to dev. Verified live: `/invite/<token>` returns 200 and
+      renders on prod rather than redirecting to `/login`.
+- [x] Supabase Advisors on dev. **0 errors**, 16 warnings, 1 suggestion. Acted on in
+      `20260817000001_advisor_cleanup.sql` — see below.
+- [ ] **Auth → Policies: enable leaked password protection** on dev *and* prod. Dashboard
+      toggle, checks new passwords against HaveIBeenPwned.
+- [ ] **Identify `public.rls_auto_enable()`.** Flagged as a SECURITY DEFINER function callable
+      by anon. It appears in no migration and no application code — origin unknown, body not
+      readable from the CLI. Inspect it in Database → Functions; if it is another pre-Phase-0
+      leftover it should be dropped alongside `task_roles`.
+- [ ] **`auth_rls_initplan` — the Performance tab.** ~50 policies re-evaluate `auth.uid()` per
+      row instead of once per query; the fix is to wrap each call as `(select auth.uid())`.
+      Real, but it touches every policy in the schema, so it wants its own migration and a
+      careful read. No measurable effect at two users — schedule it after the Playwright suite.
 - [ ] Per-user daily quota on brain dump. Deliberately deferred — the spec scopes it to
       "before any external user", and the app is still single-user.
+
+### Advisor findings and what was done (17 Aug 2026)
+
+`20260817000001_advisor_cleanup.sql` handles three of them:
+
+- **`task_roles` dropped.** Pre-Phase-0 join table from when tasks were tagged with
+  `role_categories`; the 0.1 rebuild missed it. No migration, no code, 0 rows, 0 seq scans.
+  RLS was on with no policies, so it already denied everything — litter, not an exposure.
+- **`set_updated_at` search_path pinned.** Every other function in the schema sets it.
+- **anon `EXECUTE` revoked** on `accept_household_invitation`, `create_household_workspace`
+  and `create_personal_workspace`. Each already ran `revoke all … from public`, but Supabase's
+  default privileges grant EXECUTE to `anon` explicitly and that survives a revoke from PUBLIC.
+  All three raise 'Not authenticated' anyway; this closes the door properly. Verified on dev:
+  `create_household_workspace` now returns 401 to an anon caller.
+
+The other 13 SECURITY DEFINER warnings are by design and deliberately left:
+`get_invitation_by_token` **must** stay anon-callable (that is the invite landing page), and
+`is_workspace_member` / `is_workspace_owner` are evaluated inside RLS policies as the querying
+role — revoking anon there turns an anonymous read into a permission error instead of an empty
+result, and both return false when `auth.uid()` is null.
 
 ### Findings beyond the original spec
 
