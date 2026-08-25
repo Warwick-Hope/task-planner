@@ -214,7 +214,7 @@ export default function OnboardingWizard() {
           <div className="mt-6 flex items-center justify-between">
             <button
               onClick={() => setStep((s) => s - 1)}
-              className={`text-sm text-gray-500 hover:text-gray-800 transition-colors ${step === 0 ? 'invisible' : ''}`}
+              className={`min-h-[44px] px-1 text-sm text-gray-500 hover:text-gray-800 transition-colors ${step === 0 ? 'invisible' : ''}`}
             >
               Back
             </button>
@@ -224,7 +224,7 @@ export default function OnboardingWizard() {
                 <button
                   onClick={() => handleFinish(true)}
                   disabled={submitting}
-                  className="text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
+                  className="min-h-[44px] px-2 text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50"
                 >
                   Skip
                 </button>
@@ -235,7 +235,7 @@ export default function OnboardingWizard() {
                   else handleFinish(false)
                 }}
                 disabled={!canAdvance() || submitting}
-                className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="rounded-lg bg-blue-600 px-5 py-3 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {step < 2 ? 'Next' : submitting ? 'Saving…' : 'Finish'}
               </button>

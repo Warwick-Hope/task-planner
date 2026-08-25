@@ -52,6 +52,16 @@ export default defineConfig({
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/user.json' },
+      testIgnore: /mobile\.spec\.ts/,
+      dependencies: ['setup'],
+    },
+    // Phase 4.1 added phone layouts; this project is the guard that they stay
+    // that way. Only mobile.spec.ts runs here — the rest of the suite is about
+    // behaviour, which does not change with the viewport.
+    {
+      name: 'mobile-chromium',
+      testMatch: /mobile\.spec\.ts/,
+      use: { ...devices['Pixel 5'], storageState: 'e2e/.auth/user.json' },
       dependencies: ['setup'],
     },
   ],

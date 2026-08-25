@@ -102,7 +102,7 @@ function ReviewRow({
       )}
       <Link
         href={`/tasks/${task.id}/edit`}
-        className="shrink-0 rounded-md border border-amber-300 bg-white px-2.5 py-1 text-xs font-medium text-amber-800 hover:bg-amber-50 transition-colors"
+        className="shrink-0 rounded-md border border-amber-300 bg-white px-2.5 py-2 sm:py-1 text-xs font-medium text-amber-800 hover:bg-amber-50 transition-colors"
       >
         Set date
       </Link>

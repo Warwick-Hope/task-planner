@@ -116,7 +116,7 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
           />
         ) : (
           <button
-            className="flex-1 text-left text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors"
+            className="flex-1 text-left text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors min-h-[36px] sm:min-h-0"
             onClick={() => setEditing(true)}
             title="Click to edit title"
           >
@@ -125,8 +125,9 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
         )}
         <button
           onClick={() => onDiscard(index)}
-          className="shrink-0 text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
+          className="shrink-0 flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
           title="Discard this task"
+          aria-label="Discard this task"
         >
           ×
         </button>
@@ -146,7 +147,7 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
         {/* Category selector */}
         <div className="relative">
           <select
-            className="appearance-none rounded-full border border-gray-200 bg-white pl-6 pr-6 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            className="appearance-none rounded-full border border-gray-200 bg-white pl-6 pr-6 py-2 sm:py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
             value={task.category_id ?? ''}
             onChange={e => setField('category_id', e.target.value || null)}
           >
@@ -176,7 +177,7 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
         <div className="flex items-center gap-1">
           <span className="text-xs text-gray-400">When:</span>
           <select
-            className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
+            className="rounded-full border border-gray-200 bg-white px-2 py-2 sm:py-1 text-xs text-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-500 cursor-pointer"
             value={task.horizon_precision}
             onChange={e => setHorizonPrecision(e.target.value as ParsedTask['horizon_precision'])}
           >
@@ -258,7 +259,7 @@ export default function BrainDumpClient({ categories }: { categories: Category[]
   return (
     <div className="max-w-2xl space-y-6">
       {/* Input panel — always visible so user can re-dump */}
-      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+      <div className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 space-y-4">
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             What&apos;s on your mind?
@@ -281,11 +282,11 @@ export default function BrainDumpClient({ categories }: { categories: Category[]
         {parseError && (
           <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{parseError}</p>
         )}
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
           <button
             onClick={handleParse}
             disabled={!text.trim() || parsing}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full sm:w-auto rounded-lg bg-blue-600 px-4 py-3 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {parsing ? 'Extracting tasks…' : tasks ? 'Re-extract' : 'Extract tasks'}
           </button>
@@ -322,17 +323,17 @@ export default function BrainDumpClient({ categories }: { categories: Category[]
             <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">{saveError}</p>
           )}
 
-          <div className="flex items-center gap-3 pt-2">
+          <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2">
             <button
               onClick={handleConfirm}
               disabled={remaining === 0 || saving}
-              className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full sm:w-auto rounded-lg bg-blue-600 px-5 py-3 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving…' : `Save ${remaining} task${remaining === 1 ? '' : 's'}`}
             </button>
             <button
               onClick={() => { setTasks(null); setText('') }}
-              className="text-sm text-gray-400 hover:text-gray-700 transition-colors"
+              className="w-full sm:w-auto py-3 sm:py-0 text-sm text-gray-400 hover:text-gray-700 transition-colors"
             >
               Start over
             </button>

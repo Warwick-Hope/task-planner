@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { ROLE_COLOURS } from '@/lib/constants'
-import type { Category } from '@/types'
+import type { Category } from '@/types'
+
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 interface EditState {
@@ -294,16 +295,16 @@ export default function CategoryManager({
           style={{ backgroundColor: colour }}
         />
         <span className="text-sm text-gray-900 flex-1">{cat.name}</span>
-        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex gap-1 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
           <button
             onClick={() => startEdit(cat)}
-            className="rounded px-2 py-0.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+            className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 rounded px-2 py-0.5 text-xs text-gray-400 hover:text-gray-700 hover:bg-gray-100"
           >
             Edit
           </button>
           <button
             onClick={() => setDeleteConfirm(cat.id)}
-            className="rounded px-2 py-0.5 text-xs text-gray-400 hover:text-red-600 hover:bg-red-50"
+            className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 rounded px-2 py-0.5 text-xs text-gray-400 hover:text-red-600 hover:bg-red-50"
           >
             Delete
           </button>

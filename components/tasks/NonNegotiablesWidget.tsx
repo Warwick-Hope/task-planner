@@ -136,22 +136,28 @@ export default function NonNegotiablesWidget({ date, initialItems, availableTask
           if (item) {
             const isDone = item.task.status === 'done'
             return (
-              <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                {/* Done toggle */}
+              <div key={item.id} className="flex items-center gap-2 sm:gap-3 px-4 py-1.5 sm:py-3">
+                {/* Done toggle — the circle stays 20px; the button around it is
+                    finger-sized on a phone. */}
                 <button
                   onClick={() => toggleDone(item)}
-                  className={`shrink-0 w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
-                    isDone
-                      ? 'bg-green-500 border-green-500 text-white'
-                      : 'border-gray-300 hover:border-green-400'
-                  }`}
+                  className="shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0"
                   title={isDone ? 'Mark not done' : 'Mark done'}
+                  aria-label={isDone ? 'Mark not done' : 'Mark done'}
                 >
-                  {isDone && (
-                    <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                      <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                  )}
+                  <span
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                      isDone
+                        ? 'bg-green-500 border-green-500 text-white'
+                        : 'border-gray-300 hover:border-green-400'
+                    }`}
+                  >
+                    {isDone && (
+                      <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                    )}
+                  </span>
                 </button>
 
                 {/* Title */}
@@ -167,8 +173,9 @@ export default function NonNegotiablesWidget({ date, initialItems, availableTask
                 {/* Remove */}
                 <button
                   onClick={() => removeItem(item.id)}
-                  className="shrink-0 text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
+                  className="shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 text-gray-300 hover:text-red-400 transition-colors text-lg leading-none"
                   title="Remove from today's focus"
+                  aria-label="Remove from today's focus"
                 >
                   ×
                 </button>
@@ -192,11 +199,11 @@ export default function NonNegotiablesWidget({ date, initialItems, availableTask
 
           // Empty slot — idle
           return (
-            <div key={`empty-${slot}`} className="flex items-center gap-3 px-4 py-3">
-              <div className="shrink-0 w-5 h-5 rounded-full border-2 border-dashed border-gray-200" />
+            <div key={`empty-${slot}`} className="flex items-center gap-2 sm:gap-3 px-4 py-1.5 sm:py-3">
+              <div className="shrink-0 w-5 h-5 mx-2 sm:mx-0 rounded-full border-2 border-dashed border-gray-200" />
               <button
                 onClick={() => setAddingSlot(slot)}
-                className="flex-1 text-left text-sm text-gray-300 hover:text-blue-500 transition-colors"
+                className="flex-1 text-left text-sm text-gray-300 hover:text-blue-500 transition-colors min-h-[40px] sm:min-h-0"
               >
                 + Add a focus task
               </button>

@@ -3,7 +3,7 @@ import HouseholdNav from '@/components/nav/HouseholdNav'
 
 export default function HouseholdLayout({ children }: { children: React.ReactNode }) {
   return (
-    <AppShell variant="household" nav={<HouseholdNav />}>
+    <AppShell variant="household" nav={v => <HouseholdNav variant={v} />}>
       {children}
     </AppShell>
   )

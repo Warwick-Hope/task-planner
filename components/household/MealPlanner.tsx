@@ -173,7 +173,8 @@ export default function MealPlanner({ workspaceId, initialMeals, initialPlans, w
                       {canManage && (
                         <button
                           onClick={() => removePlan(plan.id)}
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-300 hover:text-red-500"
+                          aria-label="Remove meal"
+                          className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity text-xs text-gray-300 hover:text-red-500"
                         >
                           ✕
                         </button>
@@ -222,7 +223,7 @@ export default function MealPlanner({ workspaceId, initialMeals, initialPlans, w
                   )}
 
                   {/* Quick-create */}
-                  <div className="flex gap-2">
+                  <div className="flex flex-col sm:flex-row gap-2">
                     <input
                       type="text"
                       value={newMealName || mealSearch}
@@ -234,7 +235,7 @@ export default function MealPlanner({ workspaceId, initialMeals, initialPlans, w
                     <button
                       onClick={() => createAndAssign(date)}
                       disabled={addingMeal || !(newMealName || mealSearch).trim()}
-                      className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
+                      className="rounded-md bg-blue-600 px-3 py-2.5 sm:py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors whitespace-nowrap"
                     >
                       {addingMeal ? '…' : 'Create & add'}
                     </button>

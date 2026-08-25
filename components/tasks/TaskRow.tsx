@@ -59,7 +59,7 @@ export default function TaskRow({
 
   return (
     <div
-      className={`group flex items-start gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
+      className={`group flex items-start gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${
         task.status === 'done' ? 'opacity-60' : ''
       }`}
     >
@@ -68,13 +68,14 @@ export default function TaskRow({
         onClick={toggleStatus}
         disabled={toggling}
         title={`Status: ${task.status}. Click to advance.`}
-        className={`mt-0.5 text-lg leading-none shrink-0 transition-colors ${statusConfig.className}`}
+        aria-label={`Status: ${task.status}. Advance status.`}
+        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:mt-0.5 text-lg leading-none transition-colors ${statusConfig.className}`}
       >
         {statusConfig.icon}
       </button>
 
       {/* Title + notes */}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 py-2 sm:py-0">
         <Link
           href={`/tasks/${task.id}/edit`}
           className={`text-left text-sm w-full truncate block ${
@@ -90,6 +91,20 @@ export default function TaskRow({
         </Link>
         {task.notes && (
           <p className="mt-0.5 text-xs text-gray-400 truncate">{task.notes}</p>
+        )}
+
+        {/* Category and horizon are their own columns from sm up. On a phone
+            there is no room for columns, so they stack under the title —
+            without this the mobile list showed no category or date at all. */}
+        {(category || !isUnplanned) && (
+          <div className="sm:hidden mt-1 flex items-center gap-1.5 min-w-0">
+            {category && dotColour && (
+              <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: dotColour }} />
+            )}
+            {category && <span className="text-xs text-gray-500 truncate">{category.name}</span>}
+            {category && !isUnplanned && <span className="text-gray-300 text-xs">·</span>}
+            {!isUnplanned && <span className="text-xs text-gray-400 shrink-0">{horizonLabel}</span>}
+          </div>
         )}
       </div>
 
@@ -114,39 +129,42 @@ export default function TaskRow({
         {horizonLabel}
       </span>
 
-      {/* Actions (pin + edit + delete) */}
-      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+      {/* Actions (pin + edit + delete). Revealed on hover from md up; always
+          visible below that, because a touch screen never hovers and the row
+          actions were unreachable on a phone. */}
+      <div className="shrink-0 flex items-center gap-0.5 sm:gap-1 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
         <button
           onClick={pinAsNN}
           disabled={pinning}
           title={pinError ?? "Set as today's focus"}
-          className={`text-xs px-1 transition-colors ${
-            pinError
-              ? 'text-red-400'
-              : 'text-gray-300 hover:text-amber-500'
+          aria-label="Set as today's focus"
+          className={`flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:px-1 text-sm sm:text-xs transition-colors ${
+            pinError ? 'text-red-400' : 'text-gray-300 hover:text-amber-500'
           }`}
         >
           {pinError ? '!' : '◎'}
         </button>
         <Link
           href={`/tasks/${task.id}/edit`}
-          className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors px-1"
+          className="flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:px-1 text-sm sm:text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors"
           title="Edit task"
+          aria-label="Edit task"
         >
-          Edit
+          <span className="hidden sm:inline">Edit</span>
+          <span className="sm:hidden">✎</span>
         </Link>
         {confirmDelete ? (
           <div className="flex items-center gap-1">
             <button
               onClick={deleteTask}
               disabled={deleting}
-              className="text-xs text-red-600 hover:text-red-700 font-medium"
+              className="min-h-[40px] sm:min-h-0 px-1 text-xs text-red-600 hover:text-red-700 font-medium"
             >
               {deleting ? '…' : 'Delete'}
             </button>
             <button
               onClick={() => setConfirmDelete(false)}
-              className="text-xs text-gray-400 hover:text-gray-600"
+              className="min-h-[40px] sm:min-h-0 px-1 text-xs text-gray-400 hover:text-gray-600"
             >
               Cancel
             </button>
@@ -154,7 +172,9 @@ export default function TaskRow({
         ) : (
           <button
             onClick={() => setConfirmDelete(true)}
-            className="text-xs text-gray-300 hover:text-red-500 transition-colors px-1"
+            title="Delete task"
+            aria-label="Delete task"
+            className="flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:px-1 text-sm sm:text-xs text-gray-300 hover:text-red-500 transition-colors"
           >
             ✕
           </button>

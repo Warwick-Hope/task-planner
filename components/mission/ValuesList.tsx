@@ -148,11 +148,11 @@ export default function ValuesList({ initial }: { initial: Value[] }) {
             /* View mode */
             <div className="flex items-start gap-3">
               {/* Reorder buttons */}
-              <div className="flex flex-col gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex flex-col gap-0.5 shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
                 <button
                   onClick={() => move(i, -1)}
                   disabled={i === 0}
-                  className="text-gray-300 hover:text-gray-600 disabled:opacity-20 text-xs leading-none"
+                  className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-gray-300 hover:text-gray-600 disabled:opacity-20 text-xs leading-none"
                   title="Move up"
                 >
                   ▲
@@ -160,7 +160,7 @@ export default function ValuesList({ initial }: { initial: Value[] }) {
                 <button
                   onClick={() => move(i, 1)}
                   disabled={i === values.length - 1}
-                  className="text-gray-300 hover:text-gray-600 disabled:opacity-20 text-xs leading-none"
+                  className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-gray-300 hover:text-gray-600 disabled:opacity-20 text-xs leading-none"
                   title="Move down"
                 >
                   ▼
@@ -176,10 +176,10 @@ export default function ValuesList({ initial }: { initial: Value[] }) {
               </div>
 
               {/* Actions */}
-              <div className="shrink-0 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="shrink-0 flex items-center gap-2 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity">
                 <button
                   onClick={() => startEdit(value)}
-                  className="text-xs text-gray-400 hover:text-blue-600 transition-colors"
+                  className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-xs text-gray-400 hover:text-blue-600 transition-colors"
                 >
                   Edit
                 </button>
@@ -188,7 +188,8 @@ export default function ValuesList({ initial }: { initial: Value[] }) {
                 ) : (
                   <button
                     onClick={() => handleDelete(value.id)}
-                    className="text-xs text-gray-300 hover:text-red-500 transition-colors"
+                    aria-label="Delete value"
+                    className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-xs text-gray-300 hover:text-red-500 transition-colors"
                   >
                     ✕
                   </button>

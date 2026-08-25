@@ -18,10 +18,15 @@ export function taskRow(page: Page, title: string): Locator {
   return page.locator('div.group').filter({ hasText: title })
 }
 
-/** Deletes a task through the UI's two-step confirm and waits for it to go. */
+/**
+ * Deletes a task through the UI's two-step confirm and waits for it to go.
+ *
+ * The ✕ carries an aria-label since the mobile pass — a bare glyph is no name
+ * for a screen reader — so it is addressed by that, not by its text.
+ */
 export async function deleteTaskRow(page: Page, title: string): Promise<void> {
   const row = taskRow(page, title).first()
-  await row.getByRole('button', { name: '✕' }).click()
+  await row.getByRole('button', { name: 'Delete task' }).click()
   await row.getByRole('button', { name: 'Delete' }).click()
   await taskRow(page, title).waitFor({ state: 'detached' }).catch(() => {})
 }

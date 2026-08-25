@@ -259,7 +259,8 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
                       {canManage && (
                         <button
                           onClick={() => deleteIngredient(meal.id, ing.id)}
-                          className="opacity-0 group-hover:opacity-100 text-xs text-gray-300 hover:text-red-500 transition-opacity"
+                          aria-label="Remove"
+                          className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 text-xs text-gray-300 hover:text-red-500 transition-opacity"
                         >✕</button>
                       )}
                     </li>

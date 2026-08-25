@@ -7,10 +7,8 @@ import {
   DragEndEvent,
   useDraggable,
   useDroppable,
-  PointerSensor,
-  useSensors,
-  useSensor,
 } from '@dnd-kit/core'
+import { useDragSensors } from '@/lib/dnd-sensors'
 import Link from 'next/link'
 import type { Task, Category } from '@/types'
 import {
@@ -78,7 +76,7 @@ function DraggableTaskChip({ task, categories }: { task: Task; categories: Categ
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md bg-white border border-gray-200 text-xs cursor-grab select-none shadow-sm transition-opacity ${
+      className={`flex items-center gap-1.5 px-2 py-2.5 sm:py-1.5 rounded-md bg-white border border-gray-200 text-xs cursor-grab select-none shadow-sm transition-opacity ${
         isDragging ? 'opacity-40' : 'hover:border-gray-300 hover:shadow'
       }`}
     >
@@ -128,7 +126,7 @@ function DroppableBucket({
         {onOpen && (
           <button
             onClick={onOpen}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            className="shrink-0 -my-2 py-2 pl-3 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
           >
             Open →
           </button>
@@ -136,7 +134,7 @@ function DroppableBucket({
         {calendarHref && (
           <Link
             href={calendarHref}
-            className="text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
+            className="shrink-0 -my-2 py-2 pl-3 text-xs text-blue-600 hover:text-blue-800 font-medium transition-colors"
           >
             Calendar →
           </Link>
@@ -203,7 +201,7 @@ function SidebarSection({
         <div className={`text-sm font-medium ${titleCl}`}>{title}</div>
         <div className={`text-xs ${subCl}`}>{subtitle}</div>
       </div>
-      <div className="p-2 flex flex-col gap-1 max-h-64 overflow-y-auto">
+      <div className="p-2 flex flex-col gap-1 max-h-44 lg:max-h-64 overflow-y-auto">
         {tasks.length === 0 ? (
           <p className={`text-xs text-center py-3 ${emptyCl}`}>{emptyMessage}</p>
         ) : (
@@ -236,7 +234,7 @@ export default function HorizonPlannerClient({
   const searchParams = useSearchParams()
   const router = useRouter()
   const [tasks, setTasks] = useState(initialTasks)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+  const sensors = useDragSensors()
 
   // Parse view state from URL params
   const state: PlanState = {
@@ -355,10 +353,10 @@ export default function HorizonPlannerClient({
     <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
       <div className="flex flex-col gap-5">
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-xl font-semibold text-gray-900">Horizon Planner</h1>
-            <nav className="flex items-center gap-1 mt-1" aria-label="breadcrumb">
+            <nav className="flex flex-wrap items-center gap-1 mt-1" aria-label="breadcrumb">
               {crumbs.map((c, i) => (
                 <span key={i} className="flex items-center gap-1">
                   {i > 0 && <span className="text-gray-300 text-sm">/</span>}
@@ -378,29 +376,34 @@ export default function HorizonPlannerClient({
           </div>
 
           {/* Year navigator */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <button
               onClick={() => nav({ ...state, year: year - 1 })}
-              className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 text-sm transition-colors"
+              aria-label="Previous year"
+              className="w-10 h-10 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 text-sm transition-colors"
             >
               ←
             </button>
             <span className="text-sm font-medium text-gray-700 w-10 text-center">{year}</span>
             <button
               onClick={() => nav({ ...state, year: year + 1 })}
-              className="w-7 h-7 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 text-sm transition-colors"
+              aria-label="Next year"
+              className="w-10 h-10 sm:w-7 sm:h-7 flex items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:text-gray-900 hover:border-gray-300 text-sm transition-colors"
             >
               →
             </button>
           </div>
         </div>
 
-        {/* Main layout: buckets + sidebar */}
-        <div className="flex gap-4 items-start">
+        {/* Main layout: buckets + sidebar.
+            Below lg the sidebar cannot sit beside 240px of buckets, so it stacks
+            — column-reverse, which puts the list you drag *from* above the
+            buckets you drag *into* rather than off the bottom of the screen. */}
+        <div className="flex flex-col-reverse lg:flex-row gap-4 items-stretch lg:items-start">
           {/* Buckets */}
           <div className="flex-1 min-w-0">
             {view === 'year' && (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 {([1, 2, 3, 4] as const).map(qn => (
                   <DroppableBucket
                     key={qn}
@@ -416,7 +419,7 @@ export default function HorizonPlannerClient({
             )}
 
             {view === 'quarter' && q != null && (
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {getQuarterMonths(q).map(mn => (
                   <DroppableBucket
                     key={mn}
@@ -431,7 +434,7 @@ export default function HorizonPlannerClient({
             )}
 
             {view === 'month' && month != null && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {getWeeksInMonth(year, month).map(ws => (
                   <DroppableBucket
                     key={ws}
@@ -446,7 +449,7 @@ export default function HorizonPlannerClient({
             )}
 
             {view === 'week' && week && (
-              <div className="grid grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                 {getDaysInWeek(week).map(ds => (
                   <DroppableBucket
                     key={ds}
@@ -462,7 +465,7 @@ export default function HorizonPlannerClient({
           </div>
 
           {/* Sidebar */}
-          <div className="w-60 shrink-0 flex flex-col gap-3">
+          <div className="w-full lg:w-60 shrink-0 flex flex-col gap-3">
             <SidebarSection
               title="Needs planning"
               subtitle={needsPlanningSubtitle}

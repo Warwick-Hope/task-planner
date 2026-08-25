@@ -110,11 +110,16 @@ export default function ShoppingList({ workspaceId, initialItems, canManage }: P
             <div key={item.id} className="group flex items-center gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
               <button
                 onClick={() => togglePurchased(item)}
-                className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                  item.is_purchased ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-gray-400'
-                }`}
+                aria-label={item.is_purchased ? 'Mark not bought' : 'Mark bought'}
+                className="shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0"
               >
-                {item.is_purchased && <span className="text-xs">✓</span>}
+                <span
+                  className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                    item.is_purchased ? 'bg-green-500 border-green-500 text-white' : 'border-gray-300 hover:border-gray-400'
+                  }`}
+                >
+                  {item.is_purchased && <span className="text-xs">✓</span>}
+                </span>
               </button>
               <div className="flex-1 min-w-0">
                 <span className={`text-sm ${item.is_purchased ? 'line-through text-gray-400' : 'text-gray-900'}`}>
@@ -129,7 +134,8 @@ export default function ShoppingList({ workspaceId, initialItems, canManage }: P
               {canManage && (
                 <button
                   onClick={() => deleteItem(item.id)}
-                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-300 hover:text-red-500"
+                  aria-label="Delete item"
+                  className="shrink-0 inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity text-xs text-gray-300 hover:text-red-500"
                 >
                   ✕
                 </button>
@@ -191,14 +197,14 @@ export default function ShoppingList({ workspaceId, initialItems, canManage }: P
             <button
               type="submit"
               disabled={loading || !form.name.trim()}
-              className="rounded-md bg-blue-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
+              className="rounded-md bg-blue-600 px-3 py-2.5 sm:py-1.5 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {loading ? 'Adding…' : 'Add item'}
             </button>
             <button
               type="button"
               onClick={() => { setShowForm(false); setForm(EMPTY_FORM); setError(null) }}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+              className="rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
             >
               Cancel
             </button>
@@ -236,15 +242,19 @@ export default function ShoppingList({ workspaceId, initialItems, canManage }: P
             <div key={item.id} className="group flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-0">
               <button
                 onClick={() => togglePurchased(item)}
-                className="w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 bg-green-500 border-green-500 text-white"
+                aria-label="Move back to the list"
+                className="shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0"
               >
-                <span className="text-xs">✓</span>
+                <span className="w-5 h-5 rounded border-2 flex items-center justify-center bg-green-500 border-green-500 text-white">
+                  <span className="text-xs">✓</span>
+                </span>
               </button>
               <span className="flex-1 text-sm line-through text-gray-400">{item.name}</span>
               {canManage && (
                 <button
                   onClick={() => deleteItem(item.id)}
-                  className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-xs text-gray-300 hover:text-red-500"
+                  aria-label="Delete item"
+                  className="shrink-0 inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity text-xs text-gray-300 hover:text-red-500"
                 >
                   ✕
                 </button>

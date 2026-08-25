@@ -34,7 +34,7 @@ test('a task can be edited and the change persists a reload', async ({ page }) =
 
   // exact: the row title is itself a link to the same edit page, so a substring
   // match on "Edit" resolves to two elements whenever a title contains that word.
-  await taskRow(page, title).first().getByRole('link', { name: 'Edit', exact: true }).click()
+  await taskRow(page, title).first().getByRole('link', { name: 'Edit task', exact: true }).click()
   await page.getByPlaceholder('What needs doing?').fill(edited)
   await page.getByRole('button', { name: 'Save changes' }).click()
   await expect(page).toHaveURL('/tasks')

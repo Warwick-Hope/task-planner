@@ -57,16 +57,17 @@ export default function HouseholdTaskRow({
   }
 
   return (
-    <div className={`group flex items-start gap-3 px-4 py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${task.status === 'done' ? 'opacity-60' : ''}`}>
+    <div className={`group flex items-start gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${task.status === 'done' ? 'opacity-60' : ''}`}>
       <button
         onClick={toggleStatus}
         disabled={toggling}
-        className={`mt-0.5 text-lg leading-none shrink-0 transition-colors ${statusConfig.className}`}
+        aria-label={`Status: ${task.status}. Advance status.`}
+        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:mt-0.5 text-lg leading-none transition-colors ${statusConfig.className}`}
       >
         {statusConfig.icon}
       </button>
 
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 py-2 sm:py-0">
         <Link
           href={`/tasks/${task.id}/edit`}
           className={`text-sm truncate block ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900 hover:text-blue-600 transition-colors'}`}
@@ -75,6 +76,19 @@ export default function HouseholdTaskRow({
           {task.is_recurring && <span className="ml-1.5 text-gray-300 text-xs" title="Recurring">↻</span>}
         </Link>
         {task.notes && <p className="mt-0.5 text-xs text-gray-400 truncate">{task.notes}</p>}
+
+        {/* Category and horizon have their own columns from sm up; on a phone
+            they stack under the title instead of disappearing. */}
+        {(category || !isUnplanned) && (
+          <div className="sm:hidden mt-1 flex items-center gap-1.5 min-w-0">
+            {category && dotColour && (
+              <span className="shrink-0 w-2 h-2 rounded-full" style={{ backgroundColor: dotColour }} />
+            )}
+            {category && <span className="text-xs text-gray-500 truncate">{category.name}</span>}
+            {category && !isUnplanned && <span className="text-gray-300 text-xs">·</span>}
+            {!isUnplanned && <span className="text-xs text-gray-400 shrink-0">{horizonLabel}</span>}
+          </div>
+        )}
       </div>
 
       {/* Category chip */}
@@ -106,25 +120,34 @@ export default function HouseholdTaskRow({
         />
       </div>
 
-      {/* Actions */}
-      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+      {/* Actions — hover-revealed from md up, always visible below that so they
+          are reachable on a touch screen. */}
+      <div className="shrink-0 flex items-center gap-0.5 sm:gap-1 transition-opacity md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100">
         <Link
           href={`/tasks/${task.id}/edit`}
-          className="text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors px-1"
+          title="Edit task"
+          aria-label="Edit task"
+          className="flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:px-1 text-sm sm:text-xs font-medium text-gray-400 hover:text-blue-600 transition-colors"
         >
-          Edit
+          <span className="hidden sm:inline">Edit</span>
+          <span className="sm:hidden">✎</span>
         </Link>
         {confirmDelete ? (
           <div className="flex items-center gap-1">
-            <button onClick={deleteTask} disabled={deleting} className="text-xs text-red-600 hover:text-red-700 font-medium">
+            <button onClick={deleteTask} disabled={deleting} className="min-h-[40px] sm:min-h-0 px-1 text-xs text-red-600 hover:text-red-700 font-medium">
               {deleting ? '…' : 'Delete'}
             </button>
-            <button onClick={() => setConfirmDelete(false)} className="text-xs text-gray-400 hover:text-gray-600">
+            <button onClick={() => setConfirmDelete(false)} className="min-h-[40px] sm:min-h-0 px-1 text-xs text-gray-400 hover:text-gray-600">
               Cancel
             </button>
           </div>
         ) : (
-          <button onClick={() => setConfirmDelete(true)} className="text-xs text-gray-300 hover:text-red-500 transition-colors px-1">
+          <button
+            onClick={() => setConfirmDelete(true)}
+            title="Delete task"
+            aria-label="Delete task"
+            className="flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:px-1 text-sm sm:text-xs text-gray-300 hover:text-red-500 transition-colors"
+          >
             ✕
           </button>
         )}
