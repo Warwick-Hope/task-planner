@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "setup:hooks": "git config core.hooksPath .githooks && git config core.longpaths true && git config credential.https://github.com.username Warwick-Hope"
+    "setup:hooks": "git config core.hooksPath .githooks && git config core.longpaths true && git config credential.https://github.com.username Warwick-Hope",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",
@@ -22,6 +24,7 @@
     "rrule": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",

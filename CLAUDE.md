@@ -9,7 +9,24 @@ npm run lint     # next lint (ESLint: next/core-web-vitals, next/typescript, pre
 npm run format   # prettier --write .
 ```
 
-No test suite exists in this repo — don't assume Jest/Vitest are configured.
+```bash
+npm run test:e2e     # Playwright smoke suite (starts the dev server itself)
+npm run test:e2e:ui  # same, in Playwright's interactive UI
+```
+
+There is **no unit-test runner** — don't assume Jest or Vitest. The only tests are the Playwright end-to-end suite in [e2e/](e2e/).
+
+### The e2e suite
+
+- **Runs against dev Supabase using two dedicated accounts**, never Warwick's own login: `warwickhope93+e2e@gmail.com` (owner, does almost everything) and `warwickhope93+e2e2@gmail.com` (invitee, exists so the invitation flow has someone to accept). Credentials are `E2E_USER_*` / `E2E_USER2_*` in `.env.local`; in CI they'd come from repository secrets.
+- **Email confirmation is deliberately OFF on the dev project** (Authentication → Providers → Email), so accounts can be created without a mailbox. **Prod keeps it on.** If it is ever re-enabled on dev, new test accounts need a confirmation click before they can sign in, and `auth.setup.ts` will say `Sign-in failed: Email not confirmed`.
+- **The two accounts are fixed, not created per run.** Without a `service_role` key the suite cannot delete auth users, so disposable accounts would accumulate forever. Freshness comes from creating a **new household each run** and deleting it in teardown — which also stops the invitee staying a member, since `accept_household_invitation` rejects a second attempt with "Already a member of this household" and would make the invite test pass once then fail forever.
+- **`auth.setup.ts` signs both in** and saves sessions to `e2e/.auth/user.json` and `user2.json` (gitignored). Specs default to the owner's; the invite spec opens a second context with `INVITEE_STATE`. Logged-out assertions opt out with `test.use({ storageState: … })`. **Storage-state paths live in `helpers.ts`** because Playwright forbids a spec importing a setup file.
+- **Single worker, no parallelism** — every test shares one account and one workspace.
+- **Tests clean up after themselves, and a teardown project sweeps the rest.** Anything created is titled `[e2e] …` with a timestamp. Each spec deletes what it made, but only on the happy path — a test that fails before its cleanup leaves its row behind, so `global.teardown.ts` removes every `[e2e]` task at the end of the run regardless. It talks to Supabase directly (there is no list endpoint on `/api/tasks`) under the test account's own RLS.
+- **`auth.setup.ts` completes onboarding if the account needs it,** so the suite works against a brand-new account. Do not detect this from `page.url()` immediately after sign-in — the client pushes `/dashboard` and the server redirects to `/onboarding` a moment later, so an instant check sees the wrong thing and skips the wizard.
+- **The brain dump is not called for real** in the default run. Its deterministic paths (413 over the cap, 400 on empty/non-string, the textarea `maxLength`) are exercised genuinely because they never reach Anthropic; the happy path is stubbed with `page.route()` so the review panel and save flow are deterministic. The real call is tagged `@live` and skipped unless `E2E_LIVE=1` — model output varies, so asserting on extracted titles would produce a flaky suite.
+- **Not wired into CI yet, deliberately.** The dev Supabase project sleeps after ~7 days idle on the free tier, and a sleeping project would turn `verify` red for reasons unrelated to the code. Config reads `E2E_BASE_URL` and the credentials from the environment, so enabling it later is a workflow file plus two secrets — revisit alongside the Pro decision.
 
 Supabase CLI migrations (dev):
 
