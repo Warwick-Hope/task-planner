@@ -51,6 +51,23 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/*
+          Chrome fires beforeinstallprompt once, and often before React has
+          hydrated — a listener added in an effect can miss it entirely. Catch it
+          here, park it on window, and tell InstallButton it has arrived.
+
+          Deliberately WITHOUT preventDefault: that is what suppresses the
+          browser's own install UI, which is the offer people actually expect —
+          the icon in the desktop address bar, the prompt on Android. Letting it
+          through means the browser leads and the in-app row is the fallback for
+          browsers that never offer anything.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('beforeinstallprompt',function(e){window.__clarityInstallPrompt=e;window.dispatchEvent(new Event('clarity:installprompt'))});",
+          }}
+        />
         {children}
         <ServiceWorkerRegistration />
       </body>

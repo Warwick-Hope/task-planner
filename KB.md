@@ -106,6 +106,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 31 | The PWA's three files must be exempt from the middleware matcher | Auth, RLS and security | Live |
 | 32 | The service worker caches no user data, and registers in production only | The app | Live |
 | 33 | Editing `next.config.mjs` wedges a running dev server, and Playwright reuses it | The e2e suite | Live |
+| 34 | Phone navigation is a bottom tab bar, not a scrolling strip | The app | Live |
+| 35 | `beforeinstallprompt` fires before hydration, and often not at all | The app | Live |
 
 ---
 
@@ -462,6 +464,50 @@ against a production build — see `PLAN.md` §Verification.
 
 Bump `VERSION` in `sw.js` when its caching behaviour changes; `activate` deletes every older
 `clarity-static-*` cache.
+
+### 34. Phone navigation is a bottom tab bar, not a scrolling strip
+
+Phase 4.1 put the seven sections in a swipeable strip under the header. It passed the viewport
+check — nothing overflowed, because the strip scrolled — and it was still wrong: **on a handset
+only four sections were visible, and you had to scroll a navigation bar to find out what the app
+could do.** Reported the first time it was used on a real phone, which is the whole argument for
+doing that (#26 was found the same way).
+
+Below `md` the nav is now a fixed bottom bar: the first four items in `SECTIONS` as tabs, the
+rest in a More sheet. **Order in `PersonalNav`/`HouseholdNav` therefore decides what is a tab** —
+the first four are the daily loop, not an arbitrary order. The grid is `grid-cols-5` (four plus
+More), so `PRIMARY_COUNT` in `SectionNav.tsx` cannot be changed on its own.
+
+Consequences worth knowing before touching layout: the shell reserves `pb-24` on `main` so a list
+never ends under the bar, and any full-height screen must subtract it — the calendar is
+`h-[calc(100dvh-12rem)]` for exactly this reason. The bar carries
+`pb-[env(safe-area-inset-bottom)]` for the gesture area on a modern handset.
+
+### 35. `beforeinstallprompt` fires before hydration, and often not at all
+
+Chrome fires the event **once**, early — frequently before React has hydrated — and it cannot be
+retrieved later. A listener registered in a `useEffect` therefore misses it on a cold load, and
+the install button never appears. It is captured instead by an inline script in `app/layout.tsx`,
+which parks the event on `window.__clarityInstallPrompt` and dispatches
+`clarity:installprompt`; `InstallButton` reads whichever arrives first. The event is single-use:
+after `prompt()` it must be discarded.
+
+**Do not call `preventDefault()` on it.** That is what suppresses the browser's *own* install
+offer — the address-bar icon on desktop, the prompt on Android — and it is the offer people
+expect, because it puts the app where every other installed app lives. Every tutorial calls
+`preventDefault` so the page can present its own button; doing that here traded the offer
+everyone recognises for one nobody looks for. Capture the event, leave the default alone, and
+treat the in-app row as the backstop. `prompt()` may then throw because the browser already
+consumed it — catch that and fall back to the instructions.
+
+**Plenty of browsers never fire it at all** — iOS Safari has no such event, and some Android
+browsers only offer the option through their own menu. So the More sheet always shows a row: a
+one-tap *Install app* when the prompt was captured, and *Add to home screen* with instructions
+when it was not. The original complaint was that the app was installable and nothing in it said
+so, which from the outside is indistinguishable from not being installable.
+
+This is also why headless Chromium shows the instructions variant — do not read that as a
+broken manifest. `npm run verify:pwa` is what proves installability.
 
 ---
 

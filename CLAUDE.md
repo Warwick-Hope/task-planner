@@ -78,6 +78,11 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   ([KB.md](KB.md) #26).
 - **The service worker caches no user data and registers in production only** — adding pages or
   API responses to it would be a bug, not an improvement ([KB.md](KB.md) #32).
+- **Never call `preventDefault()` on `beforeinstallprompt`** — it suppresses the browser's own
+  install offer, which is the one people expect ([KB.md](KB.md) #35).
+- **Below `md` the nav is a bottom tab bar** — the first four entries in `PersonalNav`/
+  `HouseholdNav` are the tabs, the rest are in the More sheet, and `main` reserves `pb-24` for it
+  ([KB.md](KB.md) #34).
 - **`manifest.webmanifest`, `sw.js` and `offline.html` are exempt from the middleware matcher** —
   Chrome fetches them with no session, and a 307 to `/login` fails the install silently
   ([KB.md](KB.md) #31).

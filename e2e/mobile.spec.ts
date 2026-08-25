@@ -59,6 +59,29 @@ for (const route of PERSONAL_ROUTES) {
   })
 }
 
+test('every section is reachable from the tab bar or its More sheet', async ({ page }) => {
+  await page.goto('/dashboard')
+
+  // The four daily sections are tabs; nothing is hidden off the side of a
+  // scrolling strip, which is what this replaced.
+  for (const label of ['Dashboard', 'Tasks', 'Plan', 'Calendar']) {
+    await expect(page.getByRole('link', { name: label }).first()).toBeVisible()
+  }
+
+  // Scoped to the sheet: the dashboard's quick-access cards link to the same
+  // places, so an unscoped lookup matches two elements.
+  await page.getByRole('button', { name: 'More' }).click()
+  const sheet = page.getByRole('dialog', { name: 'More sections' })
+  for (const label of ['Brain dump', 'Categories', 'Mission']) {
+    await expect(sheet.getByRole('link', { name: label })).toBeVisible()
+  }
+
+  // And it navigates, rather than merely rendering.
+  await sheet.getByRole('link', { name: 'Brain dump' }).click()
+  await expect(page).toHaveURL(/\/brain-dump/)
+  await expect(sheet).toBeHidden()
+})
+
 test('task row actions are reachable without hovering', async ({ page }) => {
   const title = uniqueTitle('mobile-actions')
 
