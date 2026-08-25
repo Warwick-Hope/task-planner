@@ -5,6 +5,11 @@ import { useEffect, useState } from 'react'
 /**
  * The "Install app" row in the More sheet.
  *
+ * **The browser leads.** The capture script does not call `preventDefault`, so
+ * the browser still shows its own install offer — the address-bar icon on
+ * desktop, the prompt on Android. This row is the backstop for when it doesn't,
+ * not the primary route.
+ *
  * Chrome fires `beforeinstallprompt` once, early — often before React has
  * hydrated — so the event is captured by an inline script in the root layout and
  * parked on `window`. This component picks it up from there, and also listens
@@ -59,12 +64,19 @@ export default function InstallButton() {
 
   async function install() {
     if (!prompt) return
-    await prompt.prompt()
-    const { outcome } = await prompt.userChoice
-    // The event is single-use: once shown it cannot be shown again.
-    window.__clarityInstallPrompt = undefined
-    setPrompt(null)
-    if (outcome === 'accepted') setInstalled(true)
+    // The event is single-use, and since the browser's own offer is no longer
+    // suppressed it may already have been consumed — in which case prompt()
+    // throws and the instructions below are what is left.
+    try {
+      await prompt.prompt()
+      const { outcome } = await prompt.userChoice
+      if (outcome === 'accepted') setInstalled(true)
+    } catch {
+      setShowHelp(true)
+    } finally {
+      window.__clarityInstallPrompt = undefined
+      setPrompt(null)
+    }
   }
 
   if (installed) {

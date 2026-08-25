@@ -492,6 +492,14 @@ which parks the event on `window.__clarityInstallPrompt` and dispatches
 `clarity:installprompt`; `InstallButton` reads whichever arrives first. The event is single-use:
 after `prompt()` it must be discarded.
 
+**Do not call `preventDefault()` on it.** That is what suppresses the browser's *own* install
+offer — the address-bar icon on desktop, the prompt on Android — and it is the offer people
+expect, because it puts the app where every other installed app lives. Every tutorial calls
+`preventDefault` so the page can present its own button; doing that here traded the offer
+everyone recognises for one nobody looks for. Capture the event, leave the default alone, and
+treat the in-app row as the backstop. `prompt()` may then throw because the browser already
+consumed it — catch that and fall back to the instructions.
+
 **Plenty of browsers never fire it at all** — iOS Safari has no such event, and some Android
 browsers only offer the option through their own menu. So the More sheet always shows a row: a
 one-tap *Install app* when the prompt was captured, and *Add to home screen* with instructions
