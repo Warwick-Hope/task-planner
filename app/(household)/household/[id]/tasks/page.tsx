@@ -95,7 +95,7 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
         <div>
           <Link href={`/household/${params.id}`} className="text-sm text-gray-400 hover:text-gray-700 transition-colors">
             ← {workspace?.name ?? 'Household'}
@@ -105,7 +105,7 @@ export default async function HouseholdTasksPage({ params, searchParams }: PageP
         {canCreate && (
           <Link
             href={`/household/${params.id}/tasks/new`}
-            className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+            className="shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2.5 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
           >
             + New task
           </Link>

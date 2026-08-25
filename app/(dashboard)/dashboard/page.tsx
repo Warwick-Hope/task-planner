@@ -86,8 +86,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       {/* ── Header ── */}
-      <div className="flex items-start justify-between">
-        <div>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
           <h1 className="text-xl font-semibold text-gray-900">
             {greeting()}, {displayName}
           </h1>
@@ -95,7 +95,7 @@ export default async function DashboardPage() {
         </div>
         <Link
           href="/tasks/new"
-          className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
+          className="shrink-0 whitespace-nowrap rounded-lg bg-blue-600 px-4 py-2.5 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
         >
           + New task
         </Link>

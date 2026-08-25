@@ -461,7 +461,9 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
       {/* Calendar + side pane */}
       <div className="flex flex-col sm:flex-row flex-1 min-h-0 rounded-xl border border-gray-200 bg-white overflow-hidden">
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          <div className="flex-1 min-w-0 flex flex-col">
+          {/* min-h-0 matters once this is a column on mobile: without it the
+              grid refuses to shrink and pushes the side pane out of the card. */}
+          <div className="flex-1 min-w-0 min-h-0 flex flex-col">
             {view === 'month' && (
               <MonthView year={year} month={month} tasks={tasks} categories={categories} today={today} />
             )}
