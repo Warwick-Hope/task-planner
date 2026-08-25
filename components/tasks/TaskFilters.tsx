@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import type { Category } from '@/types'
+import type { Category } from '@/types'
+
 import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 const STATUS_OPTIONS = [
@@ -23,6 +24,9 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
   const selectedIds: string[] = (params.get('category') ?? '').split(',').filter(Boolean)
 
   const [expandedParent, setExpandedParent] = useState<string | null>(null)
+  // Three rows of filter pills would push the list itself off a phone screen,
+  // so on mobile they live behind a toggle that reports what is active.
+  const [showFilters, setShowFilters] = useState(false)
 
   const parents = allCategories
     .filter(c => c.parent_id === null)
@@ -85,10 +89,32 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
     : []
   const expandedParentObj = parents.find(p => p.id === expandedParent)
 
+  const activeCount =
+    (currentStatus === 'all' ? 0 : 1) + (currentView === 'unplanned' ? 1 : 0) + selectedIds.length
+
   return (
-    <div className="flex flex-col gap-2 mb-6">
+    <div className="flex flex-col gap-2 mb-4 sm:mb-6">
+      {/* Mobile-only disclosure */}
+      <button
+        onClick={() => setShowFilters(o => !o)}
+        aria-expanded={showFilters}
+        className="sm:hidden flex items-center justify-between rounded-lg border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-600"
+      >
+        <span>
+          Filters
+          {activeCount > 0 && (
+            <span className="ml-2 rounded-full bg-gray-800 px-2 py-0.5 text-xs font-medium text-white">
+              {activeCount}
+            </span>
+          )}
+        </span>
+        <span className="text-xs text-gray-400">{showFilters ? 'Hide' : 'Show'}</span>
+      </button>
+
       {/* Primary filter row */}
-      <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+      <div
+        className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2`}
+      >
         {/* Status */}
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-gray-400 mr-1">Status</span>
@@ -96,7 +122,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
             <button
               key={opt.value}
               onClick={() => pushParams({ status: opt.value })}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-1.5 sm:py-1 text-xs font-medium transition-colors ${
                 currentStatus === opt.value
                   ? 'bg-gray-800 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -113,7 +139,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
             <span className="text-xs text-gray-400 mr-1">Category</span>
             <button
               onClick={() => { setIds([]); setExpandedParent(null) }}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-1.5 sm:py-1 text-xs font-medium transition-colors ${
                 selectedIds.length === 0 && !expandedParent
                   ? 'bg-gray-800 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -131,7 +157,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
                   {/* Name — click to toggle all children (multi-select) */}
                   <button
                     onClick={() => handleParentToggle(parent)}
-                    className={`px-3 py-1 transition-colors ${
+                    className={`px-3 py-1.5 sm:py-1 transition-colors ${
                       active ? 'text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                     }`}
                     style={active ? { backgroundColor: colour } : {}}
@@ -142,7 +168,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
                   {hasChildren && (
                     <button
                       onClick={(e) => handleParentExpand(parent.id, e)}
-                      className={`px-1.5 transition-colors border-l ${
+                      className={`px-2.5 sm:px-1.5 transition-colors border-l ${
                         active
                           ? 'text-white/80 border-white/20 hover:bg-black/10'
                           : expanded
@@ -164,7 +190,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
         {/* Unplanned toggle */}
         <button
           onClick={() => pushParams({ view: currentView === 'unplanned' ? 'all' : 'unplanned' })}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+          className={`rounded-full px-3 py-1.5 sm:py-1 text-xs font-medium transition-colors ${
             currentView === 'unplanned'
               ? 'bg-amber-500 text-white'
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -176,7 +202,9 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
 
       {/* Subcategory row — shown when a parent with children is expanded */}
       {expandedParent && expandedParentObj && expandedChildren.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100">
+        <div
+          className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-1.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100`}
+        >
           <span className="text-xs text-gray-400 mr-1">{expandedParentObj.name}:</span>
           {expandedChildren.map(child => {
             const selected = selectedIds.includes(child.id)
@@ -184,7 +212,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
               <button
                 key={child.id}
                 onClick={() => toggleId(child.id)}
-                className={`rounded-full px-3 py-1 text-xs font-medium border transition-colors ${
+                className={`rounded-full px-3 py-1.5 sm:py-1 text-xs font-medium border transition-colors ${
                   selected
                     ? 'border-transparent text-white'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'

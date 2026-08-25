@@ -24,6 +24,19 @@ body {
   overflow-x: clip;
 }
 
+/*
+ * Anything under 16px makes mobile Safari zoom the page in when the field takes
+ * focus, and it never zooms back out. The app styles its inputs text-sm (14px),
+ * so lift them on small screens rather than annotating every field.
+ */
+@media (max-width: 639px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
 @layer utilities {
   .text-balance {
     text-wrap: balance;

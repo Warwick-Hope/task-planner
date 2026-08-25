@@ -27,11 +27,12 @@ export default function DashboardTaskRow({
   const done = task.status === 'done'
 
   return (
-    <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group ${done ? 'opacity-60' : ''}`}>
+    <div className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group ${done ? 'opacity-60' : ''}`}>
       <button
         onClick={toggleStatus}
         disabled={toggling}
-        className={`shrink-0 text-lg leading-none transition-colors ${STATUS_CLASS[task.status]}`}
+        aria-label={`Status: ${task.status}. Advance status.`}
+        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 text-lg leading-none transition-colors ${STATUS_CLASS[task.status]}`}
       >
         {STATUS_DISPLAY[task.status].icon}
       </button>
@@ -50,8 +51,9 @@ export default function DashboardTaskRow({
 
       <Link
         href={`/tasks/${task.id}/edit`}
-        className="shrink-0 text-xs text-gray-200 hover:text-blue-500 transition-colors opacity-0 group-hover:opacity-100"
+        className="shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 text-sm sm:text-xs text-gray-300 sm:text-gray-200 hover:text-blue-500 transition-colors md:opacity-0 md:group-hover:opacity-100 md:focus:opacity-100"
         title="Edit"
+        aria-label="Edit task"
       >
         ✎
       </Link>

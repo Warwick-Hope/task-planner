@@ -101,7 +101,7 @@ export default function AssignButton({
       <button
         onClick={() => setOpen((o) => !o)}
         disabled={loading}
-        className={`text-xs px-2 py-1 rounded-md border transition-colors ${
+        className={`text-xs px-2 py-1 min-h-[32px] sm:min-h-0 max-w-[6rem] sm:max-w-none truncate rounded-md border transition-colors ${
           assignedMember || assignedProfile
             ? assignmentStatus === 'declined'
               ? 'border-red-200 text-red-500 bg-red-50 hover:bg-red-100'
@@ -120,7 +120,7 @@ export default function AssignButton({
           <div className="flex gap-2">
             <button
               onClick={() => assign('member', currentUserId)}
-              className="flex-1 rounded bg-green-600 px-2 py-1 text-xs font-medium text-white hover:bg-green-700"
+              className="flex-1 rounded bg-green-600 px-2 py-2 sm:py-1 text-xs font-medium text-white hover:bg-green-700"
             >
               Accept
             </button>
@@ -136,7 +136,7 @@ export default function AssignButton({
                 setLoading(false)
                 onUpdated?.({ assigned_to_user_id: assignedToUserId, assigned_to_profile_id: null, assignment_status: 'declined' })
               }}
-              className="flex-1 rounded border border-gray-300 px-2 py-1 text-xs text-gray-600 hover:bg-gray-50"
+              className="flex-1 rounded border border-gray-300 px-2 py-2 sm:py-1 text-xs text-gray-600 hover:bg-gray-50"
             >
               Decline
             </button>
@@ -153,7 +153,7 @@ export default function AssignButton({
                 <button
                   key={m.id}
                   onClick={() => assign('member', m.userId)}
-                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors ${
+                  className={`w-full text-left px-3 py-2.5 sm:py-1.5 text-sm hover:bg-gray-50 transition-colors ${
                     assignedToUserId === m.userId ? 'font-medium text-blue-600' : 'text-gray-700'
                   }`}
                 >
@@ -170,7 +170,7 @@ export default function AssignButton({
                 <button
                   key={p.id}
                   onClick={() => assign('profile', p.id)}
-                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 ${
+                  className={`w-full text-left px-3 py-2.5 sm:py-1.5 text-sm hover:bg-gray-50 transition-colors flex items-center gap-2 ${
                     assignedToProfileId === p.id ? 'font-medium text-blue-600' : 'text-gray-700'
                   }`}
                 >
@@ -190,7 +190,7 @@ export default function AssignButton({
               <div className="border-t border-gray-100 mt-1" />
               <button
                 onClick={() => assign('unassign')}
-                className="w-full text-left px-3 py-1.5 text-sm text-gray-400 hover:bg-gray-50 hover:text-red-500 transition-colors"
+                className="w-full text-left px-3 py-2.5 sm:py-1.5 text-sm text-gray-400 hover:bg-gray-50 hover:text-red-500 transition-colors"
               >
                 Unassign
               </button>
