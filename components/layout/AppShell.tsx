@@ -19,9 +19,9 @@ import type { NavVariant } from '@/components/nav/SectionNav'
  * personal workspace, household leaves a hint that the switcher refines from the
  * pathname on the client.
  *
- * `nav` is a render function rather than an element because the header needs the
- * same nav in two shapes — inline in the bar on desktop, as a swipeable strip
- * under it on a phone — and only one of the two is ever mounted.
+ * `nav` is a render function rather than an element because the app needs the
+ * same nav in two shapes — inline in the header on desktop, as a fixed bottom
+ * tab bar on a phone — and only one of the two is ever mounted.
  */
 export interface AppShellProps {
   variant: 'personal' | 'household'
@@ -98,8 +98,8 @@ export default async function AppShell({ variant, nav, children }: AppShellProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Sticky on a phone: the section strip is the only way between screens,
-          so it has to survive a long task list. */}
+      {/* Sticky so the workspace switcher stays reachable down a long list.
+          Navigation itself lives in the bottom tab bar on a phone. */}
       <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-3 md:gap-4 min-w-0">
@@ -120,9 +120,12 @@ export default async function AppShell({ variant, nav, children }: AppShellProps
             <SignOutButton />
           </div>
         </div>
-        <div className="md:hidden border-t border-gray-100 px-4">{nav('strip')}</div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">{children}</main>
+      {/* pb-24 keeps the last row of any list clear of the tab bar. */}
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-24 md:pb-8">
+        {children}
+      </main>
+      {nav('tabs')}
     </div>
   )
 }

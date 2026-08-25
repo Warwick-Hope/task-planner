@@ -427,8 +427,9 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
 
   return (
     /* dvh on mobile so the browser chrome hiding and showing does not leave the
-       grid overflowing the screen. */
-    <div className="flex flex-col h-[calc(100dvh-13rem)] sm:h-[calc(100vh-10rem)]">
+       grid overflowing the screen. Below md it also has to clear the bottom tab
+       bar and the padding the shell reserves for it. */
+    <div className="flex flex-col h-[calc(100dvh-12rem)] md:h-[calc(100vh-10rem)]">
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
         <div className="flex items-center gap-1 sm:gap-2 min-w-0">

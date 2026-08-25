@@ -2,15 +2,17 @@
 
 import { usePathname } from 'next/navigation'
 import SectionNav, { type NavVariant } from '@/components/nav/SectionNav'
+import type { NavIconKey } from '@/components/nav/NavIcon'
 
-const SECTIONS = [
-  { label: 'Dashboard', segment: '' },
-  { label: 'Tasks', segment: 'tasks' },
-  { label: 'Cleaning', segment: 'cleaning' },
-  { label: 'Shopping', segment: 'shopping' },
-  { label: 'Meals', segment: 'meals' },
-  { label: 'Rooms', segment: 'rooms' },
-  { label: 'Categories', segment: 'categories' },
+/** First four are the phone's bottom tabs; the rest go in the More sheet. */
+const SECTIONS: { label: string; segment: string; icon: NavIconKey }[] = [
+  { label: 'Dashboard', segment: '', icon: 'dashboard' },
+  { label: 'Tasks', segment: 'tasks', icon: 'tasks' },
+  { label: 'Cleaning', segment: 'cleaning', icon: 'cleaning' },
+  { label: 'Shopping', segment: 'shopping', icon: 'shopping' },
+  { label: 'Meals', segment: 'meals', icon: 'meals' },
+  { label: 'Rooms', segment: 'rooms', icon: 'rooms' },
+  { label: 'Categories', segment: 'categories', icon: 'categories' },
 ]
 
 export default function HouseholdNav({ variant }: { variant: NavVariant }) {
@@ -22,8 +24,9 @@ export default function HouseholdNav({ variant }: { variant: NavVariant }) {
 
   if (!householdId) return null
 
-  const items = SECTIONS.map(({ label, segment }) => ({
+  const items = SECTIONS.map(({ label, segment, icon }) => ({
     label,
+    icon,
     href: segment ? `/household/${householdId}/${segment}` : `/household/${householdId}`,
     active: segment
       ? pathname.startsWith(`/household/${householdId}/${segment}`)

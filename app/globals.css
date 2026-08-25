@@ -41,13 +41,4 @@ body {
   .text-balance {
     text-wrap: balance;
   }
-
-  /* Horizontal scroll strips (section nav, week columns) — swipeable, no bar. */
-  .no-scrollbar {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .no-scrollbar::-webkit-scrollbar {
-    display: none;
-  }
 }

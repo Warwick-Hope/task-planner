@@ -51,6 +51,17 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/*
+          Chrome fires beforeinstallprompt once, and often before React has
+          hydrated — a listener added in an effect can miss it entirely. Catch it
+          here, park it on window, and tell InstallButton it has arrived.
+        */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "window.addEventListener('beforeinstallprompt',function(e){e.preventDefault();window.__clarityInstallPrompt=e;window.dispatchEvent(new Event('clarity:installprompt'))});",
+          }}
+        />
         {children}
         <ServiceWorkerRegistration />
       </body>
