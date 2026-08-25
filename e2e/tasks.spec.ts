@@ -48,6 +48,30 @@ test('a task can be edited and the change persists a reload', async ({ page }) =
   await expect(taskRow(page, edited)).toHaveCount(0)
 })
 
+test('the status indicator advances and the change persists', async ({ page }) => {
+  const title = uniqueTitle('status-toggle')
+
+  await page.goto('/tasks/new')
+  await page.getByPlaceholder('What needs doing?').fill(title)
+  await page.getByRole('button', { name: 'Create task' }).click()
+  await expect(page).toHaveURL('/tasks')
+
+  const row = taskRow(page, title).first()
+  const indicator = row.getByTitle(/^Status:/)
+  await expect(indicator).toHaveAttribute('title', /not_started/)
+
+  // Clicking advances not_started -> wip, optimistically and then for real.
+  await indicator.click()
+  await expect(row.getByTitle(/^Status:/)).toHaveAttribute('title', /wip/)
+
+  // The reload is the point: it proves the PATCH reached the database rather
+  // than the row just updating in place.
+  await page.reload()
+  await expect(taskRow(page, title).first().getByTitle(/^Status:/)).toHaveAttribute('title', /wip/)
+
+  await deleteTaskRow(page, title)
+})
+
 test('the API refuses a task with no title', async ({ request }) => {
   // Session cookies come from the shared storageState, so this exercises the
   // authenticated path rather than the 401 branch.

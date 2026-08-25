@@ -28,8 +28,13 @@ export default defineConfig({
   forbidOnly: isCI,
   retries: isCI ? 1 : 0,
   reporter: isCI ? [['github'], ['html', { open: 'never' }]] : [['list']],
-  timeout: 30_000,
-  expect: { timeout: 10_000 },
+  // Every test drives a dev server that compiles routes on first hit and talks
+  // to a hosted Supabase project, so timings vary a lot with connection quality —
+  // the same spec has run in 7s locally and timed out at 30s over a slower link.
+  // These are generous on purpose: a timeout here means "too slow to be useful",
+  // not "wrong".
+  timeout: 60_000,
+  expect: { timeout: 15_000 },
 
   use: {
     baseURL,
