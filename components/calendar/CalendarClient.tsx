@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -8,15 +8,14 @@ import {
   DragEndEvent,
   DragOverlay,
   DragStartEvent,
-  PointerSensor,
-  useSensor,
-  useSensors,
   useDroppable,
   useDraggable,
 } from '@dnd-kit/core'
+import { useDragSensors } from '@/lib/dnd-sensors'
 import { CSS } from '@dnd-kit/utilities'
 import type { Task, Category } from '@/types'
-import { buildHorizonFields } from '@/lib/horizon'
+import { buildHorizonFields } from '@/lib/horizon'
+
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -135,14 +134,14 @@ function MonthView({ year, month, tasks, categories, today }: {
       </div>
       <div className="grid grid-cols-7 flex-1">
         {cells.map((date, i) => {
-          if (!date) return <div key={`pad-${i}`} className="min-h-[90px] border-b border-r border-gray-100 bg-gray-50" />
+          if (!date) return <div key={`pad-${i}`} className="min-h-[72px] sm:min-h-[90px] border-b border-r border-gray-100 bg-gray-50" />
           const ds = toDateStr(date)
           const dayTasks = tasksForDay(tasks, ds)
           const isToday = sameDay(date, today)
           const isCurrent = date.getMonth() === month
           return (
             <DroppableCell key={ds} id={ds}
-              className={`min-h-[90px] p-1.5 border-b border-r border-gray-100 flex flex-col gap-0.5 ${isCurrent ? 'bg-white' : 'bg-gray-50'}`}>
+              className={`min-h-[72px] sm:min-h-[90px] p-1 sm:p-1.5 border-b border-r border-gray-100 flex flex-col gap-0.5 ${isCurrent ? 'bg-white' : 'bg-gray-50'}`}>
               <span className={`text-xs font-medium mb-0.5 w-6 h-6 flex items-center justify-center rounded-full
                 ${isToday ? 'bg-blue-600 text-white' : isCurrent ? 'text-gray-700' : 'text-gray-300'}`}>
                 {date.getDate()}
@@ -164,7 +163,10 @@ function WeekView({ monday, tasks, categories, today }: {
   const days = Array.from({ length: 7 }, (_, i) => addDays(monday, i))
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto">
+    /* Seven columns will not fit a phone at a readable width, so the week
+       scrolls sideways below sm instead of squeezing to 50px per day. */
+    <div className="flex-1 min-h-0 overflow-auto">
+      <div className="min-w-[44rem] sm:min-w-0">
       {/* Day headers */}
       <div className="grid grid-cols-7 border-b border-gray-100 sticky top-0 bg-white z-10">
         {days.map((d, i) => {
@@ -203,6 +205,7 @@ function WeekView({ monday, tasks, categories, today }: {
             </DroppableCell>
           )
         })}
+      </div>
       </div>
     </div>
   )
@@ -267,11 +270,13 @@ function DayView({ date, tasks, categories, today }: {
 
 function SidePane({ label, tasks, categories }: { label: string; tasks: Task[]; categories: Category[] }) {
   return (
-    <div className="w-56 shrink-0 border-l border-gray-100 flex flex-col">
+    /* Beside the grid on desktop; underneath it on a phone, where 224px of
+       sidebar would leave the calendar itself about 150px wide. */
+    <div className="w-full sm:w-56 shrink-0 border-t sm:border-t-0 sm:border-l border-gray-100 flex flex-col max-h-44 sm:max-h-none">
       <div className="px-3 py-2.5 border-b border-gray-100">
         <p className="text-xs font-semibold text-gray-500">{label}</p>
       </div>
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 overflow-y-auto p-2 space-y-1 min-h-0">
         {tasks.length === 0 ? (
           <p className="text-xs text-gray-300 italic px-1 py-2">Nothing here</p>
         ) : (
@@ -311,7 +316,19 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
   const [tasks, setTasks] = useState<Task[]>(initialTasks)
   const [activeTask, setActiveTask] = useState<Task | null>(null)
 
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }))
+  const sensors = useDragSensors()
+
+  // A week of seven columns is the right default on a desktop and the wrong one
+  // on a phone, where the day view is the only one that reads at all. Decided
+  // after mount rather than during render — the server has no viewport width.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setView('day')
+      setAnchor(new Date())
+    }
+    // Deliberately first-mount only: this is a starting point, not a lock.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // ── Navigation ──────────────────────────────────────────────────────────────
 
@@ -409,28 +426,30 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
   sidePaneTasks = sidePaneTasks.filter((t, i, arr) => arr.findIndex(x => x.id === t.id) === i)
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)]">
+    /* dvh on mobile so the browser chrome hiding and showing does not leave the
+       grid overflowing the screen. */
+    <div className="flex flex-col h-[calc(100dvh-13rem)] sm:h-[calc(100vh-10rem)]">
       {/* Toolbar */}
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <button onClick={() => navigate(-1)}
-            className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg leading-none">‹</button>
-          <button onClick={() => navigate(1)}
-            className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg leading-none">›</button>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-3 sm:mb-4">
+        <div className="flex items-center gap-1 sm:gap-2 min-w-0">
+          <button onClick={() => navigate(-1)} aria-label="Previous"
+            className="flex items-center justify-center min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 rounded-md sm:p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg leading-none">‹</button>
+          <button onClick={() => navigate(1)} aria-label="Next"
+            className="flex items-center justify-center min-h-[40px] min-w-[40px] sm:min-h-0 sm:min-w-0 rounded-md sm:p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors text-lg leading-none">›</button>
           <button onClick={goToday}
-            className="rounded-md border border-gray-200 px-2.5 py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+            className="rounded-md border border-gray-200 px-2.5 py-2 sm:py-1 text-xs font-medium text-gray-600 hover:bg-gray-50 transition-colors">
             Today
           </button>
-          <h2 className="ml-2 text-sm font-semibold text-gray-900 w-52">
+          <h2 className="ml-1 sm:ml-2 text-sm font-semibold text-gray-900 truncate sm:w-52">
             {navLabel(view, year, month, anchor)}
           </h2>
         </div>
 
         {/* View switcher */}
-        <div className="flex rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
+        <div className="flex self-start sm:self-auto shrink-0 rounded-lg border border-gray-200 overflow-hidden text-xs font-medium">
           {(['month','week','day'] as CalView[]).map(v => (
             <button key={v} onClick={() => switchView(v)}
-              className={`px-3 py-1.5 capitalize transition-colors ${
+              className={`px-4 sm:px-3 py-2 sm:py-1.5 capitalize transition-colors ${
                 view === v ? 'bg-gray-900 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
               }`}>
               {v}
@@ -440,7 +459,7 @@ export default function CalendarClient({ tasks: initialTasks, categories }: { ta
       </div>
 
       {/* Calendar + side pane */}
-      <div className="flex flex-1 min-h-0 rounded-xl border border-gray-200 bg-white overflow-hidden">
+      <div className="flex flex-col sm:flex-row flex-1 min-h-0 rounded-xl border border-gray-200 bg-white overflow-hidden">
         <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
           <div className="flex-1 min-w-0 flex flex-col">
             {view === 'month' && (
