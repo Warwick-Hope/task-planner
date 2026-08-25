@@ -4,6 +4,7 @@ import Link from 'next/link'
 import SignOutButton from '@/components/auth/SignOutButton'
 import WorkspaceSwitcher from '@/components/nav/WorkspaceSwitcher'
 import NotificationBell from '@/components/nav/NotificationBell'
+import type { NavVariant } from '@/components/nav/SectionNav'
 
 /**
  * The chrome shared by both route groups: auth gate, workspace switcher,
@@ -17,10 +18,14 @@ import NotificationBell from '@/components/nav/NotificationBell'
  * `variant` decides only what the switcher shows as current: personal pins to the
  * personal workspace, household leaves a hint that the switcher refines from the
  * pathname on the client.
+ *
+ * `nav` is a render function rather than an element because the header needs the
+ * same nav in two shapes — inline in the bar on desktop, as a swipeable strip
+ * under it on a phone — and only one of the two is ever mounted.
  */
 export interface AppShellProps {
   variant: 'personal' | 'household'
-  nav: React.ReactNode
+  nav: (navVariant: NavVariant) => React.ReactNode
   children: React.ReactNode
 }
 
@@ -93,26 +98,31 @@ export default async function AppShell({ variant, nav, children }: AppShellProps
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+      {/* Sticky on a phone: the section strip is the only way between screens,
+          so it has to survive a long task list. */}
+      <header className="sticky top-0 z-20 bg-white border-b border-gray-200">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3 md:gap-4 min-w-0">
             <Link
               href="/dashboard"
-              className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors"
+              className="text-sm font-semibold text-gray-900 hover:text-blue-600 transition-colors shrink-0"
             >
               Clarity
             </Link>
             <WorkspaceSwitcher current={current} all={switcherWorkspaces} />
-            {nav}
+            <div className="hidden md:block">{nav('inline')}</div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 sm:gap-3 shrink-0">
             <NotificationBell initial={pendingAssignments} />
-            <span className="text-xs text-gray-400">{profile.display_name ?? user.email}</span>
+            <span className="hidden sm:block text-xs text-gray-400 max-w-[10rem] truncate">
+              {profile.display_name ?? user.email}
+            </span>
             <SignOutButton />
           </div>
         </div>
+        <div className="md:hidden border-t border-gray-100 px-4">{nav('strip')}</div>
       </header>
-      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">{children}</main>
+      <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-6 sm:py-8">{children}</main>
     </div>
   )
 }

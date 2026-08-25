@@ -42,14 +42,14 @@ export default function WorkspaceSwitcher({ current: currentHint, all }: Props) 
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
+        className="flex items-center gap-1.5 rounded-md px-2.5 py-2 sm:py-1 min-h-[40px] sm:min-h-0 text-sm font-medium text-gray-700 hover:bg-gray-100 transition-colors"
       >
         <span
           className={`w-2 h-2 rounded-full flex-shrink-0 ${
             current.type === 'household' ? 'bg-green-500' : 'bg-blue-500'
           }`}
         />
-        <span className="max-w-[140px] truncate">{current.name}</span>
+        <span className="max-w-[7rem] sm:max-w-[140px] truncate">{current.name}</span>
         <svg className="w-3 h-3 text-gray-400 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
         </svg>
@@ -76,7 +76,7 @@ export default function WorkspaceSwitcher({ current: currentHint, all }: Props) 
                   key={w.id}
                   href={w.href}
                   onClick={() => setOpen(false)}
-                  className="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
                   <span
                     className={`w-2 h-2 rounded-full flex-shrink-0 ${
@@ -94,7 +94,7 @@ export default function WorkspaceSwitcher({ current: currentHint, all }: Props) 
           <Link
             href="/household/create"
             onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-blue-600 hover:bg-gray-50 transition-colors"
+            className="flex items-center gap-2 px-3 py-2.5 text-sm text-gray-400 hover:text-blue-600 hover:bg-gray-50 transition-colors"
           >
             + New household
           </Link>

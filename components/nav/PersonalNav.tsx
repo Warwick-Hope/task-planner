@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import SectionNav, { type NavVariant } from '@/components/nav/SectionNav'
 
 const SECTIONS = [
   { label: 'Dashboard', href: '/dashboard' },
@@ -13,25 +13,14 @@ const SECTIONS = [
   { label: 'Mission', href: '/mission' },
 ]
 
-export default function PersonalNav() {
+export default function PersonalNav({ variant }: { variant: NavVariant }) {
   const pathname = usePathname()
 
-  return (
-    <nav className="flex items-center gap-4">
-      {SECTIONS.map(({ label, href }) => {
-        const active = pathname === href || (href !== '/dashboard' && pathname.startsWith(href))
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={`text-sm transition-colors ${
-              active ? 'text-gray-900 font-medium' : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            {label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
+  const items = SECTIONS.map(({ label, href }) => ({
+    label,
+    href,
+    active: pathname === href || (href !== '/dashboard' && pathname.startsWith(href)),
+  }))
+
+  return <SectionNav items={items} variant={variant} />
 }

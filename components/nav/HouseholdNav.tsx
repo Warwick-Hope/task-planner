@@ -1,7 +1,7 @@
 'use client'
 
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import SectionNav, { type NavVariant } from '@/components/nav/SectionNav'
 
 const SECTIONS = [
   { label: 'Dashboard', segment: '' },
@@ -13,7 +13,7 @@ const SECTIONS = [
   { label: 'Categories', segment: 'categories' },
 ]
 
-export default function HouseholdNav() {
+export default function HouseholdNav({ variant }: { variant: NavVariant }) {
   const pathname = usePathname()
 
   // Extract household ID from /household/[id]/...
@@ -22,28 +22,13 @@ export default function HouseholdNav() {
 
   if (!householdId) return null
 
-  return (
-    <nav className="flex items-center gap-4">
-      {SECTIONS.map(({ label, segment }) => {
-        const href = segment ? `/household/${householdId}/${segment}` : `/household/${householdId}`
-        const active = segment
-          ? pathname.startsWith(`/household/${householdId}/${segment}`)
-          : pathname === `/household/${householdId}`
+  const items = SECTIONS.map(({ label, segment }) => ({
+    label,
+    href: segment ? `/household/${householdId}/${segment}` : `/household/${householdId}`,
+    active: segment
+      ? pathname.startsWith(`/household/${householdId}/${segment}`)
+      : pathname === `/household/${householdId}`,
+  }))
 
-        return (
-          <Link
-            key={segment}
-            href={href}
-            className={`text-sm transition-colors ${
-              active
-                ? 'text-gray-900 font-medium'
-                : 'text-gray-500 hover:text-gray-900'
-            }`}
-          >
-            {label}
-          </Link>
-        )
-      })}
-    </nav>
-  )
+  return <SectionNav items={items} variant={variant} />
 }
