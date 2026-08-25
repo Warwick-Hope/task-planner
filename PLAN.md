@@ -27,9 +27,10 @@ on 17 Aug 2026. On 25 Aug 2026 four pieces landed in a row: the Playwright smoke
 consolidation refactor, the RLS `initplan` rewrite, and the Phase 4.1 mobile pass — **all four
 merged, and 4.1 auto-deployed to prod on merge. It has not yet been checked on a real phone.**
 The documents were retrofitted to the standard set the same day, and Phase 4.2, the PWA, merged
-that evening. **The app was then used on a real handset for the first time**, which produced two
-findings — a section nav you had to scroll to see, and no way to install from inside the app —
-both fixed on PR #15. The next build item is 4.3, web push.
+that evening. **The app was then used on a real handset for the first time**, which produced
+three findings in an hour — a section nav you had to scroll to see, no install offer, and a
+production invitation link with no host on it — all fixed on PRs #15 and #16. Clarity is now
+installed on Android and running standalone. The next build item is 4.3, web push.
 
 1. ✅ **Phases 0–3** — schema rebuild, personal workspace, household foundation, cleaning /
    shopping / meals. Live on prod. Detail in §Phases.
@@ -58,12 +59,18 @@ both fixed on PR #15. The next build item is 4.3, web push.
    middleware matcher, without which Chrome's install fails silently ([KB.md](KB.md) #31).
    Verified against the live URL with `npm run verify:pwa`: the manifest parses, the worker
    activates, the offline page works, and the cache holds nothing user-specific.
-10. 🔄 **Real-phone fixes — PR #15.** The first use on an actual handset produced two findings,
-    both now fixed: the 4.1 section nav had to be scrolled sideways to reach half the app, so
-    below `md` it is a bottom tab bar with a More sheet ([KB.md](KB.md) #34); and nothing in the
-    app offered to install it, so that sheet now carries an install row driven by
-    `beforeinstallprompt` ([KB.md](KB.md) #35). **4.2 is not signed off until the install itself
-    has been done on the handset** (§Open items 1).
+10. ✅ **Real-phone fixes — PRs #15 and #16, merged 25 Aug 2026.** Using the app on an actual
+    handset produced three findings in an hour, none of which any automated check had caught.
+    The 4.1 section nav had to be scrolled sideways to reach half the app, so below `md` it is
+    now a bottom tab bar with a More sheet ([KB.md](KB.md) #34). Nothing in the app offered to
+    install it — and the reason the *browser* was not offering either was our own
+    `preventDefault()` on `beforeinstallprompt`, which suppresses exactly that
+    ([KB.md](KB.md) #35). And every invitation link created on production was a bare
+    `/invite/<token>`, because it was built from `NEXT_PUBLIC_APP_URL`, which is set in
+    `.env.local` and in CI and not in production ([KB.md](KB.md) #36).
+
+    **The app is installed on an Android handset and running standalone**, and the invitation
+    link was confirmed correct on production after #16 deployed.
 11. ⏭ **Next — Phase 4.3, web push notifications.** Task reminders and assignment
     notifications. It needs a registered service worker, which 4.2 provides.
 12. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
@@ -223,7 +230,7 @@ paper. Met.
 | # | Item | State |
 |---|---|---|
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
-| 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — install unconfirmed on a handset |
+| 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
 | 4.3 | Web push notifications — reminders, assignments | Next |
 | 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Not started |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
@@ -311,12 +318,15 @@ that last one is the check that would catch a well-meant change starting to cach
 
 ## Open items to resolve as we go
 
-1. **Finish the real-phone pass.** The first look happened 25 Aug 2026 and immediately found two
-   things no automated check could: the section nav had to be scrolled sideways to reach half the
-   app, and nothing in the app offered to install it. Both are fixed on PR #15 — so the claim
-   that a viewport test is not a handset now has evidence behind it. **Still outstanding:** once
-   PR #15 deploys, install from the More sheet, confirm it launches standalone with the right
-   icon, and use it for a day.
+1. **Use it for a week, not an hour.** The first handset session on 25 Aug 2026 found three
+   things no automated check had (§Where we are, item 10) — a hit rate that says the remaining
+   bugs of that kind are found by use, not by another test. The app is installed and running
+   standalone; what is left is living with it.
+
+   One thing genuinely cannot be re-checked on that device: **whether the browser now makes the
+   install offer itself**, since it is already installed and Chrome will not offer again. If it
+   matters, confirm it from a second device or a fresh browser profile — or accept the code
+   reading, which is that suppressing it was the only thing stopping it ([KB.md](KB.md) #35).
 2. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
 3. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
@@ -384,3 +394,12 @@ re-litigated.**
   phase, where a real local store would be the answer rather than an HTTP cache. Production-only
   registration is separate and practical: dev chunk URLs are not content-hashed, so a worker in
   development would serve stale JavaScript over a hot reload ([KB.md](KB.md) #32).
+
+- **25 Aug 2026** — the browser makes the install offer; the in-app row is a backstop. The
+  capture script for `beforeinstallprompt` originally called `preventDefault()`, which is what
+  every tutorial does so the page can present its own button — and which suppresses the address
+  bar icon on desktop and the prompt on Android. That traded the offer people already recognise
+  for one they have to go looking for, and the first thing said about it on a real phone was
+  that it should behave like the desktop. The default is left alone now. The row in the More
+  sheet stays, because iOS Safari never fires the event and some Android browsers only offer
+  install through their own menu ([KB.md](KB.md) #35).
