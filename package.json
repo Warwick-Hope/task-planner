@@ -8,6 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
+    "build:icons": "node scripts/generate-icons.mjs",
+    "verify:pwa": "node scripts/verify-pwa.mjs",
     "check:docs": "node scripts/check-docs.mjs",
     "setup:hooks": "git config core.hooksPath .githooks && git config core.longpaths true && git config credential.https://github.com.username Warwick-Hope",
     "test:e2e": "playwright test",

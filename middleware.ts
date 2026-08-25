@@ -63,8 +63,15 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except static files and images
+     * Match all request paths except static files, images, and the three files
+     * the PWA install depends on.
+     *
+     * manifest.webmanifest, sw.js and offline.html must all answer for a visitor
+     * with no session: Chrome fetches the manifest and the worker script outside
+     * any page context, and a 307 to /login is neither a manifest nor JavaScript,
+     * so the install silently fails. They expose nothing — static files with no
+     * user data on them.
      */
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!_next/static|_next/image|favicon.ico|manifest.webmanifest|sw.js|offline.html|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 }
