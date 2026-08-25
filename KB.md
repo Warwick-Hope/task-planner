@@ -103,6 +103,9 @@ Every entry, in number order. Statuses are the point of this table.
 | 28 | A push to `main` is a production deploy | Git and deploy | Live |
 | 29 | `git branch -d` refuses after a squash merge | Git and deploy | Live |
 | 30 | Worktrees go outside the repository | Git and deploy | Live |
+| 31 | The PWA's three files must be exempt from the middleware matcher | Auth, RLS and security | Live |
+| 32 | The service worker caches no user data, and registers in production only | The app | Live |
+| 33 | Editing `next.config.mjs` wedges a running dev server, and Playwright reuses it | The e2e suite | Live |
 
 ---
 
@@ -262,6 +265,21 @@ column rule; a trigger would be needed to enforce it in the database.
 This is why `e2e/invite.spec.ts` pins the distinction explicitly: a restricted member **may**
 tick a shopping item off but **may not** rename it. Nothing else would catch that regressing.
 
+### 31. The PWA's three files must be exempt from the middleware matcher
+
+`manifest.webmanifest`, `sw.js` and `offline.html` are fetched **outside any page context** —
+Chrome reads the manifest and the worker script itself, with no session in hand. The middleware
+matcher excludes `_next/static` and image extensions, so all three were matched, and a
+session-less request was answered with a 307 to `/login`.
+
+A redirect is neither a manifest nor JavaScript, so the install fails — and it fails *quietly*:
+no console error worth reading, no failed request in the network tab that looks wrong, just an
+app Chrome declines to offer to install. All three are now named in the matcher's negative
+lookahead, alongside the `/invite/` exemption (#7).
+
+They expose nothing: static files with no user data on them. `e2e/pwa.spec.ts` asserts each one
+answers **logged out**, which is the only state in which this breaks.
+
 ---
 
 ## The e2e suite
@@ -342,6 +360,23 @@ project would turn `verify` red for reasons unrelated to the code.
 The config already reads `E2E_BASE_URL` and the credentials from the environment, so enabling
 it later is a workflow file plus two repository secrets. Revisit alongside the Pro decision.
 
+### 33. Editing `next.config.mjs` wedges a running dev server, and Playwright reuses it
+
+Symptom: every spec fails in `auth.setup.ts` with *"Sign-in neither succeeded nor errored"* — the
+sign-in button does nothing, no inline error appears, and the page sits on `/login`. Nothing in
+the diff touched auth, and the same suite passed twenty minutes earlier.
+
+Cause: `next.config.mjs` had been edited while a dev server was running. Next restarts itself on
+a config change and the restarted server was left half-alive. Playwright's `webServer` is
+configured `reuseExistingServer: !isCI`, so it attached to that broken server rather than
+starting a healthy one, and the failure surfaced as an auth problem.
+
+**Fix: kill whatever is listening on 3000 and re-run.** `netstat -ano | grep ":3000 "` then
+`taskkill //F //PID <pid>`. Suspect this whenever the whole suite fails at setup after a change
+to `next.config.mjs`, `middleware.ts` or anything else Next reads once at boot — and check the
+dev server before reading anything into the error message, which describes a symptom rather than
+a cause.
+
 ---
 
 ## The app
@@ -405,6 +440,28 @@ All such controls now show unconditionally below `md`. `mobile.spec.ts` asserts 
 edit and delete controls are visible without a hover, which is the guard on this class of bug
 coming back. Task rows also stack category and horizon under the title where the columns are
 hidden, and the calendar and planner sidebars stack rather than taking 224px beside the grid.
+
+### 32. The service worker caches no user data, and registers in production only
+
+`public/sw.js` exists to make the app installable and to fail politely with no signal. It is
+**not** an offline cache, and adding pages or API responses to it would be a bug, not an
+improvement: every page is server-rendered per user and every API response is that user's live
+data, so a cached copy is planning data that looks current and is not. An error tells you to try
+again; stale data gets acted on.
+
+What it caches is Next's `/_next/static/` assets — whose URLs carry a content hash, so a hit can
+never be the wrong version — plus `/offline.html` and one icon, precached at install. Everything
+else is not handled by the fetch listener at all, which sends it straight to the network.
+`npm run verify:pwa` asserts the cache holds nothing else; that check is the guard.
+
+**Registration is production-only** (`components/pwa/ServiceWorkerRegistration.tsx`). Dev chunk
+URLs are *not* content-hashed, so the same cache-first rule in development would serve yesterday's
+JavaScript over a hot reload. The consequence for testing: the Playwright suite runs against
+`npm run dev` and therefore never registers the worker, so registration is verified separately
+against a production build — see `PLAN.md` §Verification.
+
+Bump `VERSION` in `sw.js` when its caching behaviour changes; `activate` deletes every older
+`clarity-static-*` cache.
 
 ---
 

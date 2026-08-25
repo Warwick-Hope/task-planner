@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -16,6 +17,21 @@ const geistMono = localFont({
 export const metadata: Metadata = {
   title: "Clarity",
   description: "Personal planning and household coordination",
+  applicationName: "Clarity",
+  // iOS ignores the manifest and reads these instead, so an install from Safari
+  // still opens without browser chrome and with the right home-screen artwork.
+  appleWebApp: {
+    capable: true,
+    title: "Clarity",
+    statusBarStyle: "default",
+  },
+  icons: {
+    icon: [
+      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
 };
 
 // No maximumScale/userScalable — pinch zoom stays available.
@@ -36,6 +52,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         {children}
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

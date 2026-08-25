@@ -26,8 +26,9 @@ Phases 0 to 3 are complete and running in production at
 on 17 Aug 2026. On 25 Aug 2026 four pieces landed in a row: the Playwright smoke suite, the
 consolidation refactor, the RLS `initplan` rewrite, and the Phase 4.1 mobile pass — **all four
 merged, and 4.1 auto-deployed to prod on merge. It has not yet been checked on a real phone.**
-The documents were retrofitted to the standard set the same day. The next build item is 4.2,
-the PWA.
+The documents were retrofitted to the standard set the same day. Phase 4.2, the PWA, is
+code-complete on PR #14 — and the install has not been checked on a handset either, for the
+same reason (§Open items 1). The next build item after it is 4.3, web push.
 
 1. ✅ **Phases 0–3** — schema rebuild, personal workspace, household foundation, cleaning /
    shopping / meals. Live on prod. Detail in §Phases.
@@ -50,15 +51,20 @@ the PWA.
 8. ✅ **Documentation retrofitted to the standard set** — PR #12, merged 25 Aug 2026. Status,
    knowledge, contribution rules and schema split out of `CLAUDE.md`; `npm run check:docs` runs
    in CI ahead of lint.
-9. ⏭ **Next — Phase 4.2, Progressive Web App.** Manifest, service worker, installable on
-   Android. *Done* means the prod URL installs to an Android home screen and launches
-   standalone.
-10. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+9. 🔄 **Phase 4.2 — Progressive Web App.** Code-complete on `feat/phase-4-2-pwa`, open as
+   PR #14 since 25 Aug 2026. Manifest, icon set, service worker, offline page. The worker is
+   deliberately **not** an offline cache ([KB.md](KB.md) #32), and the three install files are
+   exempt from the middleware matcher, without which Chrome's install fails silently
+   ([KB.md](KB.md) #31). *Done* means the **prod** URL installs to an Android home screen and
+   launches standalone — that needs the merge and a handset, so it is not done yet.
+10. ⏭ **Next — Phase 4.3, web push notifications.** Task reminders and assignment
+    notifications. It needs a registered service worker, which 4.2 provides.
+11. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-11. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
-    until an external user exists. None block 4.2.
+12. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+    until an external user exists. None block 4.3.
 
 ---
 
@@ -210,8 +216,8 @@ paper. Met.
 | # | Item | State |
 |---|---|---|
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
-| 4.2 | Progressive Web App — manifest, service worker, installable | Next |
-| 4.3 | Web push notifications — reminders, assignments | Not started |
+| 4.2 | Progressive Web App — manifest, service worker, installable | 🔄 PR #14 open |
+| 4.3 | Web push notifications — reminders, assignments | Next |
 | 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Not started |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
@@ -253,6 +259,7 @@ npm run lint          # ESLint: next/core-web-vitals, next/typescript, prettier
 npm run build         # production build — also type-checks, since noEmit + strict
 npm run test:e2e      # Playwright suite; starts the dev server itself
 npm run check:docs    # the documentation guard
+npm run verify:pwa    # the PWA, against a production build — see below
 ```
 
 `npm run lint` and `npm run build` are what CI's `verify` job runs on every PR. There is **no
@@ -277,15 +284,33 @@ Properties that must hold, because they are what catch the bugs that look fine o
 - **Migrations are idempotent and announce what they change** — the `initplan` rewrite reads
   `pg_policies` rather than listing policies by hand ([KB.md](KB.md) #10).
 
+**The PWA is verified in two halves, because the suite cannot see all of it.** `e2e/pwa.spec.ts`
+covers what the dev server can prove, all of it logged out — the manifest, the worker script,
+the offline page and the icons are served rather than redirected to `/login`, and every page
+links the manifest. Registration itself is production-only ([KB.md](KB.md) #32), so it is
+checked by `npm run verify:pwa` against a real build:
+
+```bash
+npm run build
+npx next start -p 3100     # in another shell
+npm run verify:pwa         # BASE=<url> to point it at a deployment
+```
+
+It asserts Chrome parses the manifest without errors, the worker reaches `activated`, a failed
+navigation lands on the offline page, and **nothing but hashed build assets is in the cache** —
+that last one is the check that would catch a well-meant change starting to cache user data.
+
 ---
 
 ## Open items to resolve as we go
 
-1. **Check 4.1 on a real phone.** It is merged and deployed; what has not happened is anyone
-   using it on an actual handset. A Pixel 5 viewport in Chromium catches layout overflow and
-   missing controls — it does not catch a tap target that is technically 44px and still awkward,
-   or a scroll that fights the browser chrome. Do this before starting 4.2, because the PWA
-   makes the phone the primary device.
+1. **Use it on a real phone — 4.1's layouts and 4.2's install.** 4.1 is merged and deployed,
+   4.2 is on PR #14; what has not happened is anyone holding a handset. A Pixel 5 viewport in
+   Chromium catches layout overflow and missing controls, and `npm run verify:pwa` catches a
+   broken manifest — neither catches a tap target that is technically 44px and still awkward, a
+   scroll that fights the browser chrome, or a home-screen icon nobody recognises. Once 4.2 is
+   merged: open <https://task-planner-nine-sigma.vercel.app> in Chrome on Android, install it
+   from the ⋮ menu, and use it for a day.
 2. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
 3. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
@@ -344,3 +369,12 @@ re-litigated.**
   card. The trigger was measured drift: `CLAUDE.md` listed two security items as open that
   `SECURITY_HARDENING.md` had already closed or reclassified, and named the wrong dashboard
   location for one of them.
+
+- **25 Aug 2026** — the service worker is **not** an offline cache, and registers in production
+  only. Every page is server-rendered per user and every API response is that user's live data,
+  so a cached copy is planning data that looks current and is not — worse than an error, because
+  you act on it. It therefore caches only Next's content-hashed build assets, where a hit cannot
+  be the wrong version, plus a static offline page. Offline-first stays deferred to the Android
+  phase, where a real local store would be the answer rather than an HTTP cache. Production-only
+  registration is separate and practical: dev chunk URLs are not content-hashed, so a worker in
+  development would serve stale JavaScript over a hot reload ([KB.md](KB.md) #32).

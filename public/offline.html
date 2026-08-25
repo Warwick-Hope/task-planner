@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline — Clarity</title>
+    <!--
+      Shown by the service worker when a page request fails outright, which on a
+      phone means no signal. Deliberately a static file with no data on it: the
+      app's pages are per-user and are never cached, so there is nothing to show
+      but an explanation and a retry.
+    -->
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f9fafb;
+        color: #111827;
+        font-family: Arial, Helvetica, sans-serif;
+        padding: 1.5rem;
+      }
+      main {
+        max-width: 22rem;
+        text-align: center;
+      }
+      img {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+      }
+      h1 {
+        margin: 1.25rem 0 0.5rem;
+        font-size: 1.125rem;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        font-size: 0.875rem;
+        color: #6b7280;
+        line-height: 1.5;
+      }
+      button {
+        border: 0;
+        border-radius: 0.5rem;
+        background: #2563eb;
+        color: #fff;
+        font-size: 0.875rem;
+        font-weight: 500;
+        padding: 0.75rem 1.25rem;
+        min-height: 44px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <img src="/icon-192.png" alt="" />
+      <h1>You're offline</h1>
+      <p>
+        Clarity needs a connection — your tasks live on the server, so there is nothing
+        cached to show you. It will work again as soon as you have signal.
+      </p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
