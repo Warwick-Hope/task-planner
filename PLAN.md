@@ -26,9 +26,10 @@ Phases 0 to 3 are complete and running in production at
 on 17 Aug 2026. On 25 Aug 2026 four pieces landed in a row: the Playwright smoke suite, the
 consolidation refactor, the RLS `initplan` rewrite, and the Phase 4.1 mobile pass — **all four
 merged, and 4.1 auto-deployed to prod on merge. It has not yet been checked on a real phone.**
-The documents were retrofitted to the standard set the same day. Phase 4.2, the PWA, is
-code-complete on PR #14 — and the install has not been checked on a handset either, for the
-same reason (§Open items 1). The next build item after it is 4.3, web push.
+The documents were retrofitted to the standard set the same day, and Phase 4.2, the PWA, merged
+that evening. **The app was then used on a real handset for the first time**, which produced two
+findings — a section nav you had to scroll to see, and no way to install from inside the app —
+both fixed on PR #15. The next build item is 4.3, web push.
 
 1. ✅ **Phases 0–3** — schema rebuild, personal workspace, household foundation, cleaning /
    shopping / meals. Live on prod. Detail in §Phases.
@@ -51,19 +52,25 @@ same reason (§Open items 1). The next build item after it is 4.3, web push.
 8. ✅ **Documentation retrofitted to the standard set** — PR #12, merged 25 Aug 2026. Status,
    knowledge, contribution rules and schema split out of `CLAUDE.md`; `npm run check:docs` runs
    in CI ahead of lint.
-9. 🔄 **Phase 4.2 — Progressive Web App.** Code-complete on `feat/phase-4-2-pwa`, open as
-   PR #14 since 25 Aug 2026. Manifest, icon set, service worker, offline page. The worker is
-   deliberately **not** an offline cache ([KB.md](KB.md) #32), and the three install files are
-   exempt from the middleware matcher, without which Chrome's install fails silently
-   ([KB.md](KB.md) #31). *Done* means the **prod** URL installs to an Android home screen and
-   launches standalone — that needs the merge and a handset, so it is not done yet.
-10. ⏭ **Next — Phase 4.3, web push notifications.** Task reminders and assignment
+9. ✅ **Phase 4.2 — Progressive Web App.** PR #14, merged 25 Aug 2026 and auto-deployed.
+   Manifest, icon set, service worker, offline page. The worker is deliberately **not** an
+   offline cache ([KB.md](KB.md) #32), and the three install files are exempt from the
+   middleware matcher, without which Chrome's install fails silently ([KB.md](KB.md) #31).
+   Verified against the live URL with `npm run verify:pwa`: the manifest parses, the worker
+   activates, the offline page works, and the cache holds nothing user-specific.
+10. 🔄 **Real-phone fixes — PR #15.** The first use on an actual handset produced two findings,
+    both now fixed: the 4.1 section nav had to be scrolled sideways to reach half the app, so
+    below `md` it is a bottom tab bar with a More sheet ([KB.md](KB.md) #34); and nothing in the
+    app offered to install it, so that sheet now carries an install row driven by
+    `beforeinstallprompt` ([KB.md](KB.md) #35). **4.2 is not signed off until the install itself
+    has been done on the handset** (§Open items 1).
+11. ⏭ **Next — Phase 4.3, web push notifications.** Task reminders and assignment
     notifications. It needs a registered service worker, which 4.2 provides.
-11. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+12. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-12. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+13. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
     until an external user exists. None block 4.3.
 
 ---
@@ -216,7 +223,7 @@ paper. Met.
 | # | Item | State |
 |---|---|---|
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
-| 4.2 | Progressive Web App — manifest, service worker, installable | 🔄 PR #14 open |
+| 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — install unconfirmed on a handset |
 | 4.3 | Web push notifications — reminders, assignments | Next |
 | 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Not started |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
@@ -304,13 +311,12 @@ that last one is the check that would catch a well-meant change starting to cach
 
 ## Open items to resolve as we go
 
-1. **Use it on a real phone — 4.1's layouts and 4.2's install.** 4.1 is merged and deployed,
-   4.2 is on PR #14; what has not happened is anyone holding a handset. A Pixel 5 viewport in
-   Chromium catches layout overflow and missing controls, and `npm run verify:pwa` catches a
-   broken manifest — neither catches a tap target that is technically 44px and still awkward, a
-   scroll that fights the browser chrome, or a home-screen icon nobody recognises. Once 4.2 is
-   merged: open <https://task-planner-nine-sigma.vercel.app> in Chrome on Android, install it
-   from the ⋮ menu, and use it for a day.
+1. **Finish the real-phone pass.** The first look happened 25 Aug 2026 and immediately found two
+   things no automated check could: the section nav had to be scrolled sideways to reach half the
+   app, and nothing in the app offered to install it. Both are fixed on PR #15 — so the claim
+   that a viewport test is not a handset now has evidence behind it. **Still outstanding:** once
+   PR #15 deploys, install from the More sheet, confirm it launches standalone with the right
+   icon, and use it for a day.
 2. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
 3. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
