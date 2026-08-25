@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { ROLE_COLOURS } from '@/lib/constants'
-import type { Category } from '@/types'
+import type { Category } from '@/types'
+import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 interface EditState {
   id: string
@@ -64,16 +65,10 @@ export default function CategoryManager({
       .sort((a, b) => a.sort_order - b.sort_order)
   }
 
-  function colourFor(cat: Category): string {
-    if (cat.parent_id === null) return cat.colour ?? '#6B7280'
-    const parent = categories.find((c) => c.id === cat.parent_id)
-    return parent?.colour ?? '#6B7280'
-  }
-
   // ── Edit ──────────────────────────────────────────────────────────────────
 
   function startEdit(cat: Category) {
-    setEditing({ id: cat.id, name: cat.name, colour: colourFor(cat) })
+    setEditing({ id: cat.id, name: cat.name, colour: categoryColour(cat.id, categories) ?? DEFAULT_CATEGORY_COLOUR })
     setAdding(null)
     setError(null)
   }
@@ -211,7 +206,7 @@ export default function CategoryManager({
   }
 
   function renderCategory(cat: Category, isChild = false) {
-    const colour = colourFor(cat)
+    const colour = categoryColour(cat.id, categories) ?? DEFAULT_CATEGORY_COLOUR
     const isEditing = editing?.id === cat.id
     const isDeletePending = deleteConfirm === cat.id
 

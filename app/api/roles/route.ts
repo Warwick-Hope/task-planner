@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { NextResponse } from 'next/server'
 import { parseJson, badBody } from '@/lib/api'
+import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 export async function GET() {
   const supabase = createClient()
@@ -53,7 +54,7 @@ export async function POST(request: Request) {
       workspace_id: workspaceId,
       owner_id: user.id,
       name: name.trim(),
-      colour: parent_id ? '#6B7280' : (colour ?? '#6B7280'),
+      colour: parent_id ? DEFAULT_CATEGORY_COLOUR : (colour ?? DEFAULT_CATEGORY_COLOUR),
       is_shared: false,
       parent_id: parent_id ?? null,
       sort_order: count ?? 0,

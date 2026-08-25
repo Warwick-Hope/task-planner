@@ -16,7 +16,8 @@ import {
 } from '@dnd-kit/core'
 import { CSS } from '@dnd-kit/utilities'
 import type { Task, Category } from '@/types'
-import { buildHorizonFields } from '@/lib/horizon'
+import { buildHorizonFields } from '@/lib/horizon'
+import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,14 +82,8 @@ function getHorizonFieldsForDay(dateStr: string) {
 
 // ─── Task chip ────────────────────────────────────────────────────────────────
 
-function chipColour(task: Task, cats: Category[]) {
-  const cat = task.category_id ? cats.find(c => c.id === task.category_id) : null
-  const parent = cat?.parent_id ? cats.find(c => c.id === cat.parent_id) : null
-  return (parent ?? cat)?.colour ?? '#6B7280'
-}
-
 function TaskChip({ task, categories, isDragging = false }: { task: Task; categories: Category[]; isDragging?: boolean }) {
-  const colour = chipColour(task, categories)
+  const colour = categoryColour(task.category_id, categories) ?? DEFAULT_CATEGORY_COLOUR
   return (
     <div
       title={task.title}

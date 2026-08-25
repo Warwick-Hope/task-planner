@@ -5,20 +5,13 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Task, Category, TaskStatus } from '@/types'
 import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
+import { categoryColour } from '@/lib/category-colour'
 
 const STATUS_CLASS: Record<TaskStatus, string> = {
   not_started: 'text-gray-300 hover:text-gray-500',
   wip: 'text-blue-500 hover:text-blue-600',
   done: 'text-green-500 hover:text-green-600',
   cancelled: 'text-gray-300',
-}
-
-function categoryColour(task: Task, cats: Category[]): string | null {
-  if (!task.category_id) return null
-  const cat = cats.find(c => c.id === task.category_id)
-  if (!cat) return null
-  const parent = cat.parent_id ? cats.find(c => c.id === cat.parent_id) : null
-  return (parent ?? cat).colour ?? '#6B7280'
 }
 
 export default function DashboardTaskRow({
@@ -32,7 +25,7 @@ export default function DashboardTaskRow({
   const [task, setTask]     = useState(initial)
   const [toggling, setToggling] = useState(false)
 
-  const colour = categoryColour(task, categories)
+  const colour = categoryColour(task.category_id, categories)
 
   async function toggle() {
     if (toggling) return

@@ -7,14 +7,7 @@ import type { Task, Category } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
 import AssignButton from './AssignButton'
 import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
-
-function colourFor(categoryId: string, allCategories: Category[]): string {
-  const cat = allCategories.find((c) => c.id === categoryId)
-  if (!cat) return '#6B7280'
-  if (cat.parent_id === null) return cat.colour ?? '#6B7280'
-  const parent = allCategories.find((c) => c.id === cat.parent_id)
-  return parent?.colour ?? '#6B7280'
-}
+import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 interface Member {
   id: string
@@ -53,7 +46,7 @@ export default function HouseholdTaskRow({
 
   const statusConfig = STATUS_DISPLAY[task.status]
   const category = task.category_id ? allCategories.find((c) => c.id === task.category_id) ?? null : null
-  const categoryColour = category ? colourFor(category.id, allCategories) : null
+  const dotColour = category ? categoryColour(category.id, allCategories) ?? DEFAULT_CATEGORY_COLOUR : null
   const horizonLabel = formatHorizon(task)
   const isUnplanned = horizonLabel === 'Unplanned'
 
@@ -101,8 +94,8 @@ export default function HouseholdTaskRow({
 
       {/* Category chip */}
       <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-        {category && categoryColour && (
-          <span className="rounded-full px-2 py-0.5 text-xs text-white font-medium" style={{ backgroundColor: categoryColour }}>
+        {category && dotColour && (
+          <span className="rounded-full px-2 py-0.5 text-xs text-white font-medium" style={{ backgroundColor: dotColour }}>
             {category.name}
           </span>
         )}
