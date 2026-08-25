@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "format": "prettier --write .",
-    "setup:hooks": "git config core.hooksPath .githooks && git config core.longpaths true"
+    "setup:hooks": "git config core.hooksPath .githooks && git config core.longpaths true && git config credential.https://github.com.username Warwick-Hope"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.91.0",

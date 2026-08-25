@@ -277,7 +277,7 @@ A push to `main` is a production deploy — Vercel publishes `task-planner-nine-
 ### One-time setup, per clone
 
 ```bash
-npm run setup:hooks   # core.hooksPath → .githooks (pre-push refuses main); core.longpaths true
+npm run setup:hooks   # core.hooksPath → .githooks; core.longpaths true; pins the GitHub account
 ```
 
 ### The flow
@@ -301,7 +301,14 @@ gh pr merge --squash        # remote branch auto-deletes
 - The repo is squash-only and takes the **PR title as the squash-commit subject, PR body as its message** — write the title as an imperative commit subject.
 - After the squash merge: `git branch -D <type>/<slug>` locally (`-d` refuses — squash commits aren't ancestors of `main`), then `git worktree remove` + delete the folder if one was used.
 - **No force push.** Emergency direct push to `main` (broken prod needing an instant revert): `TP_ALLOW_MAIN_PUSH=1 git push origin main` — say why in the commit message. Reaching for it twice means the branch model is wrong; fix it instead.
-- **Git identity** — repo-local config: `user.email = warwickhope93@gmail.com`, `user.name = Warwick-Hope`; credential helper is repo-local `gh` with active account Warwick-Hope. Global git config is Plant Plan — never change global.
+- **Git identity** — repo-local config: `user.email = warwickhope93@gmail.com`, `user.name = Warwick-Hope`. Global git config is Plant Plan — never change global.
+- **GitHub account pinning** — there are two GitHub accounts on this machine (personal `Warwick-Hope`, secondary `WarwickHope`), and **`gh auth switch` changes the active account globally**. Working on a business repo therefore leaves the wrong account active here, and the next push fails with a bare `403` that names no cause. The fix is repo-local:
+
+  ```bash
+  git config --local credential.https://github.com.username Warwick-Hope
+  ```
+
+  Git passes that as a hint to `gh auth git-credential`, and gh returns *that* account's token no matter which one is globally active — verified by asking the helper directly with the wrong account active. `npm run setup:hooks` sets it, and the pre-push hook refuses to push if the pin is missing or names an account `gh` isn't logged into. **Never fix a 403 with `gh auth switch`** — that just moves the breakage to the other repo. Pin both sides instead.
 
 ---
 
