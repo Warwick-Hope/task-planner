@@ -1,6 +1,13 @@
 import type { Page, Locator } from '@playwright/test'
 
 /**
+ * Saved sessions written by auth.setup.ts. They live here rather than in the
+ * setup file because Playwright forbids a spec from importing a setup file.
+ */
+export const OWNER_STATE = 'e2e/.auth/user.json'
+export const INVITEE_STATE = 'e2e/.auth/user2.json'
+
+/**
  * A task row in the list.
  *
  * Rows are plain divs carrying Tailwind's `group` marker — not list items, which
