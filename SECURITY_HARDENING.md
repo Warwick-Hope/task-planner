@@ -223,9 +223,12 @@ table).
       with a real token, after the middleware fix above.
 - [x] Brain dump parses; the 10,000-character cap holds in the textarea and the server returns
       413 above it.
-- [ ] Restricted-member write to a room/meal/shopping item returns 403. **Not tested** — needs
-      a second account invited as `restricted`, which does not exist yet. RLS covers it at the
-      database layer regardless.
+- [x] Restricted-member write to a room/meal/shopping item returns 403. **Now covered by the
+      Playwright suite** (`e2e/invite.spec.ts`), which invites a second account as `restricted`,
+      accepts, then asserts 200 on a read and 403 on creating a room, creating a meal, adding a
+      child profile and clearing the shopping list. It also pins the deliberately nuanced rule:
+      a restricted member **may** tick a shopping item off but **may not** rename it — a
+      distinction that lives only in the route layer, so nothing else would catch it regressing.
 - [ ] Supabase dashboard → Advisors (Security + Performance) on dev after the migrations — MCP
       lacks permission to run these, so it's a dashboard step.
 - [x] Delete `components/tasks/TaskPreviewPanel.tsx` (168 lines, never imported) while here.

@@ -73,3 +73,67 @@ test('a household route refuses a non-member', async ({ browser, request }) => {
   expect(response.status(), 'a non-member must not read household tasks').toBe(403)
   await outsider.close()
 })
+
+/**
+ * The restricted-member rules, which are enforced in the route layer rather than
+ * by RLS — RLS checks membership, not role. The security spec flagged this as
+ * untested because it needs a second account in a second role; it does now.
+ *
+ * Includes the one deliberately nuanced rule: a restricted member may tick a
+ * shopping item off, but may not rename it. That distinction exists only in
+ * app/api/household/[id]/shopping/[itemId], so nothing else would catch it
+ * regressing.
+ */
+test('a restricted member can read but not write', async ({ request, browser }) => {
+  const householdName = `[e2e] restricted household ${Date.now()}`
+  const inviteeEmail = process.env.E2E_USER2_EMAIL
+
+  const created = await request.post('/api/household', { data: { name: householdName } })
+  expect(created.ok()).toBe(true)
+  const { workspaceId } = await created.json()
+
+  const invited = await request.post(`/api/household/${workspaceId}/invite`, {
+    data: { email: inviteeEmail, role: 'restricted' },
+  })
+  expect(invited.ok(), `invite failed: ${invited.status()}`).toBe(true)
+  const { token } = await invited.json()
+
+  const context = await browser.newContext({ storageState: INVITEE_STATE })
+  const memberPage = await context.newPage()
+  await memberPage.goto(`/invite/${token}`)
+  await memberPage.getByRole('button', { name: 'Accept invitation' }).click()
+  await memberPage.waitForURL(`**/household/${workspaceId}`, { timeout: 20_000 })
+
+  const asRestricted = context.request
+  const base = `/api/household/${workspaceId}`
+
+  // Reads are allowed.
+  expect((await asRestricted.get(`${base}/rooms`)).status(), 'reading rooms').toBe(200)
+
+  // Writes are not.
+  for (const [label, call] of [
+    ['create a room', () => asRestricted.post(`${base}/rooms`, { data: { name: 'Kitchen' } })],
+    ['create a meal', () => asRestricted.post(`${base}/meals`, { data: { name: 'Pasta' } })],
+    ['add a child profile', () => asRestricted.post(`${base}/profiles`, { data: { name: 'Child' } })],
+    ['clear the shopping list', () => asRestricted.delete(`${base}/shopping?purchased=true`)],
+  ] as const) {
+    expect((await call()).status(), `restricted member should not ${label}`).toBe(403)
+  }
+
+  // The nuanced rule: ticking off is allowed, renaming is not.
+  const item = await request.post(`${base}/shopping`, { data: { name: '[e2e] milk' } })
+  expect(item.ok(), `owner could not add a shopping item: ${item.status()}`).toBe(true)
+  const { item: created_item } = await item.json()
+
+  expect(
+    (await asRestricted.patch(`${base}/shopping/${created_item.id}`, { data: { is_purchased: true } })).status(),
+    'restricted member should be able to tick an item off'
+  ).toBe(200)
+
+  expect(
+    (await asRestricted.patch(`${base}/shopping/${created_item.id}`, { data: { name: 'renamed' } })).status(),
+    'restricted member should not be able to rename an item'
+  ).toBe(403)
+
+  await context.close()
+})
