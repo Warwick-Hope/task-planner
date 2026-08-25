@@ -24,9 +24,10 @@ file wins.
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
 on 17 Aug 2026. On 25 Aug 2026 four pieces landed in a row: the Playwright smoke suite, the
-consolidation refactor, the RLS `initplan` rewrite, and the Phase 4.1 mobile pass. **The first
-three are merged; 4.1 is code-complete on PR #11 and not yet merged, so it is not yet in
-production.** The next build item is 4.2, the PWA.
+consolidation refactor, the RLS `initplan` rewrite, and the Phase 4.1 mobile pass — **all four
+merged, and 4.1 auto-deployed to prod on merge. It has not yet been checked on a real phone.**
+The documents were retrofitted to the standard set the same day. The next build item is 4.2,
+the PWA.
 
 1. ✅ **Phases 0–3** — schema rebuild, personal workspace, household foundation, cleaning /
    shopping / meals. Live on prod. Detail in §Phases.
@@ -43,17 +44,20 @@ production.** The next build item is 4.2, the PWA.
 6. ✅ **RLS `initplan` rewrite** — PR #10, merged 25 Aug 2026. 53 policies rewritten to
    `(select auth.uid())`. **Re-run the Supabase Performance advisor once this reaches prod** to
    confirm the findings clear — that has not been done.
-7. 🔄 **Phase 4.1 — mobile-optimised layouts.** Code-complete on `feat/phase-4-1-mobile-layouts`,
-   open as PR #11 since 25 Aug 2026. *Done* means: `verify` green, squash-merged, Vercel deploy
-   live, and checked on a real phone.
-8. ⏭ **Next — Phase 4.2, Progressive Web App.** Manifest, service worker, installable on
+7. ✅ **Phase 4.1 — mobile-optimised layouts.** PR #11, merged 25 Aug 2026 and auto-deployed.
+   Guarded by the `mobile-chromium` Playwright project. **Still to do: look at it on a real
+   phone** — a Pixel 5 viewport in Playwright is not the same test (§Open items 1).
+8. ✅ **Documentation retrofitted to the standard set** — PR #12, merged 25 Aug 2026. Status,
+   knowledge, contribution rules and schema split out of `CLAUDE.md`; `npm run check:docs` runs
+   in CI ahead of lint.
+9. ⏭ **Next — Phase 4.2, Progressive Web App.** Manifest, service worker, installable on
    Android. *Done* means the prod URL installs to an Android home screen and launches
    standalone.
-9. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
-   (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
-   **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
-   were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-10. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+10. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+    (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
+    **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
+    were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
+11. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
     until an external user exists. None block 4.2.
 
 ---
@@ -205,7 +209,7 @@ paper. Met.
 
 | # | Item | State |
 |---|---|---|
-| 4.1 | Mobile-optimised layouts throughout | 🔄 PR #11 open |
+| 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | Next |
 | 4.3 | Web push notifications — reminders, assignments | Not started |
 | 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Not started |
@@ -277,8 +281,11 @@ Properties that must hold, because they are what catch the bugs that look fine o
 
 ## Open items to resolve as we go
 
-1. **Merge PR #11 and deploy 4.1.** Then check it on a real phone, not just at a Pixel 5
-   viewport in Playwright.
+1. **Check 4.1 on a real phone.** It is merged and deployed; what has not happened is anyone
+   using it on an actual handset. A Pixel 5 viewport in Chromium catches layout overflow and
+   missing controls — it does not catch a tap target that is technically 44px and still awkward,
+   or a scroll that fights the browser chrome. Do this before starting 4.2, because the PWA
+   makes the phone the primary device.
 2. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
 3. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
