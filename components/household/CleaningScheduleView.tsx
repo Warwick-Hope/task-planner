@@ -1,27 +1,13 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import type { Room, Task, TaskStatus } from '@/types'
+import type { Room, Task } from '@/types'
+import { STATUS_DISPLAY } from '@/lib/task-status'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 interface Props {
   rooms: Room[]
   tasks: Task[]
   today: string
-}
-
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  not_started: 'wip',
-  wip: 'done',
-  done: 'not_started',
-  cancelled: 'not_started',
-}
-
-const STATUS_ICON: Record<TaskStatus, { icon: string; className: string }> = {
-  not_started: { icon: '○', className: 'text-gray-300 hover:text-gray-500' },
-  wip:         { icon: '◉', className: 'text-blue-500 hover:text-blue-600' },
-  done:        { icon: '✓', className: 'text-green-500 hover:text-green-600' },
-  cancelled:   { icon: '—', className: 'text-gray-300 hover:text-gray-500' },
 }
 
 function taskDate(task: Task): string | null {
@@ -58,31 +44,14 @@ function ScheduleRow({
   task: Task
   roomName: string
 }) {
-  const router = useRouter()
-  const [task, setTask] = useState(initialTask)
-  const [toggling, setToggling] = useState(false)
+  const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
 
-  async function toggle() {
-    if (toggling) return
-    const next = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask((t) => ({ ...t, status: next }))
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
-    })
-    if (!res.ok) setTask((t) => ({ ...t, status: initialTask.status }))
-    setToggling(false)
-    router.refresh()
-  }
-
-  const cfg = STATUS_ICON[task.status]
+  const cfg = STATUS_DISPLAY[task.status]
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-0 ${task.status === 'done' ? 'opacity-50' : ''}`}>
       <button
-        onClick={toggle}
+        onClick={toggleStatus}
         disabled={toggling}
         className={`text-lg leading-none shrink-0 transition-colors ${cfg.className}`}
       >

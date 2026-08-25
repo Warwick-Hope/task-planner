@@ -19,7 +19,8 @@ import {
   parseRrule,
   firstOccurrence,
 } from '@/lib/recurrence'
-import RecurrencePicker from './RecurrencePicker'
+import RecurrencePicker from './RecurrencePicker'
+import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 const PRECISIONS: HorizonPrecision[] = [
   'unplanned',
@@ -568,7 +569,7 @@ export default function TaskForm({
                 <div className="flex items-center gap-1.5 mb-1.5">
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: parent.colour ?? '#6B7280' }}
+                    style={{ backgroundColor: parent.colour ?? DEFAULT_CATEGORY_COLOUR }}
                   />
                   <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
                     {parent.name}
@@ -578,7 +579,7 @@ export default function TaskForm({
                 {children.length > 0 ? (
                   <div className="flex flex-wrap gap-2 pl-4">
                     {children.map((child) => {
-                      const colour = parent.colour ?? '#6B7280'
+                      const colour = parent.colour ?? DEFAULT_CATEGORY_COLOUR
                       const selected = selectedCategoryId === child.id
                       return (
                         <button

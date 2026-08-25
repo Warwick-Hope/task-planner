@@ -3,42 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Task, Category, TaskStatus } from '@/types'
+import type { Task, Category } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
-
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  not_started: 'wip',
-  wip: 'done',
-  done: 'not_started',
-  cancelled: 'not_started',
-}
-
-const STATUS_ICON: Record<TaskStatus, { icon: string; className: string }> = {
-  not_started: {
-    icon: '○',
-    className: 'text-gray-300 hover:text-gray-500',
-  },
-  wip: {
-    icon: '◉',
-    className: 'text-blue-500 hover:text-blue-600',
-  },
-  done: {
-    icon: '✓',
-    className: 'text-green-500 hover:text-green-600',
-  },
-  cancelled: {
-    icon: '—',
-    className: 'text-gray-300 hover:text-gray-500',
-  },
-}
-
-function colourFor(categoryId: string, allCategories: Category[]): string {
-  const cat = allCategories.find((c) => c.id === categoryId)
-  if (!cat) return '#6B7280'
-  if (cat.parent_id === null) return cat.colour ?? '#6B7280'
-  const parent = allCategories.find((c) => c.id === cat.parent_id)
-  return parent?.colour ?? '#6B7280'
-}
+import { STATUS_DISPLAY } from '@/lib/task-status'
+import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 export default function TaskRow({
   task: initialTask,
@@ -48,39 +17,19 @@ export default function TaskRow({
   allCategories: Category[]
 }) {
   const router = useRouter()
-  const [task, setTask] = useState(initialTask)
-  const [toggling, setToggling] = useState(false)
+  const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [pinning, setPinning] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
 
-  const statusConfig = STATUS_ICON[task.status]
+  const statusConfig = STATUS_DISPLAY[task.status]
   const category = task.category_id
     ? allCategories.find((c) => c.id === task.category_id) ?? null
     : null
-  const categoryColour = category ? colourFor(category.id, allCategories) : null
+  const dotColour = category ? categoryColour(category.id, allCategories) ?? DEFAULT_CATEGORY_COLOUR : null
   const horizonLabel = formatHorizon(task)
   const isUnplanned = horizonLabel === 'Unplanned'
-
-  async function toggleStatus() {
-    if (toggling) return
-    const nextStatus = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask((t) => ({ ...t, status: nextStatus }))
-
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: nextStatus }),
-    })
-
-    if (!res.ok) {
-      setTask((t) => ({ ...t, status: task.status }))
-    }
-    setToggling(false)
-    router.refresh()
-  }
 
   async function deleteTask() {
     setDeleting(true)
@@ -146,10 +95,10 @@ export default function TaskRow({
 
       {/* Category chip */}
       <div className="hidden sm:flex items-center gap-1.5 shrink-0">
-        {category && categoryColour && (
+        {category && dotColour && (
           <span
             className="rounded-full px-2 py-0.5 text-xs text-white font-medium"
-            style={{ backgroundColor: categoryColour }}
+            style={{ backgroundColor: dotColour }}
           >
             {category.name}
           </span>

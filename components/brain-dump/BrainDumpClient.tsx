@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { Category } from '@/types'
 import type { ParsedTask } from '@/app/api/brain-dump/route'
 import { MAX_BRAIN_DUMP_CHARS } from '@/lib/limits'
+import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 const HORIZON_LABELS: Record<ParsedTask['horizon_precision'], string> = {
   unplanned: 'Unplanned',
@@ -52,10 +53,7 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
   const topLevel = categories.filter(c => c.parent_id === null)
   const children = categories.filter(c => c.parent_id !== null)
   const selectedCat = categories.find(c => c.id === task.category_id)
-  const parentCat = selectedCat?.parent_id
-    ? categories.find(c => c.id === selectedCat.parent_id)
-    : null
-  const dotColour = (parentCat ?? selectedCat)?.colour ?? '#6B7280'
+  const dotColour = categoryColour(task.category_id, categories) ?? DEFAULT_CATEGORY_COLOUR
 
   function setField<K extends keyof ParsedTask>(key: K, value: ParsedTask[K]) {
     onChange(index, { ...task, [key]: value })

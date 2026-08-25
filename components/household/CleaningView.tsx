@@ -2,9 +2,11 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Room, Category, Task, TaskStatus } from '@/types'
+import type { Room, Category, Task } from '@/types'
 import CleaningTaskForm from './CleaningTaskForm'
 import { formatHorizon } from '@/lib/horizon'
+import { STATUS_DISPLAY } from '@/lib/task-status'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 interface Member {
   id: string
@@ -28,20 +30,6 @@ interface Props {
   canManage: boolean
 }
 
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  not_started: 'wip',
-  wip: 'done',
-  done: 'not_started',
-  cancelled: 'not_started',
-}
-
-const STATUS_ICON: Record<TaskStatus, { icon: string; className: string }> = {
-  not_started: { icon: '○', className: 'text-gray-300 hover:text-gray-500' },
-  wip:         { icon: '◉', className: 'text-blue-500 hover:text-blue-600' },
-  done:        { icon: '✓', className: 'text-green-500 hover:text-green-600' },
-  cancelled:   { icon: '—', className: 'text-gray-300 hover:text-gray-500' },
-}
-
 function TaskRow({
   task: initialTask,
   onEdit,
@@ -52,24 +40,8 @@ function TaskRow({
   onDeleted: (id: string) => void
 }) {
   const router = useRouter()
-  const [task, setTask] = useState(initialTask)
-  const [toggling, setToggling] = useState(false)
+  const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
   const horizonLabel = formatHorizon(task)
-
-  async function toggleStatus() {
-    if (toggling) return
-    const next = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask((t) => ({ ...t, status: next }))
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
-    })
-    if (!res.ok) setTask((t) => ({ ...t, status: initialTask.status }))
-    setToggling(false)
-    router.refresh()
-  }
 
   async function handleDelete() {
     if (!confirm('Delete this cleaning task?')) return
@@ -78,7 +50,7 @@ function TaskRow({
     router.refresh()
   }
 
-  const cfg = STATUS_ICON[task.status]
+  const cfg = STATUS_DISPLAY[task.status]
 
   return (
     <div className={`group flex items-start gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors ${task.status === 'done' ? 'opacity-60' : ''}`}>

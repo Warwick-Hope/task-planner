@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { requireMember } from '@/lib/workspace-server'
 import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
+import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -52,7 +53,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
       workspace_id: params.id,
       owner_id: null,
       name,
-      colour: parent_id ? '#6B7280' : (colour ?? '#6B7280'),
+      colour: parent_id ? DEFAULT_CATEGORY_COLOUR : (colour ?? DEFAULT_CATEGORY_COLOUR),
       is_shared: true,
       parent_id: parent_id ?? null,
       sort_order: count ?? 0,

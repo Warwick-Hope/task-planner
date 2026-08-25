@@ -2,7 +2,8 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useState } from 'react'
-import type { Category } from '@/types'
+import type { Category } from '@/types'
+import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 const STATUS_OPTIONS = [
   { value: 'all', label: 'All' },
@@ -124,7 +125,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
               const hasChildren = allCategories.some(c => c.parent_id === parent.id)
               const active = isParentActive(parent)
               const expanded = expandedParent === parent.id
-              const colour = parent.colour ?? '#6B7280'
+              const colour = parent.colour ?? DEFAULT_CATEGORY_COLOUR
               return (
                 <div key={parent.id} className="flex items-stretch rounded-full overflow-hidden text-xs font-medium transition-colors">
                   {/* Name — click to toggle all children (multi-select) */}
@@ -188,7 +189,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
                     ? 'border-transparent text-white'
                     : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
                 }`}
-                style={selected ? { backgroundColor: expandedParentObj.colour ?? '#6B7280' } : {}}
+                style={selected ? { backgroundColor: expandedParentObj.colour ?? DEFAULT_CATEGORY_COLOUR } : {}}
               >
                 {child.name}
               </button>

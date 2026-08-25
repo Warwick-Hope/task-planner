@@ -19,6 +19,13 @@ import { OWNER_STATE, INVITEE_STATE } from './helpers'
  * disposable accounts would accumulate forever. Fresh state per run comes from
  * creating a new household each time and deleting it in teardown instead.
  */
+// Sign-in and onboarding run against a cold dev server that compiles routes on
+// first hit, and every step is a round trip to Supabase. Measured at 7s on a
+// warm local run and 29s on a cold one over a slower connection, which makes the
+// default 30s test timeout a coin toss. This is setup, not an assertion about
+// speed — give it room.
+setup.setTimeout(120_000)
+
 async function signInAndOnboard(page: Page, email: string, password: string, displayName: string) {
   await page.goto('/login')
   await page.getByLabel('Email').fill(email)
