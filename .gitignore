@@ -38,3 +38,7 @@ next-env.d.ts
 
 # local Claude settings (permission entries can embed access tokens)
 .claude/settings.local.json
+/test-results/
+/playwright-report/
+/blob-report/
+e2e/.auth/

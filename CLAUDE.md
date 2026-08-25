@@ -9,7 +9,21 @@ npm run lint     # next lint (ESLint: next/core-web-vitals, next/typescript, pre
 npm run format   # prettier --write .
 ```
 
-No test suite exists in this repo — don't assume Jest/Vitest are configured.
+```bash
+npm run test:e2e     # Playwright smoke suite (starts the dev server itself)
+npm run test:e2e:ui  # same, in Playwright's interactive UI
+```
+
+There is **no unit-test runner** — don't assume Jest or Vitest. The only tests are the Playwright end-to-end suite in [e2e/](e2e/).
+
+### The e2e suite
+
+- **Runs against dev Supabase, using a dedicated account** (`warwickhope93+e2e@gmail.com`), never Warwick's own login. Credentials are `E2E_USER_EMAIL` / `E2E_USER_PASSWORD` in `.env.local`; in CI they'd come from repository secrets. **Email confirmation is enabled on dev**, so the suite cannot register a user on the fly — the account must exist and be confirmed, and `auth.setup.ts` fails with `Sign-in failed: Email not confirmed` if it isn't.
+- **`auth.setup.ts` signs in once** and saves the session to `e2e/.auth/user.json` (gitignored); every other spec reuses it. Logged-out assertions opt out with `test.use({ storageState: … })`.
+- **Single worker, no parallelism** — every test shares one account and one workspace.
+- **Tests clean up after themselves.** Anything created is titled `[e2e] …` with a timestamp, so a failed run leaves findable litter rather than mystery rows.
+- **The brain dump is not called for real** in the default run. Its deterministic paths (413 over the cap, 400 on empty/non-string, the textarea `maxLength`) are exercised genuinely because they never reach Anthropic; the happy path is stubbed with `page.route()` so the review panel and save flow are deterministic. The real call is tagged `@live` and skipped unless `E2E_LIVE=1` — model output varies, so asserting on extracted titles would produce a flaky suite.
+- **Not wired into CI yet, deliberately.** The dev Supabase project sleeps after ~7 days idle on the free tier, and a sleeping project would turn `verify` red for reasons unrelated to the code. Config reads `E2E_BASE_URL` and the credentials from the environment, so enabling it later is a workflow file plus two secrets — revisit alongside the Pro decision.
 
 Supabase CLI migrations (dev):
 
