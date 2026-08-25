@@ -30,12 +30,16 @@ stays anon-readable until it does.
       renders on prod rather than redirecting to `/login`.
 - [x] Supabase Advisors on dev. **0 errors**, 16 warnings, 1 suggestion. Acted on in
       `20260817000001_advisor_cleanup.sql` — see below.
-- [ ] **Auth → Policies: enable leaked password protection** on dev *and* prod. Dashboard
-      toggle, checks new passwords against HaveIBeenPwned.
-- [ ] **Identify `public.rls_auto_enable()`.** Flagged as a SECURITY DEFINER function callable
-      by anon. It appears in no migration and no application code — origin unknown, body not
-      readable from the CLI. Inspect it in Database → Functions; if it is another pre-Phase-0
-      leftover it should be dropped alongside `task_roles`.
+- [~] **Leaked password protection — blocked on plan, not on us.** The setting lives at
+      Authentication → Providers → Email (not Auth → Policies), and the Supabase docs are
+      explicit that it is *"available on the Pro Plan and above"*. Both projects are on the
+      free tier, so there is nothing to toggle. Revisit when the project moves to Pro —
+      which is also what stops the projects pausing after ~7 days idle.
+- [x] **`public.rls_auto_enable()` identified — keep it.** It returns `event_trigger` and takes
+      no arguments, so it fires on DDL rather than being callable through the API; it almost
+      certainly auto-enables RLS on newly created tables. Not a pre-Phase-0 leftover, and the
+      advisor's "public can execute" warning against it is noise, because PostgREST cannot
+      invoke an event-trigger function at all. Worth reading the body if it ever matters.
 - [ ] **`auth_rls_initplan` — the Performance tab.** ~50 policies re-evaluate `auth.uid()` per
       row instead of once per query; the fix is to wrap each call as `(select auth.uid())`.
       Real, but it touches every policy in the schema, so it wants its own migration and a
