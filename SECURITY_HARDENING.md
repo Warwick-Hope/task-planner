@@ -40,10 +40,15 @@ stays anon-readable until it does.
       certainly auto-enables RLS on newly created tables. Not a pre-Phase-0 leftover, and the
       advisor's "public can execute" warning against it is noise, because PostgREST cannot
       invoke an event-trigger function at all. Worth reading the body if it ever matters.
-- [ ] **`auth_rls_initplan` — the Performance tab.** ~50 policies re-evaluate `auth.uid()` per
-      row instead of once per query; the fix is to wrap each call as `(select auth.uid())`.
-      Real, but it touches every policy in the schema, so it wants its own migration and a
-      careful read. No measurable effect at two users — schedule it after the Playwright suite.
+- [x] **`auth_rls_initplan` — done in `20260825000001_rls_initplan.sql`.** 53 policies rewritten
+      to `(select auth.uid())`, 6 skipped because they call the security definer helpers rather
+      than `auth.uid()` directly. The migration rewrites from `pg_policies` rather than listing
+      the policies by hand: the live set is the result of 89 create/drop statements across 14
+      migrations, so transcribing the survivors would have been a guess, and a wrong guess
+      silently changes who can read what. It is idempotent and announces every policy it
+      rewrites. Verified with the Playwright suite (19 passed), which exercises reads and writes
+      across both workspace types plus the non-member and restricted-member refusals.
+      **Re-run the Performance advisor after this reaches prod to confirm the findings clear.**
 - [ ] Per-user daily quota on brain dump. Deliberately deferred — the spec scopes it to
       "before any external user", and the app is still single-user.
 
