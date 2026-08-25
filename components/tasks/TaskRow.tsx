@@ -3,34 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import type { Task, Category, TaskStatus } from '@/types'
+import type { Task, Category } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
-
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  not_started: 'wip',
-  wip: 'done',
-  done: 'not_started',
-  cancelled: 'not_started',
-}
-
-const STATUS_ICON: Record<TaskStatus, { icon: string; className: string }> = {
-  not_started: {
-    icon: '○',
-    className: 'text-gray-300 hover:text-gray-500',
-  },
-  wip: {
-    icon: '◉',
-    className: 'text-blue-500 hover:text-blue-600',
-  },
-  done: {
-    icon: '✓',
-    className: 'text-green-500 hover:text-green-600',
-  },
-  cancelled: {
-    icon: '—',
-    className: 'text-gray-300 hover:text-gray-500',
-  },
-}
+import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
 
 function colourFor(categoryId: string, allCategories: Category[]): string {
   const cat = allCategories.find((c) => c.id === categoryId)
@@ -55,7 +30,7 @@ export default function TaskRow({
   const [pinning, setPinning] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
 
-  const statusConfig = STATUS_ICON[task.status]
+  const statusConfig = STATUS_DISPLAY[task.status]
   const category = task.category_id
     ? allCategories.find((c) => c.id === task.category_id) ?? null
     : null

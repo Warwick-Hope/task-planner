@@ -2,9 +2,10 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Room, Category, Task, TaskStatus } from '@/types'
+import type { Room, Category, Task } from '@/types'
 import CleaningTaskForm from './CleaningTaskForm'
 import { formatHorizon } from '@/lib/horizon'
+import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
 
 interface Member {
   id: string
@@ -26,20 +27,6 @@ interface Props {
   members: Member[]
   childProfiles: ChildProfile[]
   canManage: boolean
-}
-
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  not_started: 'wip',
-  wip: 'done',
-  done: 'not_started',
-  cancelled: 'not_started',
-}
-
-const STATUS_ICON: Record<TaskStatus, { icon: string; className: string }> = {
-  not_started: { icon: '○', className: 'text-gray-300 hover:text-gray-500' },
-  wip:         { icon: '◉', className: 'text-blue-500 hover:text-blue-600' },
-  done:        { icon: '✓', className: 'text-green-500 hover:text-green-600' },
-  cancelled:   { icon: '—', className: 'text-gray-300 hover:text-gray-500' },
 }
 
 function TaskRow({
@@ -78,7 +65,7 @@ function TaskRow({
     router.refresh()
   }
 
-  const cfg = STATUS_ICON[task.status]
+  const cfg = STATUS_DISPLAY[task.status]
 
   return (
     <div className={`group flex items-start gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors ${task.status === 'done' ? 'opacity-60' : ''}`}>

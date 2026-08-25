@@ -4,20 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Task, Category, TaskStatus } from '@/types'
-
-const STATUS_CYCLE: Record<TaskStatus, TaskStatus> = {
-  not_started: 'wip',
-  wip: 'done',
-  done: 'not_started',
-  cancelled: 'not_started',
-}
-
-const STATUS_ICON: Record<TaskStatus, string> = {
-  not_started: '○',
-  wip: '◉',
-  done: '✓',
-  cancelled: '—',
-}
+import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
 
 const STATUS_CLASS: Record<TaskStatus, string> = {
   not_started: 'text-gray-300 hover:text-gray-500',
@@ -70,7 +57,7 @@ export default function DashboardTaskRow({
         disabled={toggling}
         className={`shrink-0 text-lg leading-none transition-colors ${STATUS_CLASS[task.status]}`}
       >
-        {STATUS_ICON[task.status]}
+        {STATUS_DISPLAY[task.status].icon}
       </button>
 
       {colour && (
