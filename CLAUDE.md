@@ -76,6 +76,11 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   had drifted. Add to them ([KB.md](KB.md) #24).
 - **`group-hover` controls do not render at all on a touch screen** — show them below `md`
   ([KB.md](KB.md) #26).
+- **The service worker caches no user data and registers in production only** — adding pages or
+  API responses to it would be a bug, not an improvement ([KB.md](KB.md) #32).
+- **`manifest.webmanifest`, `sw.js` and `offline.html` are exempt from the middleware matcher** —
+  Chrome fetches them with no session, and a 307 to `/login` fails the install silently
+  ([KB.md](KB.md) #31).
 - **Middleware uses `getUser()`, and `/invite/[token]` is exempt from the login redirect**
   ([KB.md](KB.md) #6, #7).
 - **Qualify both sides of every comparison in an RLS subquery** — an unqualified column binds to
@@ -96,6 +101,8 @@ npm run format       # prettier --write .
 npm run test:e2e     # Playwright suite; starts the dev server itself
 npm run test:e2e:ui  # the same, in Playwright's interactive UI
 npm run check:docs   # the documentation guard — run before reporting finished
+npm run verify:pwa   # the PWA, against a production build (PLAN.md §Verification)
+npm run build:icons  # regenerate the app icons from public/icon.svg
 npm run setup:hooks  # one-time, per clone: hooks path, long paths, GitHub account pin
 ```
 
