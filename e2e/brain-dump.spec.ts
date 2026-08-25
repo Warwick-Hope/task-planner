@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { MAX_BRAIN_DUMP_CHARS } from '../lib/limits'
+import { taskRow, deleteTaskRow } from './helpers'
 
 /**
  * The brain dump is the one route that calls a model, and model output varies
@@ -76,15 +77,13 @@ test('review and save, with the model response stubbed', async ({ page }) => {
   await expect(page.getByText(title)).toBeVisible()
 
   // Confirm-and-save is NOT stubbed: this writes a real row.
-  await page.getByRole('button', { name: /Save/ }).first().click()
+  await page.getByRole('button', { name: /^Save \d+ task/ }).click()
   await page.waitForURL(/\/tasks/)
 
-  const row = page.locator('li', { hasText: title }).first()
-  await expect(row).toBeVisible()
+  await expect(taskRow(page, title).first()).toBeVisible()
 
-  await row.getByRole('button', { name: '✕' }).click()
-  await row.getByRole('button', { name: 'Delete' }).click()
-  await expect(page.locator('li', { hasText: title })).toHaveCount(0)
+  await deleteTaskRow(page, title)
+  await expect(taskRow(page, title)).toHaveCount(0)
 })
 
 test('@live real extraction reaches Anthropic and returns tasks', async ({ request }) => {

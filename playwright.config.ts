@@ -40,7 +40,10 @@ export default defineConfig({
 
   projects: [
     // Signs in once and writes the session to disk; every other project reuses it.
-    { name: 'setup', testMatch: /auth\.setup\.ts/ },
+    // teardown runs after everything depending on setup has finished, and
+    // sweeps up rows left behind by tests that failed before their cleanup.
+    { name: 'setup', testMatch: /auth\.setup\.ts/, teardown: 'cleanup' },
+    { name: 'cleanup', testMatch: /global\.teardown\.ts/ },
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'], storageState: 'e2e/.auth/user.json' },
