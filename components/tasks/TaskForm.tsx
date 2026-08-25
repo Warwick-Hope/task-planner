@@ -19,7 +19,8 @@ import {
   parseRrule,
   firstOccurrence,
 } from '@/lib/recurrence'
-import RecurrencePicker from './RecurrencePicker'
+import RecurrencePicker from './RecurrencePicker'
+
 import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
 const PRECISIONS: HorizonPrecision[] = [
@@ -384,7 +385,7 @@ export default function TaskForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8 max-w-xl">
+    <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8 max-w-xl">
       {/* Title */}
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -422,7 +423,7 @@ export default function TaskForm({
               key={p}
               type="button"
               onClick={() => handlePrecisionChange(p)}
-              className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full px-3 py-2 sm:py-1 text-xs font-medium transition-colors ${
                 precision === p
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
@@ -437,7 +438,7 @@ export default function TaskForm({
           <div className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-3">
             {/* Year — shown for all non-unplanned except week/day/time which derive it */}
             {['year', 'half', 'quarter', 'month'].includes(precision) && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Year</label>
                 <input
                   type="number"
@@ -452,7 +453,7 @@ export default function TaskForm({
 
             {/* Half */}
             {precision === 'half' && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Half</label>
                 <div className="flex gap-2">
                   {([1, 2] as const).map((h) => (
@@ -460,7 +461,7 @@ export default function TaskForm({
                       key={h}
                       type="button"
                       onClick={() => setHalf(h)}
-                      className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
+                      className={`rounded-md px-4 py-2.5 sm:py-1.5 text-sm font-medium transition-colors ${
                         half === h
                           ? 'bg-blue-600 text-white'
                           : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -475,7 +476,7 @@ export default function TaskForm({
 
             {/* Quarter */}
             {precision === 'quarter' && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Quarter</label>
                 <div className="flex gap-2">
                   {([1, 2, 3, 4] as const).map((q) => (
@@ -483,7 +484,7 @@ export default function TaskForm({
                       key={q}
                       type="button"
                       onClick={() => setQuarter(q)}
-                      className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                      className={`rounded-md px-3 py-2.5 sm:py-1.5 text-sm font-medium transition-colors ${
                         quarter === q
                           ? 'bg-blue-600 text-white'
                           : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
@@ -498,7 +499,7 @@ export default function TaskForm({
 
             {/* Month */}
             {precision === 'month' && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Month</label>
                 <select
                   value={month}
@@ -516,7 +517,7 @@ export default function TaskForm({
 
             {/* Week */}
             {precision === 'week' && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Week of</label>
                 <input
                   type="date"
@@ -532,7 +533,7 @@ export default function TaskForm({
 
             {/* Day */}
             {precision === 'day' && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Date</label>
                 <input
                   type="date"
@@ -545,7 +546,7 @@ export default function TaskForm({
 
             {/* Time */}
             {precision === 'time' && (
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
                 <label className="text-sm text-gray-600 w-16 shrink-0">Date &amp; time</label>
                 <input
                   type="datetime-local"
@@ -588,7 +589,7 @@ export default function TaskForm({
                           onClick={() =>
                             setSelectedCategoryId(selected ? null : child.id)
                           }
-                          className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                          className={`rounded-full border px-3 py-2 sm:py-1 text-xs font-medium transition-colors ${
                             selected
                               ? 'border-transparent text-white'
                               : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -620,7 +621,7 @@ export default function TaskForm({
               key={opt.value}
               type="button"
               onClick={() => setStatus(opt.value)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+              className={`rounded-full border px-3 py-2 sm:py-1 text-xs font-medium transition-colors ${
                 status === opt.value
                   ? 'border-gray-800 bg-gray-800 text-white'
                   : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
@@ -663,18 +664,18 @@ export default function TaskForm({
         <p className="rounded-lg bg-red-50 px-4 py-2 text-sm text-red-600">{error}</p>
       )}
 
-      <div className="flex items-center gap-3 pt-2">
+      <div className="flex flex-col-reverse sm:flex-row sm:items-center gap-2 sm:gap-3 pt-2">
         <button
           type="submit"
           disabled={!title.trim() || saving}
-          className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full sm:w-auto rounded-lg bg-blue-600 px-5 py-3 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {saving ? 'Saving…' : isEdit ? 'Save changes' : 'Create task'}
         </button>
         <button
           type="button"
           onClick={() => router.back()}
-          className="text-sm text-gray-500 hover:text-gray-800"
+          className="w-full sm:w-auto py-3 sm:py-0 text-sm text-gray-500 hover:text-gray-800"
         >
           Cancel
         </button>

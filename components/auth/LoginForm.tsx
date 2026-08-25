@@ -31,7 +31,7 @@ export default function LoginForm({ next }: { next?: string }) {
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+    <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
       <h1 className="text-2xl font-semibold text-gray-900 mb-1">Sign in</h1>
       <p className="text-sm text-gray-500 mb-6">Task Planner</p>
 
@@ -73,7 +73,7 @@ export default function LoginForm({ next }: { next?: string }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full rounded-lg bg-blue-600 px-4 py-3 sm:py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {loading ? 'Signing in…' : 'Sign in'}
         </button>

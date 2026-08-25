@@ -57,7 +57,8 @@ function TaskRow({
       <button
         onClick={toggleStatus}
         disabled={toggling}
-        className={`mt-0.5 text-lg leading-none shrink-0 transition-colors ${cfg.className}`}
+        aria-label={`Status: ${task.status}. Advance status.`}
+        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:mt-0.5 text-lg leading-none transition-colors ${cfg.className}`}
       >
         {cfg.icon}
       </button>
@@ -72,16 +73,17 @@ function TaskRow({
 
       <span className="hidden sm:block text-xs text-gray-400 shrink-0">{horizonLabel}</span>
 
-      <div className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-2">
+      <div className="shrink-0 md:opacity-0 md:group-hover:opacity-100 md:focus-within:opacity-100 transition-opacity flex items-center gap-2">
         <button
           onClick={() => onEdit(task)}
-          className="text-xs text-gray-400 hover:text-blue-600 transition-colors"
+          className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-xs text-gray-400 hover:text-blue-600 transition-colors"
         >
           Edit
         </button>
         <button
           onClick={handleDelete}
-          className="text-xs text-gray-300 hover:text-red-500 transition-colors"
+          aria-label="Delete task"
+          className="inline-flex items-center justify-center min-h-[36px] min-w-[32px] sm:min-h-0 sm:min-w-0 text-xs text-gray-300 hover:text-red-500 transition-colors"
         >
           ✕
         </button>
