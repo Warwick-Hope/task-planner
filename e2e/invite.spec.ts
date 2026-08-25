@@ -30,8 +30,18 @@ test('an invited user can accept and reach the household', async ({ page, reques
     data: { email: inviteeEmail, role: 'adult' },
   })
   expect(invited.ok(), `invite failed: ${invited.status()}`).toBe(true)
-  const { token } = await invited.json()
+  const { token, inviteUrl } = await invited.json()
   expect(token).toBeTruthy()
+
+  // The link is pasted into a message and opened on someone else's device, so a
+  // path is not enough. It shipped as a bare `/invite/<token>` in production:
+  // this spec only ever used the token, and locally NEXT_PUBLIC_APP_URL is set,
+  // so the old code looked correct here and was broken there. The route now
+  // derives the origin from the request headers instead — which is what this
+  // assertion exercises, since the environment variable is no longer consulted
+  // first.
+  const baseURL = test.info().project.use.baseURL as string
+  expect(inviteUrl, 'invite link must be absolute').toBe(`${baseURL}/invite/${token}`)
 
   // ── the invite page renders for someone who is not signed in ───────────────
   const anonymous = await browser.newContext({ storageState: { cookies: [], origins: [] } })
