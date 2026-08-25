@@ -1,17 +1,19 @@
-# Security hardening — spec
+# Security hardening — the 14 Aug 2026 review
 
-Findings from the full project review (14 Aug 2026, full code + migration sweep). This is the
-work referenced by "Next" in CLAUDE.md's current state. Work top to bottom; tier 1 items are
-live-prod exposures, tier 2 is robustness. One branch (`feat/security-hardening`), one PR per
-tier is fine.
+**Scope.** The findings of one full code and migration sweep on 14 Aug 2026, and a record of
+what was done about each. Tier 1 items were live-prod exposures; tier 2 is robustness. It
+covers security only — it is not a plan, and it does not state where the project is.
 
-Every schema change here is a new migration in `supabase/migrations/`, applied to dev first,
-pushed to prod on merge (see CLAUDE.md § Deployment workflow).
+**It does not hold status.** The current position, including anything from this review that is
+still open, is in [PLAN.md](PLAN.md) §"Where we are, and what's next" and §Open items. The
+checkbox history below is a record of what happened, not a live to-do list.
 
-## Status — 17 Aug 2026 (branch `feat/security-hardening`, PR #4)
+Every schema change here was a new migration in `supabase/migrations/`, applied to dev first
+and pushed to prod on merge — see [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Tiers 1 and 2 are code-complete. `npm run lint` and `npm run build` are green, CI `verify`
-passes, and all three migrations are **applied to dev**. Prod gets them on merge.
+## What shipped — 17 Aug 2026 (branch `feat/security-hardening`, PR #4)
+
+Tiers 1 and 2 code-complete, `verify` green, three migrations applied to dev and then to prod:
 
 ```
 supabase/migrations/20260815000001_sec_invitation_token_rpc.sql
@@ -19,22 +21,23 @@ supabase/migrations/20260815000002_sec_indexes.sql
 supabase/migrations/20260815000003_sec_rls_tighten.sql
 ```
 
-Migration 1 and `app/invite/[token]/page.tsx` must land together — the page now reads the
+Migration 1 and `app/invite/[token]/page.tsx` had to land together — the page reads the
 invitation through the new RPC, so the page is broken until the migration runs, and the table
 stays anon-readable until it does.
 
-### Still outstanding
+### The review's own items, and how each closed
 
 - [x] Merge PR #4, then push the three migrations to prod. Done 17 Aug 2026 — dry run first,
       all three applied, CLI re-linked to dev. Verified live: `/invite/<token>` returns 200 and
       renders on prod rather than redirecting to `/login`.
 - [x] Supabase Advisors on dev. **0 errors**, 16 warnings, 1 suggestion. Acted on in
       `20260817000001_advisor_cleanup.sql` — see below.
-- [~] **Leaked password protection — blocked on plan, not on us.** The setting lives at
-      Authentication → Providers → Email (not Auth → Policies), and the Supabase docs are
-      explicit that it is *"available on the Pro Plan and above"*. Both projects are on the
-      free tier, so there is nothing to toggle. Revisit when the project moves to Pro —
-      which is also what stops the projects pausing after ~7 days idle.
+- [~] **Leaked password protection — blocked on plan, not on us.** The location this review
+      originally gave for it was wrong; the setting lives at **Authentication → Providers →
+      Email**, and the Supabase docs are explicit that it is *"available on the Pro Plan and
+      above"*. Both projects are on the free tier, so there is nothing to toggle. Revisit when
+      the project moves to Pro — which is also what stops the projects pausing after ~7 days
+      idle. Live rule in [KB.md](KB.md) #12.
 - [x] **`public.rls_auto_enable()` identified — keep it.** It returns `event_trigger` and takes
       no arguments, so it fires on DDL rather than being callable through the API; it almost
       certainly auto-enables RLS on newly created tables. Not a pre-Phase-0 leftover, and the
@@ -56,9 +59,10 @@ stays anon-readable until it does.
 
 `20260817000001_advisor_cleanup.sql` handles three of them:
 
-- **`task_roles` dropped.** Pre-Phase-0 join table from when tasks were tagged with
-  `role_categories`; the 0.1 rebuild missed it. No migration, no code, 0 rows, 0 seq scans.
-  RLS was on with no policies, so it already denied everything — litter, not an exposure.
+- **`task_roles` dropped — both it and `role_categories` are dead names, retained here only as
+  history.** A pre-Phase-0 join table from the retired role-category tagging model; the 0.1
+  rebuild missed it. No migration, no code, 0 rows, 0 seq scans. RLS was on with no policies, so
+  it already denied everything — litter, not an exposure.
 - **`set_updated_at` search_path pinned.** Every other function in the schema sets it.
 - **anon `EXECUTE` revoked** on `accept_household_invitation`, `create_household_workspace`
   and `create_personal_workspace`. Each already ran `revoke all … from public`, but Supabase's
