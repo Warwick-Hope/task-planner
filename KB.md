@@ -108,6 +108,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 33 | Editing `next.config.mjs` wedges a running dev server, and Playwright reuses it | The e2e suite | Live |
 | 34 | Phone navigation is a bottom tab bar, not a scrolling strip | The app | Live |
 | 35 | `beforeinstallprompt` fires before hydration, and often not at all | The app | Live |
+| 36 | A link that leaves the app is built from the request, not `NEXT_PUBLIC_APP_URL` | The app | Live |
 
 ---
 
@@ -508,6 +509,23 @@ so, which from the outside is indistinguishable from not being installable.
 
 This is also why headless Chromium shows the instructions variant — do not read that as a
 broken manifest. `npm run verify:pwa` is what proves installability.
+### 36. A link that leaves the app is built from the request, not `NEXT_PUBLIC_APP_URL`
+
+The household invitation link was `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/invite/${token}`.
+That variable is set in `.env.local` and in CI, and **is not set in production** — so every
+invite created on the live site was a bare `/invite/<token>`, a path with no host, useless the
+moment it was pasted into a message.
+
+It survived because of the shape of the failure, which is worth recognising elsewhere: the value
+is present in every environment that gets tested and absent in the one that matters, so the code
+looks right locally and the e2e suite passes. Nothing was broken *here*.
+
+Use `requestOrigin(request)` from [lib/api.ts](lib/api.ts) for anything that has to be absolute.
+It reads `x-forwarded-host`/`x-forwarded-proto` (what Vercel sets), falls back to `host`, and
+only then to the environment variable — so the link points at whatever host the user was
+actually on, and there is no variable to forget on the next deployment or custom domain.
+
+`e2e/invite.spec.ts` now asserts the returned `inviteUrl` equals `${baseURL}/invite/${token}`.
 
 ---
 

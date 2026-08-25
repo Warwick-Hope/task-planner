@@ -2,7 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { requireMember } from '@/lib/workspace-server'
-import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
+import { unauthorised, forbidden, parseJson, badBody, requestOrigin } from '@/lib/api'
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
   const supabase = createClient()
@@ -43,7 +43,8 @@ export async function POST(request: Request, { params }: { params: { id: string 
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
-  const inviteUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/invite/${token}`
+  // Absolute: this link is copied into a message and opened elsewhere.
+  const inviteUrl = `${requestOrigin(request)}/invite/${token}`
 
   return NextResponse.json({ token, inviteUrl, expiresAt })
 }
