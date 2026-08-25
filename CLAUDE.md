@@ -19,7 +19,19 @@ $env:SUPABASE_DB_PASSWORD  = "<dev database password>"   # else the CLI prompts 
 supabase db push --linked                                # CLI is linked to dev (fxczpsznrcxykfsiyvty)
 ```
 
-`db push` has no `--project-ref` flag — it pushes to the linked project. To push to prod, `supabase link --project-ref ialovkohwdlkpgsrqrjo`, push, then re-link back to dev — never leave the CLI pointed at prod. The Supabase MCP cannot apply migrations (no permission), so this is always a CLI step run by Warwick.
+`db push` has no `--project-ref` flag — it pushes to the linked project. To push to prod, `supabase link --project-ref ialovkohwdlkpgsrqrjo`, push, then re-link back to dev — never leave the CLI pointed at prod. The Supabase MCP cannot apply migrations (no permission), so this is always a CLI step.
+
+**If the CLI reports `IPv6 is not supported on your current network`,** pass the IPv4 pooler URL explicitly instead of relying on the link:
+
+```powershell
+$pw = "<the matching database password>"
+$u  = "postgresql://postgres.<project-ref>:" + [uri]::EscapeDataString($pw) + "@aws-0-eu-west-1.pooler.supabase.com:5432/postgres"
+supabase db push --db-url $u --dry-run     # always dry-run first
+supabase db push --db-url $u --yes
+supabase inspect db table-stats --db-url $u
+```
+
+Both projects are in `eu-west-1`. The direct host (`db.<ref>.supabase.co`) resolves to IPv6 only, so on an IPv4-only network every command that uses it fails. `link` caches an IPv4 pooler URL in `supabase/.temp/pooler-url`, but it holds **one project at a time** — after linking to prod it may still contain dev's, which is what produces the confusing IPv6 error. `--db-url` sidesteps the whole problem. A paused project produces the same message for a different reason (`no such host` — the DNS record is withdrawn while it sleeps); check the project is awake before debugging the network.
 
 ## Code architecture
 
