@@ -1,11 +1,10 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Task, Category, TaskStatus } from '@/types'
-import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
+import { STATUS_DISPLAY } from '@/lib/task-status'
 import { categoryColour } from '@/lib/category-colour'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 const STATUS_CLASS: Record<TaskStatus, string> = {
   not_started: 'text-gray-300 hover:text-gray-500',
@@ -21,32 +20,16 @@ export default function DashboardTaskRow({
   task: Task
   categories: Category[]
 }) {
-  const router = useRouter()
-  const [task, setTask]     = useState(initial)
-  const [toggling, setToggling] = useState(false)
+  const { task, toggling, toggleStatus } = useTaskStatus(initial)
 
   const colour = categoryColour(task.category_id, categories)
-
-  async function toggle() {
-    if (toggling) return
-    const next = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask(t => ({ ...t, status: next }))
-    await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
-    })
-    setToggling(false)
-    router.refresh()
-  }
 
   const done = task.status === 'done'
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group ${done ? 'opacity-60' : ''}`}>
       <button
-        onClick={toggle}
+        onClick={toggleStatus}
         disabled={toggling}
         className={`shrink-0 text-lg leading-none transition-colors ${STATUS_CLASS[task.status]}`}
       >

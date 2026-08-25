@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation'
 import type { Room, Category, Task } from '@/types'
 import CleaningTaskForm from './CleaningTaskForm'
 import { formatHorizon } from '@/lib/horizon'
-import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
+import { STATUS_DISPLAY } from '@/lib/task-status'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 interface Member {
   id: string
@@ -39,24 +40,8 @@ function TaskRow({
   onDeleted: (id: string) => void
 }) {
   const router = useRouter()
-  const [task, setTask] = useState(initialTask)
-  const [toggling, setToggling] = useState(false)
+  const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
   const horizonLabel = formatHorizon(task)
-
-  async function toggleStatus() {
-    if (toggling) return
-    const next = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask((t) => ({ ...t, status: next }))
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
-    })
-    if (!res.ok) setTask((t) => ({ ...t, status: initialTask.status }))
-    setToggling(false)
-    router.refresh()
-  }
 
   async function handleDelete() {
     if (!confirm('Delete this cleaning task?')) return

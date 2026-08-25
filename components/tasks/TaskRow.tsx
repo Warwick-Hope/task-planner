@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Task, Category } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
-import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
+import { STATUS_DISPLAY } from '@/lib/task-status'
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 export default function TaskRow({
   task: initialTask,
@@ -16,8 +17,7 @@ export default function TaskRow({
   allCategories: Category[]
 }) {
   const router = useRouter()
-  const [task, setTask] = useState(initialTask)
-  const [toggling, setToggling] = useState(false)
+  const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
   const [deleting, setDeleting] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [pinning, setPinning] = useState(false)
@@ -30,25 +30,6 @@ export default function TaskRow({
   const dotColour = category ? categoryColour(category.id, allCategories) ?? DEFAULT_CATEGORY_COLOUR : null
   const horizonLabel = formatHorizon(task)
   const isUnplanned = horizonLabel === 'Unplanned'
-
-  async function toggleStatus() {
-    if (toggling) return
-    const nextStatus = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask((t) => ({ ...t, status: nextStatus }))
-
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: nextStatus }),
-    })
-
-    if (!res.ok) {
-      setTask((t) => ({ ...t, status: task.status }))
-    }
-    setToggling(false)
-    router.refresh()
-  }
 
   async function deleteTask() {
     setDeleting(true)

@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
 import type { Room, Task } from '@/types'
-import { STATUS_CYCLE, STATUS_DISPLAY } from '@/lib/task-status'
+import { STATUS_DISPLAY } from '@/lib/task-status'
+import { useTaskStatus } from '@/lib/use-task-status'
 
 interface Props {
   rooms: Room[]
@@ -45,31 +44,14 @@ function ScheduleRow({
   task: Task
   roomName: string
 }) {
-  const router = useRouter()
-  const [task, setTask] = useState(initialTask)
-  const [toggling, setToggling] = useState(false)
-
-  async function toggle() {
-    if (toggling) return
-    const next = STATUS_CYCLE[task.status]
-    setToggling(true)
-    setTask((t) => ({ ...t, status: next }))
-    const res = await fetch(`/api/tasks/${task.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ status: next }),
-    })
-    if (!res.ok) setTask((t) => ({ ...t, status: initialTask.status }))
-    setToggling(false)
-    router.refresh()
-  }
+  const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
 
   const cfg = STATUS_DISPLAY[task.status]
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-0 ${task.status === 'done' ? 'opacity-50' : ''}`}>
       <button
-        onClick={toggle}
+        onClick={toggleStatus}
         disabled={toggling}
         className={`text-lg leading-none shrink-0 transition-colors ${cfg.className}`}
       >
