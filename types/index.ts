@@ -190,6 +190,19 @@ export interface HouseholdInvitation {
   created_at: string
 }
 
+// A device's web push registration. Owner-only under RLS — see
+// 20260826000001_push_subscriptions.sql.
+export interface PushSubscriptionRecord {
+  id: string
+  user_id: string
+  endpoint: string
+  p256dh: string
+  auth: string
+  user_agent: string | null
+  created_at: string
+  last_used_at: string | null
+}
+
 // ─── Joined/view types ────────────────────────────────────────────────────────
 
 // Task with its category joined — used in list/detail views

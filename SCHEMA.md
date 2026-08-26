@@ -170,3 +170,19 @@ Read through the `get_invitation_by_token` RPC, never by selecting the table —
 `select using (true)` policy that once made it anon-readable was removed in
 `20260815000001_sec_invitation_token_rpc.sql`. See
 [SECURITY_HARDENING.md](SECURITY_HARDENING.md) §1.1.
+
+## Notifications
+
+### `push_subscriptions`
+
+`id, user_id, endpoint (unique), p256dh, auth, user_agent, created_at, last_used_at`
+
+One row per device per browser. A subscription is a **capability** — whoever holds the endpoint
+and its two keys can push to that device — so RLS restricts every operation to the owner.
+
+The one place that legitimately needs someone else's rows is the assignment route, pushing to the
+person being assigned a task. It reads them through `get_push_subscriptions_for_member(p_user_id,
+p_workspace_id)`, a security definer function that returns endpoints only when **both** the
+caller and the subject are members of that workspace. A dead endpoint (404/410 from the push
+service) is removed by `delete_push_subscription(p_endpoint)`, since the sender is usually not
+its owner. Both are in `20260826000001_push_subscriptions.sql`; neither is executable by `anon`.
