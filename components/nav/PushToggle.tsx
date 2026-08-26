@@ -43,6 +43,8 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
 
 export default function PushToggle() {
   const [state, setState] = useState<State>('loading')
+  // What the last test send did, shown under the toggle. Null = never tried.
+  const [testResult, setTestResult] = useState<string | null>(null)
 
   const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
@@ -121,6 +123,31 @@ export default function PushToggle() {
     }
   }, [publicKey])
 
+  const sendTest = useCallback(async () => {
+    setTestResult('Sending…')
+    try {
+      const res = await fetch('/api/push/test', { method: 'POST' })
+      if (!res.ok) {
+        // 503 is the one worth naming: the server has no VAPID pair, so the
+        // subscription is real and nothing can ever be sent to it.
+        setTestResult(
+          res.status === 503
+            ? 'This server has no push keys set.'
+            : 'Could not send a test notification.'
+        )
+        return
+      }
+      const { delivered } = (await res.json()) as { delivered: number }
+      setTestResult(
+        delivered > 0
+          ? `Sent to ${delivered} device${delivered === 1 ? '' : 's'}.`
+          : 'No devices are subscribed on this account.'
+      )
+    } catch {
+      setTestResult('Could not send a test notification.')
+    }
+  }, [])
+
   const disable = useCallback(async () => {
     setState('busy')
     try {
@@ -161,10 +188,11 @@ export default function PushToggle() {
   const busy = state === 'busy'
 
   return (
+    <div className="border-t border-gray-100">
     <button
       onClick={on ? disable : enable}
       disabled={busy}
-      className="w-full flex items-center justify-between gap-2 px-4 py-3 min-h-[48px] border-t border-gray-100 text-xs text-left transition-colors hover:bg-gray-50 disabled:opacity-50"
+      className="w-full flex items-center justify-between gap-2 px-4 py-3 min-h-[48px] text-xs text-left transition-colors hover:bg-gray-50 disabled:opacity-50"
     >
       <span className={on ? 'text-gray-500' : 'text-blue-600 font-medium'}>
         {busy ? 'Just a moment…' : on ? 'Push notifications are on' : 'Notify me on this device'}
@@ -182,5 +210,21 @@ export default function PushToggle() {
         />
       </span>
     </button>
+
+      {/* Only worth offering once it is on — and it is the only way one person
+          can find out whether push actually works, since assigning a task to
+          yourself deliberately notifies nobody. */}
+      {on && (
+        <div className="px-4 pb-3 -mt-1 flex items-center gap-2">
+          <button
+            onClick={sendTest}
+            className="text-xs text-blue-600 hover:text-blue-800 min-h-[32px] transition-colors"
+          >
+            Send a test notification
+          </button>
+          {testResult && <span className="text-xs text-gray-400 truncate">{testResult}</span>}
+        </div>
+      )}
+    </div>
   )
 }

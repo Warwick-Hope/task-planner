@@ -20,6 +20,7 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
+| 2026-08-26 | `feat/push-test-notification` | A test-notification route, so push is verifiable by one person | `KB.md` #38, `PLAN.md` §Verification |
 
 **Nothing claimed.** Current position and what is next: Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
 what's next".

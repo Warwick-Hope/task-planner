@@ -483,7 +483,10 @@ including through the security definer function the assignment route uses. It al
 real: one test registers a syntactically valid endpoint belonging to nobody, so the push service
 answers 404, and asserts both that the assignment still succeeds and that the dead subscription is
 retired. What no test here can do is put a notification on a handset — the worker registers in
-production builds only ([KB.md](KB.md) #32, #38).
+production builds only ([KB.md](KB.md) #32, #38). That last step is done by hand, from the
+notification bell: turn push on, then **Send a test notification**. It exists because an
+assignment to yourself notifies nobody, so one person otherwise has no way to see push work at
+all.
 
 ---
 
