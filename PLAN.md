@@ -34,7 +34,10 @@ installed on Android and running standalone. Web push for assignments merged on 
 PR #18. **That morning also produced a process failure worth more than the feature** — two
 sessions worked the same checkout at once and nearly overwrote each other, which is now guarded
 by a worktree per session, `npm run session` and the claim board
-([WORKSTREAMS.md](WORKSTREAMS.md), [KB.md](KB.md) #39).
+([WORKSTREAMS.md](WORKSTREAMS.md), [KB.md](KB.md) #39). **The same day the direction changed**:
+the next substantial build is the **Claude connector**, specified in §"The Claude connector" —
+a token-authed API and an MCP server, so tasks can be created from wherever the thought
+happened rather than only in the app.
 
 1. ✅ **Phases 0–3** — schema rebuild, personal workspace, household foundation, cleaning /
    shopping / meals. Live on prod. Detail in §Phases.
@@ -85,14 +88,22 @@ by a worktree per session, `npm run session` and the claim board
     (`scripts/session-check.mjs`, on a `SessionStart` hook) and
     [WORKSTREAMS.md](WORKSTREAMS.md), the claim board. Prompted by two sessions colliding in one
     checkout the same morning ([KB.md](KB.md) #39).
-13. ⏭ **Next — Phase 4.4, Microsoft OAuth.** Additive to email/password, never a replacement —
-    removing the password path would strand the e2e accounts and the invite flow.
-14. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+13. ⏭ **Next, in this order** — **4.8** two small fixes (the install icon's white corners and
+    revoking a household invitation), then **4.9** the token-authed API, then **4.10** the
+    Claude connector itself. SSO (4.4, now Google *and* Microsoft) and push reminders come
+    after them, not before. The design is in §"The Claude connector"; the reasoning is in
+    §Decisions log, 26 Aug 2026.
+14. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+    *interactively* is what the connector gives away for nothing, because Claude already holds
+    connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
+    nothing open. See §Phases, Phase 5.
+15. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-15. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
-    until an external user exists. None block 4.3.
+16. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+    until an external user exists. None block 4.8. **Two of them stop being optional the day
+    4.10 ships** — the brain-dump quota and the Pro decision.
 
 ---
 
@@ -245,24 +256,158 @@ paper. Met.
 |---|---|---|
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
-| 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | 🔄 PR #18 open |
-| 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Next |
+| 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | ✅ PR #18, merged 26 Aug 2026 — prod VAPID pair outstanding |
+| 4.4 | **Google and Microsoft** OAuth — **additive**, not a replacement for email/password | After 4.10 |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
+| 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | **Next** |
+| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | Then |
+| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | Then |
+| 4.11 | Connector OAuth 2.1 — one-click install as a claude.ai connector | Deferred — §"The Claude connector" |
+
+**4.8 in detail, because both halves are already diagnosed.** The install icon shows four white
+wedges on a dark Windows taskbar: `scripts/generate-icons.mjs` rasterises the SVG with
+`omitBackground: false`, so the page's white background bakes into the corners outside the
+`rx="112"` rounded rect, and the PNGs have no alpha channel at all — `icon-192`, `icon-512` and
+`apple-touch-icon` are 24bpp RGB with a `#FFFFFF` corner pixel. The fix is `omitBackground: true`
+for the two `purpose: "any"` icons; **not** for `apple-touch-icon.png`, which wants the maskable
+treatment instead, because iOS ignores `purpose`, composites transparency to black and applies
+its own rounding. Revoking an invitation is smaller than it looks: the DELETE policy already
+exists in `20260420000011`, the list already renders on the invite page and the API already has
+a GET — what is missing is a DELETE route and a button. Both get a `KB.md` entry when they land,
+not before.
 
 **Exit criterion:** the app is usable on a phone as the primary device, installs to an Android
-home screen, and tells you about things without you opening it.
+home screen, tells you about things without you opening it, **and a task can be created in it
+from outside it** — from Claude, from a meeting, from wherever the thought actually happened.
 
 ### Phase 5 — Android native and extended features — not started
 
 5.1 Capacitor wrapper · 5.2 FCM push · 5.3 recipe system with quantities and scaling ·
-5.4 entertaining event templates · 5.5 AI meal suggestions · 5.6 M365 integration ·
-5.7 extended family access · 5.8 multiple households.
+5.4 entertaining event templates · 5.5 AI meal suggestions · 5.6 **unattended inbox and calendar
+sweep** · 5.7 extended family access · 5.8 multiple households.
+
+**5.6 is no longer "M365 integration"; it is now something much narrower**, and the change is a
+consequence of the connector rather than a change of mind about the goal. Reading Outlook,
+Teams, Plaud or Fathom *interactively* costs nothing once 4.10 exists: Claude already holds
+connectors for all four, so it does the reading and calls Clarity's tools. What a connector
+cannot do is run when nothing is open. 5.6 is therefore only the **scheduled** case — a sweep at
+7am with no one present — and it needs a stored OAuth grant per provider, refresh handling and a
+per-user background job, none of which the free tier carries comfortably. It also inherits the
+scheduler problem 4.3 declined to solve (§Decisions log, 26 Aug 2026). Do not start it until the
+connector has been lived with, because it may turn out not to be wanted.
 
 **Exit criterion:** a real Android app another household could be handed.
 
 **The Capacitor decision waits until the PWA has been lived with** — 5.1 may prove unnecessary.
+
+---
+
+## The Claude connector
+
+Agreed 26 Aug 2026, before any code. **Phase 4 items 4.9, 4.10 and 4.11.**
+
+### What it is
+
+A **remote MCP server at `/api/mcp`**, so Claude — desktop, web, Claude Code or a scheduled
+routine — can read and write Clarity's tasks directly. The direction is the part worth being
+precise about: this is not "sign into Claude from the app", it is Claude signing into Clarity
+and calling it as a tool.
+
+The goal it serves is the one the whole app exists for: **whatever you are using, a task gets
+into the system without opening the app**, and the system can be updated fast enough that it
+stays true rather than becoming a second thing to maintain.
+
+### What it is not — the decision that saves the most work
+
+**Clarity does not integrate with Teams, Outlook, Plaud or Fathom.** Claude already holds
+connectors for all four. Once Clarity exposes tools, a meeting sweep is a prompt: Claude reads
+the transcript, decides what the actions are, and calls `create_tasks`. Building those four
+integrations into Clarity would mean four OAuth flows, four token stores, four sets of refresh
+handling and four polling jobs, to reproduce something the model on the other end can already
+do.
+
+That is why the connector is worth doing early. **It is not one integration, it is the last
+integration** — every future source of tasks that Claude can already read comes free, including
+ones that do not exist yet.
+
+The one thing it does not cover is the **unattended** case: a sweep that runs at 7am with
+nothing open. That is Phase 5.6, and deliberately after.
+
+### Authentication — personal access tokens first, OAuth later
+
+- An `api_tokens` table: `id`, `user_id`, `name`, `token_hash`, `scopes`, `last_used_at`,
+  `expires_at`, `revoked_at`. Deliberately the same shape as `household_invitations`, which
+  already works and already has the RLS pattern.
+- **Only the hash is stored.** The token is shown once, at creation, and never again.
+- Managed from a settings page: create, name, see last use, revoke. That revoke flow is the same
+  one 4.8 builds for invitations — which is part of why 4.8 comes first rather than being
+  tidied up afterwards.
+- Scopes stay coarse to begin with — `tasks:read`, `tasks:write` — because a scope nobody can
+  explain is a scope nobody sets correctly.
+
+**The API accepts either a session cookie or a bearer token.** Every route today resolves the
+caller through `createClient()` and `supabase.auth.getUser()`. A single helper in
+[lib/api.ts](lib/api.ts) resolves from whichever is present and returns the same shape, so route
+bodies do not change. RLS is untouched: a token resolves to a `user_id`, and every existing
+policy already keys off workspace membership for that user rather than off how they
+authenticated.
+
+**One prerequisite that is already written down.** The middleware matcher covers `/api/**`, so a
+request with no session is redirected to `/login` and the caller gets a 200 and an HTML page
+([KB.md](KB.md) #37). A bearer-token client would receive that HTML instead of JSON. #37 records
+this as "worth fixing one day… nothing currently depends on it" — 4.9 is the thing that depends
+on it. Exempting `/api` from the redirect and letting the routes answer for themselves is part
+of that item, not a separate tidy-up.
+
+**Deferred to 4.11: OAuth 2.1.** A claude.ai custom connector installs cleanly when the server
+advertises protected-resource metadata and supports dynamic client registration — authorize,
+token, registration and metadata endpoints, layered over the Supabase session. That is the
+difference between pasting a token once and clicking Connect. It is polish over real work, so
+it waits until the tool surface has proved itself.
+
+### The tool surface
+
+Deliberately small. Every tool goes through the existing route logic or the same `lib/`
+helpers, never straight at a table.
+
+| Tool | Notes |
+|---|---|
+| `list_workspaces` | Personal plus every household. Everything else takes a workspace id |
+| `list_categories` | Needed before any write, because a task's category is what decides who can see it |
+| `list_tasks` | Filter by workspace, status, horizon, due date, category |
+| `create_tasks` | **Plural.** A meeting sweep produces several at once, and one round trip beats six |
+| `update_task` | Title, category, due date, horizon, assignee |
+| `complete_task` | Separate from update, because completing also advances a recurrence |
+| `capture` | Free text in, structured tasks out — the brain dump, callable |
+
+Two rules the tools inherit rather than reimplement:
+
+- **Horizon fields are built by [lib/horizon.ts](lib/horizon.ts)**, never set directly
+  ([KB.md](KB.md) #22). A model handed seven raw horizon columns will fill them inconsistently,
+  and inconsistently is worse than not at all.
+- **`capture` is the existing brain dump**, not a second parser. The model extracts; the server
+  decides the dates ([KB.md](KB.md) #23).
+
+`create_tasks` and `capture` return what they actually wrote, with ids, so the calling model can
+report it back instead of guessing.
+
+### What it forces
+
+Two things stop being deferrable the day this ships, and both are already open items:
+
+- **A quota on `capture`** (§Open items 6). Someone typing into a textarea does not call it
+  forty times. A model in a loop does.
+- **The Supabase Pro decision** (§Open items 5). A web app that is slow because the project was
+  asleep is an annoyance you fix by waiting. A connector that returns a 500 to Claude is a tool
+  the model records as broken and stops reaching for, in the middle of doing something for you.
+
+### Sequence
+
+4.8 small fixes → 4.9 tokens, bearer auth and the `/api` redirect exemption → 4.10 `/api/mcp`
+and the tools → live with it → 4.11 OAuth. Then 5.6, the unattended sweep, only if it still
+looks worth it.
 
 ---
 
@@ -277,6 +422,7 @@ home screen, and tells you about things without you opening it.
 | Two GitHub accounts on the machine, and `gh auth switch` is global | A bare `403` on push, naming no cause | Repo-local credential pin, enforced by `pre-push`. See [KB.md](KB.md) #27 |
 | The brain dump has no per-user quota | An authenticated user could run up the Anthropic bill | Deferred deliberately while single-user. A 10,000-character cap is in place |
 | Prod is on the free tier with no backups worth the name | Data loss with no restore | Accepted for now. Revisit before any external household joins |
+| A token-authed API is a way in that needs no browser and no session (4.9) | A leaked token is silent, durable write access to every workspace its owner belongs to | Hash at rest, show once, scope it, expire it, list and revoke it in the UI, record last use. §"The Claude connector" |
 
 ---
 
@@ -362,14 +508,21 @@ production builds only ([KB.md](KB.md) #32, #38).
    the setting is Pro-plan and above. Both projects are free tier, so there is nothing to
    toggle. Revisit with the Pro decision.
 5. **The Pro decision itself.** It would unblock item 4, stop the projects pausing (§Risks), and
-   make wiring the e2e suite into CI sensible. Settle it as one decision, not three.
-6. **Per-user daily quota on the brain dump.** Deferred while single-user; required before any
-   external user.
+   make wiring the e2e suite into CI sensible. Settle it as one decision, not three — **now
+   four**: a connector that 500s because the project is asleep is materially worse than a web
+   page that is slow for the same reason (§"The Claude connector").
+6. **Per-user daily quota on the brain dump.** Deferred while single-user. **Required before
+   4.10 ships**, not before an external user arrives — `capture` exposed as an MCP tool can be
+   called in a loop by a model, which is not a thing a person with a textarea does.
 7. **Whether 1.18 has anything left in it** after 4.1. Look at what 4.1 changed before
    scheduling any of it.
 8. **`shopping_list` UPDATE column rule lives only in the route layer.** RLS cannot express
    "restricted members may change `is_purchased` only". A trigger would be needed. Recorded
    rather than fixed.
+9. **Google and Microsoft SSO are one job, not two.** 4.4 named only Microsoft. Each is a
+   Supabase Auth provider toggle, a redirect URL on the allow-list and a button — the same work
+   either way, so do the pair together. Both need an app registration on the provider side,
+   which is the manual half and the reason this is listed here rather than only in §Phases.
 
 ---
 
@@ -457,3 +610,28 @@ re-litigated.**
   disk, only two branches rewriting the same section of a document. The guard already validated
   the file before it existed — `check-docs` has looked for it since the retrofit — so adopting
   it cost a template and a seed, not a mechanism.
+
+- **26 Aug 2026** — Clarity gets a **Claude connector**, and therefore does **not** get Teams,
+  Outlook, Plaud or Fathom integrations. Those four were on the list as Phase 5.6 "M365
+  integration", now retired: the connector removes the reason for them, because Claude holds
+  connectors
+  for all four, so once Clarity exposes tools it reads the meeting and calls `create_tasks`.
+  Building them natively would mean four OAuth flows, four token stores, four refresh
+  implementations and four polling jobs, to reproduce what the model on the other end does
+  already. The connector is not one integration, it is the last one — every future source of
+  tasks that Claude can read comes free. What it cannot do is run unattended, so 5.6 survives
+  as the scheduled sweep only, and stays after.
+
+- **26 Aug 2026** — the connector is sequenced **ahead of SSO and push reminders**, behind only
+  two small fixes. The goal it serves — get a task in from wherever the thought happened — is
+  the app's whole reason for existing, and its first item (4.9, the token-authed API) is a
+  prerequisite for the Google and Microsoft work anyway, so doing it first costs nothing and
+  unblocks the rest. The two fixes go first because one of them, revoking an invitation, builds
+  the revoke flow the token settings page then reuses.
+
+- **26 Aug 2026** — the connector authenticates with **personal access tokens, not OAuth**, for
+  its first version. OAuth 2.1 with dynamic client registration is what makes it a one-click
+  claude.ai connector, and it is real work — authorize, token, registration and metadata
+  endpoints over the Supabase session. Pasting a token once buys the entire capability for a
+  fraction of that, and the thing worth learning early is whether the *tool surface* is right,
+  which a pasted token tests just as well. OAuth stays as 4.11, after the tools have been used.
