@@ -132,8 +132,10 @@ happened rather than only in the app.
     produced a duplicate.
 
     **Not finished.** Nothing has connected to it from a real client yet: that needs a token
-    minted in a browser and one `claude mcp add` on Warwick's machine (§Open items 12). The
-    migration reaches prod when this merges.
+    minted in a browser and one `claude mcp add` on Warwick's machine (§Open items 12). **The
+    migration does not reach prod by merging** — nothing in CI or Vercel touches the database, so
+    it is a `supabase db push` against the prod project by hand
+    ([CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration", §Open items 13).
 16. ⏭ **Next** — **4.11**, connector OAuth. It stopped being polish on 26 Aug 2026: **a pasted
     token cannot reach claude.ai**, so 4.10 puts Clarity in Claude Code and nowhere near the
     phone ([KB.md](KB.md) #46, §"The Claude connector"). 4.10 was built so OAuth is a third way
@@ -648,6 +650,12 @@ all.
     whether the seven tools are the right seven and whether the descriptions are enough to be
     used correctly. It needs a token from the Connections page and one `claude mcp add`
     (§"The Claude connector"). **This is what closes 4.10.**
+13. **Push `20260826000003_capture_quota` to prod.** It is on dev. **Merging does not apply it** —
+    CI runs lint and build, Vercel builds and deploys the app, and neither touches the database.
+    Until it is pushed, the live app answers 500 from the brain dump and from `capture`, because
+    `consume_capture_quota` does not exist there. Commands in
+    [CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration"; the prod password is
+    `SUPABASE_DB_PASSWORD_PROD` in `.env.local`, and the last step is re-linking the CLI to dev.
 
 ---
 

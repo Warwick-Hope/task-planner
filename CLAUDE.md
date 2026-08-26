@@ -39,7 +39,7 @@ from memory.
 | `Internal task planning web application for Plant Plan Ltd` | Wrong — this is a personal project on personal accounts, for personal and household use ([PLAN.md](PLAN.md) §Context) |
 | `An unauthenticated API call gets an HTML login page` | Fixed 26 Aug 2026 — `/api` is exempt from the redirect and answers 401 JSON ([KB.md](KB.md) #37) |
 | `4.11 OAuth is polish, deferred until the tools have proved themselves` | Withdrawn 26 Aug 2026 — a pasted token cannot reach claude.ai at all, so 4.11 is what puts the connector on a phone. It follows 4.10 immediately ([KB.md](KB.md) #46) |
-| `There is no GET /api/tasks, and nothing lists workspaces` | Both exist as of Phase 4.10 — the connector's tools needed them and the app never had ([KB.md](KB.md) #47) |
+| `There is no GET /api/tasks, and nothing lists workspaces` | Both exist as of Phase 4.10 — the connector's tools needed them and the app never had ([PLAN.md](PLAN.md) §"The tool surface") |
 | `The brain dump has no quota` | Twenty captures per user per UTC day since Phase 4.10, shared between the textarea and the `capture` tool ([KB.md](KB.md) #48) |
 | Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 

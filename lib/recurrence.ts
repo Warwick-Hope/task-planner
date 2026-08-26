@@ -82,7 +82,7 @@ export function nextOccurrence(rruleStr: string, afterDate: string): string | nu
      * returned *that* Monday whenever the parse happened after midday, so the
      * "next occurrence" was a duplicate of the one just finished, and whether it
      * happened depended on the time of day. Found by the Phase 4.10 e2e run,
-     * where `complete_task` produced a task due the same day (KB.md #47).
+     * where `complete_task` produced a task due the same day (KB.md #49).
      *
      * The unit of a recurrence here is a day, so the comparison has to be one.
      */
