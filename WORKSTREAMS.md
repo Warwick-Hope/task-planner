@@ -20,9 +20,9 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 2026-08-26 | `docs/connector-plan` | Writing the Claude connector into the plan — no code | `PLAN.md` §"Where we are", §Phases 4 and 5, §Risks, §Open items, §Decisions log, and a new §"The Claude connector" |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
+what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
@@ -34,6 +34,7 @@ Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what'
 
 | Landed | What it was |
 |---|---|
+| 2026-08-26 | **PR #20** — the Claude connector written into the plan as 4.8–4.11, and Phase 5.6 narrowed to the unattended sweep |
 | 2026-08-26 | **PR #18** — web push for task assignments. Phase 4.3 in part; scheduled reminders deliberately excluded |
 | 2026-08-26 | The two-session collision that produced this file, `npm run session` and the worktree rules in `CONTRIBUTING.md` ([KB.md](KB.md) #39) |
 | 2026-08-25 | **PRs #15, #16, #17** — the bottom tab bar, the install offer, the invitation link, and 4.2 signed off after a real handset session |
