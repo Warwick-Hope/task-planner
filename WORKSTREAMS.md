@@ -20,8 +20,9 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
+| 2026-08-26 | `docs/prod-migration-4-3` | Recording that 4.3's migration is now applied to prod | `PLAN.md` §"Where we are" item 11, §Open items 2 |
 
-**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
+**Current position and what is next:** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
 what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
