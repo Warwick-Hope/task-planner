@@ -617,7 +617,7 @@ if (on('stale-claim')) {
           CFG.claimFile,
           line,
           `claims \`${branch}\`, which no longer exists`,
-          'the work landed — remove the row and add a line to "Recently finished"',
+          'the work landed — remove the row. History lives in PLAN.md and the git log',
         );
         continue;
       }

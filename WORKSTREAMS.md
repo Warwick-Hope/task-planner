@@ -21,7 +21,7 @@ edit §"Where we are".
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
 
-**Nothing claimed.** Current position and what is next: Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
 what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
@@ -30,14 +30,14 @@ what's next".
 > working: a board that keeps dead rows is a board nobody believes, and a board nobody believes
 > is worse than no board, because it is consulted and then ignored.
 
-## Recently finished, for context
+## Why there is no history table here
 
-| Landed | What it was |
-|---|---|
-| 2026-08-26 | **PR #22** — a test notification, because push was verifiable only by two people |
-| 2026-08-26 | **PR #21** — 4.3's migration applied to prod. The code shipped with #18; the table did not |
-| 2026-08-26 | **PR #20** — the Claude connector written into the plan as 4.8–4.11, and Phase 5.6 narrowed to the unattended sweep |
-| 2026-08-26 | **PR #18** — web push for task assignments. Phase 4.3 in part; scheduled reminders deliberately excluded |
-| 2026-08-26 | The two-session collision that produced this file, `npm run session` and the worktree rules in `CONTRIBUTING.md` ([KB.md](KB.md) #39) |
-| 2026-08-25 | **PRs #15, #16, #17** — the bottom tab bar, the install offer, the invitation link, and 4.2 signed off after a real handset session |
-| 2026-08-25 | **PRs #8–#14** — Playwright suite, consolidation refactor, RLS `initplan` rewrite, mobile pass, document retrofit, PWA |
+There was one — "Recently finished, for context", a row per merged PR. It came out on
+**26 Aug 2026** after conflicting on three consecutive pull requests. Every session appended to
+the top of the same table, so any two open PRs collided on the same four lines by construction,
+and merging one guaranteed the other needed a rebase. #21 and #22 each hit it twice.
+
+It was also the third copy of something already written down: [PLAN.md](PLAN.md) §"Where we are"
+carries the narrative, and `git log --oneline` carries the rest. The claim table above has never
+conflicted, because a claim is added and removed by one session at a time — which is the
+difference worth remembering if a history table is ever proposed again.
