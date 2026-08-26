@@ -57,6 +57,34 @@ test.describe('progressive web app', () => {
     }
   })
 
+  /**
+   * The four white wedges on the Windows taskbar that this catches were invisible
+   * to every other check: the icons were the right size, the right type and at
+   * the right URL, and simply had the page's white background baked into the
+   * corners outside the rounded rect. A PNG's IHDR colour type is byte 25, and
+   * says whether there is an alpha channel at all — 6 is RGBA, 2 is RGB.
+   */
+  test('the icons carry alpha only where they should', async ({ request }) => {
+    const EXPECTED = [
+      // Composited onto a tab or a taskbar, so the corners must be transparent.
+      { icon: '/icon-192.png', alpha: true },
+      { icon: '/icon-512.png', alpha: true },
+      // Full-bleed squares: a launcher crops the first, iOS rounds the second
+      // and composites any transparency to black.
+      { icon: '/icon-maskable-512.png', alpha: false },
+      { icon: '/apple-touch-icon.png', alpha: false },
+    ]
+
+    for (const { icon, alpha } of EXPECTED) {
+      const png = await (await request.get(icon)).body()
+      const colourType = png[25]
+      expect(
+        colourType === 6,
+        `${icon} has colour type ${colourType}; expected ${alpha ? '6 (RGBA)' : '2 (RGB)'}`
+      ).toBe(alpha)
+    }
+  })
+
   test('every page links the manifest', async ({ page }) => {
     await page.goto('/login')
     await expect(page.locator('link[rel="manifest"]')).toHaveAttribute(
