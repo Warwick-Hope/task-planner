@@ -20,8 +20,7 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-
-**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+| 26 Aug 2026 | `feat/mcp-server` | Phase 4.10 — `/api/mcp`, the seven tools, `GET /api/tasks`, `GET /api/workspaces`, the capture quota | `PLAN.md` §"Where we are", §Phases 4.10, §Open items 6, §Decisions log; `KB.md` §The app (new entries); `CLAUDE.md` §"The facts that prevent mistakes" |
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
