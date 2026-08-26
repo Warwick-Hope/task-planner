@@ -39,6 +39,22 @@ npm run test:e2e     # Playwright suite
 npm run check:docs   # documentation guard
 ```
 
+## Connecting Claude
+
+Clarity is an MCP server at `/api/mcp`, so Claude can read and write tasks directly rather than
+being told about them. Mint a token on the Connections page — it is shown once — and add it:
+
+```bash
+claude mcp add --transport http clarity https://task-planner-nine-sigma.vercel.app/api/mcp   --header "Authorization: Bearer clr_…"
+```
+
+Seven tools: `list_workspaces`, `list_categories`, `list_tasks`, `create_tasks`, `update_task`,
+`complete_task` and `capture` — the brain dump, callable, so a transcript becomes tasks in one
+step.
+
+**A pasted token works in Claude Code and Claude Desktop, and not on claude.ai** — a connector
+there authenticates by OAuth only, which is the next phase of work.
+
 ## Project structure
 
 ```

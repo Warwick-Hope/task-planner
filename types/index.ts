@@ -220,6 +220,15 @@ export interface ApiToken {
   created_at: string
 }
 
+// One user's tally of brain-dump/capture calls for one UTC day. Written only by
+// consume_capture_quota() — see 20260826000003_capture_quota.sql.
+export interface CaptureUsage {
+  user_id: string
+  /** UTC date, YYYY-MM-DD. */
+  day: string
+  count: number
+}
+
 // ─── Joined/view types ────────────────────────────────────────────────────────
 
 // Task with its category joined — used in list/detail views

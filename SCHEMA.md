@@ -194,6 +194,22 @@ opt-in rule.
 Revoking sets `revoked_at` rather than deleting the row, so `last_used_at` survives the
 revocation.
 
+### `capture_usage`
+
+`user_id, day (date), count` — primary key `(user_id, day)`
+
+One row per user per **UTC** day, holding how many brain-dump/`capture` calls they have made
+(Phase 4.10). The limit itself is not here: it lives in `MAX_CAPTURES_PER_DAY` in
+[lib/limits.ts](lib/limits.ts) and is passed in, because the database's job is to make the count
+atomic rather than to hold the policy.
+
+**Readable by its owner, writable by nobody.** There is deliberately no insert, update or delete
+policy: the only writer is `consume_capture_quota(p_limit)`, a security definer function, so a
+caller cannot raise their own limit by editing the row that enforces it. The increment and the
+decision happen in one statement — a conditional `on conflict do update … where count < p_limit` —
+so two calls arriving together cannot both proceed on the same remaining call
+([KB.md](KB.md) #48).
+
 ## Notifications
 
 ### `push_subscriptions`

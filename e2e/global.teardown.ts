@@ -7,9 +7,10 @@ import { test as teardown, expect } from '@playwright/test'
  * fails before its cleanup leaves its rows behind, and those accumulate in the
  * real dev workspace. This sweeps anything named "[e2e] …" regardless.
  *
- * It talks to Supabase directly rather than through the app: there is no list
- * endpoint on /api/tasks and no delete route for a household. RLS still applies,
- * so the account can only remove its own rows.
+ * It talks to Supabase directly rather than through the app: a household has no
+ * delete route, and sweeping by title pattern is not something any endpoint
+ * offers — /api/tasks can list since Phase 4.10, but only within one workspace.
+ * RLS still applies, so the account can only remove its own rows.
  */
 
 /** PostgREST pattern matching: * is the wildcard, and the brackets need encoding. */

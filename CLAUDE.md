@@ -39,6 +39,8 @@ from memory.
 | `Internal task planning web application for Plant Plan Ltd` | Wrong — this is a personal project on personal accounts, for personal and household use ([PLAN.md](PLAN.md) §Context) |
 | `An unauthenticated API call gets an HTML login page` | Fixed 26 Aug 2026 — `/api` is exempt from the redirect and answers 401 JSON ([KB.md](KB.md) #37) |
 | `4.11 OAuth is polish, deferred until the tools have proved themselves` | Withdrawn 26 Aug 2026 — a pasted token cannot reach claude.ai at all, so 4.11 is what puts the connector on a phone. It follows 4.10 immediately ([KB.md](KB.md) #46) |
+| `There is no GET /api/tasks, and nothing lists workspaces` | Both exist as of Phase 4.10 — the connector's tools needed them and the app never had ([KB.md](KB.md) #47) |
+| `The brain dump has no quota` | Twenty captures per user per UTC day since Phase 4.10, shared between the textarea and the `capture` tool ([KB.md](KB.md) #48) |
 | Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 
 Current figures come from [PLAN.md](PLAN.md) §"Where we are" — not from memory, and not from an
@@ -90,6 +92,16 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   sends go through a security definer function that checks both sides ([KB.md](KB.md) #38).
 - **An unauthenticated call to any API route gets a 401 JSON** — `/api` is exempt from the login
   redirect as of Phase 4.9, and each route answers for itself ([KB.md](KB.md) #37).
+- **`/api/mcp` checks scope per tool, not at the door** — reaching it needs `tasks:read`, and a
+  writing tool checks `tasks:write` itself, so a read-only token gets a connector that lists. The
+  transport is hand-written JSON-RPC, deliberately, and a tool refusal is a *result* with
+  `isError`, never a protocol error ([KB.md](KB.md) #47).
+- **The capture quota is counted in [lib/brain-dump.ts](lib/brain-dump.ts)**, not in the route and
+  not in the tool — one budget of twenty a day, whichever door the call came through. The e2e
+  suite spends from it ([KB.md](KB.md) #48).
+- **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
+  the connector's tools both call it, and `complete_task` is separate from an update because
+  completing advances a recurrence ([KB.md](KB.md) #24, #49).
 - **A route is session-only until it names a token scope** — `requireCaller(request)` refuses a
   bearer token; `requireCaller(request, { scope })` accepts one. `/api/tokens` is session-only on
   purpose ([KB.md](KB.md) #45).
