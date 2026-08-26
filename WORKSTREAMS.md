@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 2026-08-26 | `docs/prod-migration-4-3` | Recording that 4.3's migration is now applied to prod | `PLAN.md` §"Where we are" item 11, §Open items 2 |
 
-**Current position and what is next:** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
+**Nothing claimed.** Current position and what is next: Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
 what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
@@ -35,6 +34,7 @@ what's next".
 
 | Landed | What it was |
 |---|---|
+| 2026-08-26 | **PR #20** — 4.3's migration applied to prod. The code shipped with #18; the table did not |
 | 2026-08-26 | **PR #20** — the Claude connector written into the plan as 4.8–4.11, and Phase 5.6 narrowed to the unattended sweep |
 | 2026-08-26 | **PR #18** — web push for task assignments. Phase 4.3 in part; scheduled reminders deliberately excluded |
 | 2026-08-26 | The two-session collision that produced this file, `npm run session` and the worktree rules in `CONTRIBUTING.md` ([KB.md](KB.md) #39) |
