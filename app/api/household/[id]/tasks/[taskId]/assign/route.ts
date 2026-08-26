@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { requireMember } from '@/lib/workspace-server'
 import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
+import { pushToMember } from '@/lib/push'
 
 export async function POST(
   request: Request,
@@ -15,10 +16,11 @@ export async function POST(
   const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
   if (!membership) return forbidden()
 
-  // Verify task belongs to this workspace
+  // Verify task belongs to this workspace. The title comes along for the
+  // notification text below.
   const { data: task } = await supabase
     .from('tasks')
-    .select('id, workspace_id')
+    .select('id, workspace_id, title')
     .eq('id', params.taskId)
     .eq('workspace_id', params.id)
     .single()
@@ -67,6 +69,34 @@ export async function POST(
       .eq('id', params.taskId)
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+
+    // Tell them, on whatever devices they have turned on. Only for an
+    // assignment to someone else: assigning to yourself needs no announcement,
+    // and the in-app bell already carries the accept/decline for both.
+    //
+    // Deliberately awaited but never allowed to fail the request — the
+    // assignment is written by this point, and a push that does not send is not
+    // a reason to report the assignment as failed.
+    if (!isSelf) {
+      const { data: assigner } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .single()
+
+      await pushToMember(supabase, {
+        userId: assignTo,
+        workspaceId: params.id,
+        payload: {
+          title: `${assigner?.display_name ?? 'Someone'} assigned you a task`,
+          body: task.title,
+          url: `/household/${params.id}/tasks`,
+          // One notification per task, replaced rather than repeated.
+          tag: `assignment:${params.taskId}`,
+        },
+      })
+    }
+
     return NextResponse.json({ ok: true, assignmentStatus })
   }
 

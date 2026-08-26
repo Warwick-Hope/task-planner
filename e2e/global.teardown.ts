@@ -36,11 +36,18 @@ teardown('remove rows created by the suite', async () => {
   const headers = { apikey: key, Authorization: `Bearer ${auth.access_token}` }
 
   /**
-   * Deletes every row in `table` whose `column` starts with "[e2e]".
-   * The column differs by table — tasks are titled, workspaces are named.
+   * Deletes every row in `table` whose `column` matches the marker pattern.
+   * The column differs by table — tasks are titled, workspaces are named, and a
+   * push subscription is only identifiable by its endpoint, which is why the
+   * pattern is overridable.
    */
-  async function sweep(table: string, column: string, label: string): Promise<number> {
-    const filter = `${column}=${LIKE_E2E}`
+  async function sweep(
+    table: string,
+    column: string,
+    label: string,
+    pattern: string = LIKE_E2E
+  ): Promise<number> {
+    const filter = `${column}=${pattern}`
 
     const listed = await fetch(`${url}/rest/v1/${table}?${filter}&select=${column}`, { headers })
     expect(listed.ok, `teardown could not list ${label}: ${listed.status}`).toBe(true)
@@ -61,5 +68,16 @@ teardown('remove rows created by the suite', async () => {
   const tasks = await sweep('tasks', 'title', 'task(s)')
   const households = await sweep('workspaces', 'name', 'household(s)')
 
-  if (tasks + households === 0) console.log('teardown: nothing to clean up')
+  // Push subscriptions carry no name to mark, so the marker is in the synthetic
+  // endpoint the push spec builds: https://fcm.googleapis.com/e2e/...
+  // Only the owner's own rows are visible here; the invitee's are cleaned up by
+  // the spec itself, and a stray one is inert — it points at nothing.
+  const subscriptions = await sweep(
+    'push_subscriptions',
+    'endpoint',
+    'push subscription(s)',
+    'like.*googleapis.com/e2e/*'
+  )
+
+  if (tasks + households + subscriptions === 0) console.log('teardown: nothing to clean up')
 })

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import PushToggle from '@/components/nav/PushToggle'
 
 interface PendingAssignment {
   taskId: string
@@ -97,6 +98,10 @@ export default function NotificationBell({ initial }: Props) {
               ))}
             </ul>
           )}
+
+          {/* Push lives here rather than in a settings page: this panel is
+              already "your notifications", and it is on every screen. */}
+          <PushToggle />
         </div>
       )}
     </div>

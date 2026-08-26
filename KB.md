@@ -51,6 +51,11 @@ E2E_USER_PASSWORD=<password>
 E2E_USER2_EMAIL=warwickhope93+e2e2@gmail.com
 E2E_USER2_PASSWORD=<password>
 
+# Web push (#38). Dev pair only — prod has its own, set in Vercel.
+NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public key from: npx web-push generate-vapid-keys>
+VAPID_PRIVATE_KEY=<the matching private key — server only, never NEXT_PUBLIC_>
+VAPID_SUBJECT=mailto:warwickhope93@gmail.com
+
 # Supabase CLI only — NOT read by the app (#5)
 SUPABASE_ACCESS_TOKEN=<personal-account token from supabase.com → Account → Access Tokens>
 ```
@@ -59,7 +64,13 @@ SUPABASE_ACCESS_TOKEN=<personal-account token from supabase.com → Account → 
 
 Set in Vercel → Project → Settings → Environment Variables, Production scope only:
 `NEXT_PUBLIC_SUPABASE_URL` (prod), `NEXT_PUBLIC_SUPABASE_ANON_KEY` (prod), `ANTHROPIC_API_KEY`
-(the same key), `NEXT_PUBLIC_APP_URL` = the Vercel URL.
+(the same key), `NEXT_PUBLIC_APP_URL` = the Vercel URL, and the **prod** web push pair —
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (#38).
+
+`NEXT_PUBLIC_APP_URL` was missing here for months and nothing said so, because the only thing
+that read it was the invitation link — which quietly came out as a bare path (#36). Nothing reads
+it on the critical path now, but the same trap applies to the VAPID pair: without it, push
+subscribes fail with a 503 that only shows in the notification bell.
 
 Prod Supabase → Authentication → URL Configuration must have **Site URL** set to the Vercel URL
 and a **wildcard redirect** `https://task-planner-nine-sigma.vercel.app/**` — signup redirects
@@ -109,6 +120,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 34 | Phone navigation is a bottom tab bar, not a scrolling strip | The app | Live |
 | 35 | `beforeinstallprompt` fires before hydration, and often not at all | The app | Live |
 | 36 | A link that leaves the app is built from the request, not `NEXT_PUBLIC_APP_URL` | The app | Live |
+| 37 | The whole API answers HTML to a caller with no session | Auth, RLS and security | Live |
+| 38 | Web push: a VAPID pair per environment, and what cannot be tested | The app | Live |
 
 ---
 
@@ -282,6 +295,23 @@ lookahead, alongside the `/invite/` exemption (#7).
 
 They expose nothing: static files with no user data on them. `e2e/pwa.spec.ts` asserts each one
 answers **logged out**, which is the only state in which this breaks.
+
+### 37. The whole API answers HTML to a caller with no session
+
+The middleware matcher covers `/api/**`, so an unauthenticated request to any route is redirected
+to `/login` and the caller receives a 200 and an HTML page. The `unauthorised()` 401 in each route
+is therefore **unreachable from a browser without a session** — it only fires for a request that
+carries a session cookie the route itself rejects.
+
+Two consequences. Writing a test that asserts 401 for an anonymous caller will fail with a
+confusing `Received: 200`, and the honest assertion is that the response URL is `/login`
+(`e2e/push.spec.ts` does this). And client code that assumes a failed `fetch` returns JSON will
+throw a parse error rather than see a status — which is a real if minor wart in the app, not
+something any one route chose.
+
+Worth fixing one day by exempting `/api` from the redirect and letting the routes answer for
+themselves. Not done: it changes the behaviour of every route at once, and nothing currently
+depends on it.
 
 ---
 
@@ -526,6 +556,30 @@ only then to the environment variable — so the link points at whatever host th
 actually on, and there is no variable to forget on the next deployment or custom domain.
 
 `e2e/invite.spec.ts` now asserts the returned `inviteUrl` equals `${baseURL}/invite/${token}`.
+
+### 38. Web push: a VAPID pair per environment, and what cannot be tested
+
+**The keypair identifies the sender, and dev and prod need different ones.** Both live in the
+environment, never the repo: `NEXT_PUBLIC_VAPID_PUBLIC_KEY` (the browser needs it to subscribe)
+and `VAPID_PRIVATE_KEY` (server only — a `NEXT_PUBLIC_` prefix on that would publish the ability
+to push to every subscriber). Generate with `npx web-push generate-vapid-keys`. Without a pair,
+`/api/push/subscribe` answers 503 rather than storing a subscription nothing can ever send to.
+
+**A subscription is a capability, not a preference.** Anyone holding the endpoint plus its two
+keys can notify that device, which is why `push_subscriptions` is owner-only under RLS and the
+assignment route reads other members' rows through `get_push_subscriptions_for_member` — security
+definer, membership checked on both sides. Do not "simplify" that into a broader policy.
+
+**Sending must never fail the request that triggered it.** The assignment is written before the
+push is attempted; a push service that is down is not a reason to tell the user their assignment
+failed. `pushToMember` swallows everything, and retires the endpoint only on 404/410 — anything
+else is transient and the row stays.
+
+**What cannot be tested here:** delivery. The worker registers in production builds only (#32), so
+the dev server never has one, and a real push needs a live push service and a browser
+registration. What `e2e/push.spec.ts` does cover is the storage boundary and the send path up to
+the push service — including a deliberately dead endpoint, which proves both that a 404 retires
+the subscription and that it cannot break the assignment.
 
 ---
 

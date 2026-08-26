@@ -78,6 +78,10 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   ([KB.md](KB.md) #26).
 - **The service worker caches no user data and registers in production only** — adding pages or
   API responses to it would be a bug, not an improvement ([KB.md](KB.md) #32).
+- **A push subscription is a capability** — `push_subscriptions` is owner-only, and cross-member
+  sends go through a security definer function that checks both sides ([KB.md](KB.md) #38).
+- **An unauthenticated call to any API route gets an HTML login page, not a 401** — the
+  middleware matcher covers `/api` ([KB.md](KB.md) #37).
 - **Never call `preventDefault()` on `beforeinstallprompt`** — it suppresses the browser's own
   install offer, which is the one people expect ([KB.md](KB.md) #35).
 - **Below `md` the nav is a bottom tab bar** — the first four entries in `PersonalNav`/

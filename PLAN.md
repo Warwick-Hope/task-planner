@@ -71,13 +71,19 @@ installed on Android and running standalone. The next build item is 4.3, web pus
 
     **The app is installed on an Android handset and running standalone**, and the invitation
     link was confirmed correct on production after #16 deployed.
-11. ⏭ **Next — Phase 4.3, web push notifications.** Task reminders and assignment
-    notifications. It needs a registered service worker, which 4.2 provides.
-12. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+11. 🔄 **Phase 4.3 — web push, assignment notifications.** Code-complete on
+    `feat/phase-4-3-push-assignments`, open as PR #18 since 26 Aug 2026. Being assigned a task
+    by another adult now pushes to whatever devices that person has turned on, from the
+    notification bell. **Scheduled reminders are deliberately not in it** — see the decisions
+    log for 26 Aug 2026. *Done* means a real notification arrives on the handset, which needs
+    the merge and the prod VAPID pair (§Open items 2).
+12. ⏭ **Next — Phase 4.4, Microsoft OAuth.** Additive to email/password, never a replacement —
+    removing the password path would strand the e2e accounts and the invite flow.
+13. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-13. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+14. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
     until an external user exists. None block 4.3.
 
 ---
@@ -231,8 +237,8 @@ paper. Met.
 |---|---|---|
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
-| 4.3 | Web push notifications — reminders, assignments | Next |
-| 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Not started |
+| 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | 🔄 PR #18 open |
+| 4.4 | Microsoft OAuth — **additive**, not a replacement for email/password | Next |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
@@ -314,6 +320,15 @@ It asserts Chrome parses the manifest without errors, the worker reaches `activa
 navigation lands on the offline page, and **nothing but hashed build assets is in the cache** —
 that last one is the check that would catch a well-meant change starting to cache user data.
 
+**Push is verified up to the push service, not onto a device.** `e2e/push.spec.ts` covers the
+storage boundary — a registration needs a session, malformed endpoints are refused, re-registering
+a device does not duplicate it, and one account can neither delete nor read another's devices,
+including through the security definer function the assignment route uses. It also sends for
+real: one test registers a syntactically valid endpoint belonging to nobody, so the push service
+answers 404, and asserts both that the assignment still succeeds and that the dead subscription is
+retired. What no test here can do is put a notification on a handset — the worker registers in
+production builds only ([KB.md](KB.md) #32, #38).
+
 ---
 
 ## Open items to resolve as we go
@@ -327,18 +342,24 @@ that last one is the check that would catch a well-meant change starting to cach
    install offer itself**, since it is already installed and Chrome will not offer again. If it
    matters, confirm it from a second device or a fresh browser profile — or accept the code
    reading, which is that suppressing it was the only thing stopping it ([KB.md](KB.md) #35).
-2. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
+2. **Generate the production VAPID pair and set it in Vercel**, once PR #18 merges. Dev has its
+   own pair in `.env.local`; prod needs a different one, and until it exists push subscribes
+   answer 503 and nothing can be sent. `npx web-push generate-vapid-keys`, then
+   `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` in the Production
+   scope ([KB.md](KB.md) #38). Then confirm a real assignment notification arrives on the
+   handset — that is what closes 4.3.
+3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
-3. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
+4. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
    the setting is Pro-plan and above. Both projects are free tier, so there is nothing to
    toggle. Revisit with the Pro decision.
-4. **The Pro decision itself.** It would unblock item 3, stop the projects pausing (§Risks), and
+5. **The Pro decision itself.** It would unblock item 4, stop the projects pausing (§Risks), and
    make wiring the e2e suite into CI sensible. Settle it as one decision, not three.
-5. **Per-user daily quota on the brain dump.** Deferred while single-user; required before any
+6. **Per-user daily quota on the brain dump.** Deferred while single-user; required before any
    external user.
-6. **Whether 1.18 has anything left in it** after 4.1. Look at what 4.1 changed before
+7. **Whether 1.18 has anything left in it** after 4.1. Look at what 4.1 changed before
    scheduling any of it.
-7. **`shopping_list` UPDATE column rule lives only in the route layer.** RLS cannot express
+8. **`shopping_list` UPDATE column rule lives only in the route layer.** RLS cannot express
    "restricted members may change `is_purchased` only". A trigger would be needed. Recorded
    rather than fixed.
 
@@ -403,3 +424,12 @@ re-litigated.**
   that it should behave like the desktop. The default is left alone now. The row in the More
   sheet stays, because iOS Safari never fires the event and some Android browsers only offer
   install through their own menu ([KB.md](KB.md) #35).
+
+- **26 Aug 2026** — Phase 4.3 ships assignment notifications and **no scheduler**. Web push needs
+  something to decide when a reminder is due, and both free options were worse than waiting: a
+  Vercel Hobby cron is limited to roughly daily, which makes a "reminder" a morning digest rather
+  than a nudge before the task; and a GitHub Actions schedule every fifteen minutes would be
+  accurate but adds a second system, a shared secret and a drift of five to fifteen minutes to
+  reason about. Neither is worth it while the only user is one person who opens the app anyway.
+  The push stack — subscriptions, worker, permission flow — is all built, so adding a scheduler
+  later is an endpoint and a trigger, not a rewrite. Revisit with the Pro decision.
