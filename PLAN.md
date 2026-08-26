@@ -78,12 +78,14 @@ happened rather than only in the app.
 
     **The app is installed on an Android handset and running standalone**, and the invitation
     link was confirmed correct on production after #16 deployed.
-11. ✅ **Phase 4.3 — web push, assignment notifications.** PR #18, merged 26 Aug 2026 and
-    auto-deployed. Being assigned a task
-    by another adult now pushes to whatever devices that person has turned on, from the
-    notification bell. **Scheduled reminders are deliberately not in it** — see the decisions
-    log for 26 Aug 2026. *Done* means a real notification arrives on the handset, which needs
-    the prod VAPID pair, which is still to be generated and set (§Open items 2).
+11. 🔄 **Phase 4.3 — web push, assignment notifications.** PR #18, merged 26 Aug 2026 and
+    auto-deployed, and `20260826000001_push_subscriptions` applied to **prod** the same day —
+    CLI re-linked to dev afterwards and checked. Being assigned a task by another adult pushes
+    to whatever devices that person has turned on, from the notification bell. **Scheduled
+    reminders are deliberately not in it** — see the decisions log for 26 Aug 2026.
+
+    **Not finished.** Prod has no VAPID pair, so subscribing there answers 503 and nothing can
+    be sent. *Done* means a real notification arriving on the handset (§Open items 2).
 12. ✅ **Parallel-session guard — 26 Aug 2026.** A worktree per session, `npm run session`
     (`scripts/session-check.mjs`, on a `SessionStart` hook) and
     [WORKSTREAMS.md](WORKSTREAMS.md), the claim board. Prompted by two sessions colliding in one
@@ -496,9 +498,11 @@ production builds only ([KB.md](KB.md) #32, #38).
    install offer itself**, since it is already installed and Chrome will not offer again. If it
    matters, confirm it from a second device or a fresh browser profile — or accept the code
    reading, which is that suppressing it was the only thing stopping it ([KB.md](KB.md) #35).
-2. **Generate the production VAPID pair and set it in Vercel**, once PR #18 merges. Dev has its
-   own pair in `.env.local`; prod needs a different one, and until it exists push subscribes
-   answer 503 and nothing can be sent. `npx web-push generate-vapid-keys`, then
+2. **Generate the production VAPID pair and set it in Vercel.** The code and the migration are
+   both live as of 26 Aug 2026; this is the only thing between them and a working notification.
+   Dev has its own pair in `.env.local`; prod needs a different one, and until it exists push
+   subscribes answer 503 and nothing can be sent. Vercel applies new variables to **new
+   deployments only**, so redeploy after adding them. `npx web-push generate-vapid-keys`, then
    `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` in the Production
    scope ([KB.md](KB.md) #38). Then confirm a real assignment notification arrives on the
    handset — that is what closes 4.3.
