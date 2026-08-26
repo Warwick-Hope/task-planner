@@ -37,6 +37,7 @@ from memory.
 | `role_categories` | Replaced by `categories` in Phase 0 ([SCHEMA.md](SCHEMA.md)) |
 | `task_roles` | Dropped 17 Aug 2026 — a pre-Phase-0 leftover with no code and no rows ([SECURITY_HARDENING.md](SECURITY_HARDENING.md)) |
 | `Internal task planning web application for Plant Plan Ltd` | Wrong — this is a personal project on personal accounts, for personal and household use ([PLAN.md](PLAN.md) §Context) |
+| Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 
 Current figures come from [PLAN.md](PLAN.md) §"Where we are" — not from memory, and not from an
 older section of any document. If two numbers disagree, say so rather than picking one.

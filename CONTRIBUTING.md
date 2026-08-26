@@ -69,7 +69,9 @@ faster, and no second copy on disk — junction it to the main checkout's. A jun
 administrator rights on Windows:
 
 ```powershell
-cmd /c mklink /J C:\Dev\.worktrees\task-planner\<slug>\node_modules C:\Dev\task-planner\node_modules
+New-Item -ItemType Junction `
+  -Path   C:\Dev\.worktrees\task-planner\<slug>\node_modules `
+  -Target C:\Dev\task-planner\node_modules
 ```
 
 Worktrees the harness creates itself get this from `worktree.symlinkDirectories` in
@@ -89,8 +91,14 @@ Worktrees the harness creates itself get this from `worktree.symlinkDirectories`
 worktree stops two sessions overwriting each other's *files*; it does not stop them both
 rewriting `PLAN.md` §"Where we are" and meeting as a merge conflict. Claim sections, not files.
 
+**Push the branch as soon as you have claimed.** The guard resolves a claim against
+`git ls-remote origin`, not your local branches, so a claim on an unpushed branch fails
+`check:docs` with "claims `<branch>`, which no longer exists" — which reads like the work has
+landed when it has not even left the machine. Pushing early is right anyway: an unpushed branch
+is invisible to every other session's `npm run session`.
+
 **Remove your claim in the last commit before the PR is ready** — the branch dies on squash
-merge, and `npm run check:docs` fails on a claim naming a branch that no longer exists.
+merge, and the same check then fails for the real reason.
 
 ## While you work
 
