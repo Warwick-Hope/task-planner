@@ -20,8 +20,9 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
+| 2026-08-26 | `feat/phase-4-9-token-auth` | Phase 4.9 — API tokens, bearer auth, the `/api` redirect exemption | PLAN.md §"Where we are" and the Phase 4 table · KB.md new entries · SCHEMA.md · this row |
 
-**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
