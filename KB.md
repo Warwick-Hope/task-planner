@@ -125,6 +125,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 39 | Two sessions in one working tree — git isolates branches, not directories | Git and deploy | Live |
 | 40 | An app icon needs alpha in some places and not others | The app | Live |
 | 41 | An accepted invitation is a record, not a pending action | The app | Live |
+| 42 | An optimistic UI means a reload can beat the write it is asserting | The e2e suite | Live |
 
 ---
 
@@ -412,6 +413,21 @@ starting a healthy one, and the failure surfaced as an auth problem.
 to `next.config.mjs`, `middleware.ts` or anything else Next reads once at boot — and check the
 dev server before reading anything into the error message, which describes a symptom rather than
 a cause.
+
+### 42. An optimistic UI means a reload can beat the write it is asserting
+
+`tasks.spec.ts` clicks the status indicator, asserts the title says `wip`, then reloads to prove
+the change reached the database. The assertion passes the instant the click lands, because the
+row updates optimistically — so the reload can start before the PATCH has been answered, and the
+page comes back saying `not_started`. It failed exactly that way once in forty tests, and passed
+on every re-run, which is what a race looks like.
+
+**Wait for the response, not for the rendered value:** set up
+`page.waitForResponse(res => res.request().method() === 'PATCH' && res.url().includes('/api/tasks/'))`
+*before* the click, then await it before reloading. A `waitForTimeout` would hide the same race
+behind a delay that is either wasted or insufficient. This applies to every optimistic control in
+the app — the status cycle, task-status toggling, the shopping tick — so any new spec that
+reloads to check persistence needs the same treatment.
 
 ---
 

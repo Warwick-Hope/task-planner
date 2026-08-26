@@ -61,8 +61,16 @@ test('the status indicator advances and the change persists', async ({ page }) =
   await expect(indicator).toHaveAttribute('title', /not_started/)
 
   // Clicking advances not_started -> wip, optimistically and then for real.
+  // The optimistic half is why the PATCH has to be waited for explicitly: the
+  // title says wip the instant the click lands, so a reload straight after it
+  // can beat the write to the database and read back not_started. That is a
+  // race in the test, not in the app, and it failed exactly that way once.
+  const written = page.waitForResponse(
+    (res) => res.request().method() === 'PATCH' && res.url().includes('/api/tasks/')
+  )
   await indicator.click()
   await expect(row.getByTitle(/^Status:/)).toHaveAttribute('title', /wip/)
+  expect((await written).ok(), 'the status PATCH failed').toBe(true)
 
   // The reload is the point: it proves the PATCH reached the database rather
   // than the row just updating in place.
