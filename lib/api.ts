@@ -68,3 +68,20 @@ export function requestOrigin(request: Request): string {
   // Last resort: whatever URL the runtime handed the route.
   return new URL(request.url).origin
 }
+
+/**
+ * What a `lib/` helper says when it will not do the thing.
+ *
+ * The status travels with the message because the same helper is called by a
+ * route, which needs an HTTP status, and by an MCP tool, which needs a sentence
+ * to hand back to a model. Anything that returns one of these pairs with a
+ * success shape, so callers branch on `ok` and TypeScript narrows the rest.
+ */
+export interface Refusal {
+  ok: false
+  status: number
+  error: string
+}
+
+/** Turns a helper's refusal into the response a route should send. */
+export const refusal = (r: Refusal) => NextResponse.json({ error: r.error }, { status: r.status })

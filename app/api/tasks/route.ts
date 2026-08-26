@@ -1,24 +1,54 @@
-import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { NextResponse } from 'next/server'
+import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { requireCaller } from '@/lib/api-auth'
+import { refusal, parseJson, badBody, trimmedString } from '@/lib/api'
+import { createTask, listTasks, type TaskStatusFilter } from '@/lib/tasks-server'
+import { horizonFieldsFromInput } from '@/lib/horizon'
 import type { TaskStatus } from '@/types'
 
-interface CreateTaskBody {
-  title: string
-  notes?: string
-  status?: TaskStatus
-  category_id?: string | null
-  due_date?: string | null
-  is_recurring?: boolean
-  recurrence_rule?: string | null
-  recurrence_end_date?: string | null
-  horizon_year?: number | null
-  horizon_half?: number | null
-  horizon_quarter?: number | null
-  horizon_month?: number | null
-  horizon_week?: string | null
-  horizon_day?: string | null
-  horizon_time_slot?: string | null
+/**
+ * The personal workspace's tasks.
+ *
+ * `GET` is new in Phase 4.10. The app never needed it — every page reads tasks
+ * server-side and renders them — so the one thing a connector does most often
+ * was the one thing the API could not do at all.
+ */
+export async function GET(request: Request) {
+  const auth = await requireCaller(request, { scope: 'tasks:read' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
+
+  const workspaceId = await getPersonalWorkspaceId(supabase, userId)
+  if (!workspaceId) return NextResponse.json({ error: 'No workspace found' }, { status: 400 })
+
+  const { searchParams } = new URL(request.url)
+  const number = (name: string) => {
+    const raw = searchParams.get(name)
+    if (raw === null) return undefined
+    const parsed = Number(raw)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  const result = await listTasks(supabase, userId, {
+    workspaceId,
+    status: (searchParams.get('status') as TaskStatusFilter | null) ?? 'all',
+    categoryId: searchParams.get('category'),
+    horizon: {
+      year: number('year'),
+      quarter: number('quarter'),
+      month: number('month'),
+      week: searchParams.get('week') ?? undefined,
+      day: searchParams.get('day') ?? undefined,
+    },
+    dueFrom: searchParams.get('due_from') ?? undefined,
+    dueTo: searchParams.get('due_to') ?? undefined,
+    unplannedOnly: searchParams.get('unplanned') === 'true',
+    limit: number('limit'),
+  })
+
+  if (!result.ok) return refusal(result)
+
+  return NextResponse.json({ tasks: result.tasks })
 }
 
 export async function POST(request: Request) {
@@ -29,54 +59,25 @@ export async function POST(request: Request) {
   const workspaceId = await getPersonalWorkspaceId(supabase, userId)
   if (!workspaceId) return NextResponse.json({ error: 'No workspace found' }, { status: 400 })
 
-  let body: CreateTaskBody
-  try {
-    body = await request.json()
-  } catch {
-    return NextResponse.json({ error: 'Invalid request body' }, { status: 400 })
-  }
+  const body = await parseJson<Record<string, unknown>>(request)
+  if (!body) return badBody()
 
-  const {
-    title,
-    notes,
-    status,
-    category_id,
-    due_date,
-    is_recurring,
-    recurrence_rule,
-    recurrence_end_date,
-    ...horizonFields
-  } = body
+  // The forms build their horizon fields with lib/horizon.ts and post the
+  // result, so they are narrowed here rather than rebuilt (KB.md #22).
+  const result = await createTask(supabase, userId, {
+    workspaceId,
+    title: trimmedString(body.title) ?? '',
+    notes: trimmedString(body.notes),
+    status: (body.status as TaskStatus) ?? undefined,
+    categoryId: trimmedString(body.category_id),
+    dueDate: trimmedString(body.due_date),
+    horizon: horizonFieldsFromInput(body),
+    isRecurring: body.is_recurring === true,
+    recurrenceRule: trimmedString(body.recurrence_rule),
+    recurrenceEndDate: trimmedString(body.recurrence_end_date),
+  })
 
-  if (!title?.trim()) {
-    return NextResponse.json({ error: 'Title is required' }, { status: 400 })
-  }
+  if (!result.ok) return refusal(result)
 
-  const { data: task, error: taskError } = await supabase
-    .from('tasks')
-    .insert({
-      workspace_id: workspaceId,
-      created_by: userId,
-      title: title.trim(),
-      notes: notes?.trim() || null,
-      status: status ?? 'not_started',
-      category_id: category_id ?? null,
-      due_date: due_date ?? null,
-      is_recurring: is_recurring ?? false,
-      recurrence_rule: recurrence_rule ?? null,
-      recurrence_end_date: recurrence_end_date ?? null,
-      horizon_year: horizonFields.horizon_year ?? null,
-      horizon_half: horizonFields.horizon_half ?? null,
-      horizon_quarter: horizonFields.horizon_quarter ?? null,
-      horizon_month: horizonFields.horizon_month ?? null,
-      horizon_week: horizonFields.horizon_week ?? null,
-      horizon_day: horizonFields.horizon_day ?? null,
-      horizon_time_slot: horizonFields.horizon_time_slot ?? null,
-    })
-    .select('id')
-    .single()
-
-  if (taskError) return NextResponse.json({ error: taskError.message }, { status: 500 })
-
-  return NextResponse.json({ id: task.id }, { status: 201 })
+  return NextResponse.json({ id: result.task.id }, { status: 201 })
 }

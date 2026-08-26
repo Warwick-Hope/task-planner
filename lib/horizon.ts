@@ -165,6 +165,69 @@ export function buildHorizonFields(
   return empty
 }
 
+/**
+ * The full field set from a precision plus **any** date inside the intended
+ * period — "next month" needs only a date in it, not the first of it.
+ *
+ * This is the shape anything that is not a form uses: the brain dump's model
+ * output and the connector's tools both name a precision and one date, and both
+ * come through here rather than setting `horizon_*` themselves (KB.md #22). A
+ * caller that hands over a precision with no usable date gets `unplanned`, which
+ * is a task you can find and fix — unlike a half-filled set of columns.
+ */
+export function horizonFromAnchor(
+  precision: HorizonPrecision,
+  anchor: string | null
+): HorizonFields {
+  if (precision === 'unplanned' || !anchor) return buildHorizonFields('unplanned', {})
+
+  // A date-only anchor cannot carry a time slot, so 'time' degrades to 'day'
+  // rather than inventing midnight.
+  const dayStr = anchor.split('T')[0]
+  const hasTime = anchor.includes('T')
+
+  const year = yearFromDate(dayStr)
+  const month = monthFromDate(dayStr)
+  const quarter = monthToQuarter(month)
+
+  switch (precision) {
+    case 'year':    return buildHorizonFields('year',    { year })
+    case 'half':    return buildHorizonFields('half',    { year, half: quarterToHalf(quarter) })
+    case 'quarter': return buildHorizonFields('quarter', { year, quarter })
+    case 'month':   return buildHorizonFields('month',   { year, month })
+    case 'week':    return buildHorizonFields('week',    { weekStr: dayStr })
+    case 'day':     return buildHorizonFields('day',     { dayStr })
+    case 'time':
+      return hasTime
+        ? buildHorizonFields('time', { timeStr: anchor })
+        : buildHorizonFields('day', { dayStr })
+  }
+}
+
+/**
+ * The seven columns picked out of a request body, with anything unrecognised
+ * dropped.
+ *
+ * The browser forms build their fields with `buildHorizonFields` and post the
+ * result, so this is a narrowing rather than a construction — its job is to make
+ * "the body carries horizon columns" a statement made in one place rather than
+ * spelled out field-by-field in every route that accepts them.
+ */
+export function horizonFieldsFromInput(input: Record<string, unknown>): HorizonFields {
+  const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
+  const str = (v: unknown) => (typeof v === 'string' && v.trim() ? v : null)
+
+  return {
+    horizon_year: num(input.horizon_year),
+    horizon_half: num(input.horizon_half),
+    horizon_quarter: num(input.horizon_quarter),
+    horizon_month: num(input.horizon_month),
+    horizon_week: str(input.horizon_week),
+    horizon_day: str(input.horizon_day),
+    horizon_time_slot: str(input.horizon_time_slot),
+  }
+}
+
 export type HorizonReviewStatus = 'approaching' | 'overdue'
 
 /**

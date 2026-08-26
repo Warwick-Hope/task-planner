@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Category } from '@/types'
-import type { ParsedTask } from '@/app/api/brain-dump/route'
+import type { ParsedTask } from '@/lib/brain-dump'
 import { MAX_BRAIN_DUMP_CHARS } from '@/lib/limits'
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
