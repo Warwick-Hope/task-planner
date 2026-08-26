@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
-import { nextOccurrence } from '@/lib/recurrence'
-import type { TaskStatus, Task } from '@/types'
-import { buildHorizonFields, getMondayOfWeek, monthFromDate, yearFromDate, monthToQuarter, quarterToHalf } from '@/lib/horizon'
-import { parseJson, badBody } from '@/lib/api'
+import type { TaskStatus } from '@/types'
+import { parseJson, badBody, refusal } from '@/lib/api'
 import { requireCaller } from '@/lib/api-auth'
 import { requireMember } from '@/lib/workspace-server'
+import { advanceRecurrence, resolveTask } from '@/lib/tasks-server'
 
 const HORIZON_FIELDS = [
   'horizon_year',
@@ -21,20 +20,10 @@ export async function GET(request: Request, { params }: { params: { id: string }
   if (!auth.ok) return auth.response
   const { supabase, userId } = auth.caller
 
-  const { data: task } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('id', params.id)
-    .single()
+  const found = await resolveTask(supabase, userId, params.id)
+  if (!found.ok) return refusal(found)
 
-  if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-  if (task.created_by !== userId) {
-    const membership = await requireMember(supabase, task.workspace_id, userId)
-    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
-
-  return NextResponse.json({ task })
+  return NextResponse.json({ task: found.task })
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
@@ -64,20 +53,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
     if (field in body) allowed[field] = body[field] ?? null
   }
 
-  // Fetch the current task — owner or any workspace member may edit
-  const { data: existing } = await supabase
-    .from('tasks')
-    .select('*')
-    .eq('id', params.id)
-    .single()
-
-  if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-
-  // Verify user has access: either they created it, or they're a member of its workspace
-  if (existing.created_by !== userId) {
-    const membership = await requireMember(supabase, existing.workspace_id, userId)
-    if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  // Owner or any workspace member may edit; RLS hides everything else.
+  const found = await resolveTask(supabase, userId, params.id)
+  if (!found.ok) return refusal(found)
+  const existing = found.task
 
   // A new assignee must be a member of the task's workspace (mirrors the assign route)
   if (allowed.assigned_to_user_id) {
@@ -101,51 +80,14 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
   if (!data) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  // Auto-generate next occurrence when a recurring task is marked done
-  if (
-    existing &&
-    (existing as Task).is_recurring &&
-    (existing as Task).recurrence_rule &&
-    (existing as Task).status !== 'done' &&
-    allowed.status === 'done'
-  ) {
-    const task = existing as Task
-    const afterDate = task.due_date ?? new Date().toISOString().split('T')[0]
-    const nextDate  = nextOccurrence(task.recurrence_rule!, afterDate)
-
-    if (nextDate) {
-      const m = monthFromDate(nextDate)
-      const q = monthToQuarter(m)
-      const nextHorizon = buildHorizonFields('day', {
-        year: yearFromDate(nextDate),
-        half: quarterToHalf(q),
-        quarter: q,
-        month: m,
-        weekStr: getMondayOfWeek(nextDate),
-        dayStr: nextDate,
-      })
-      const { error: nextError } = await supabase.from('tasks').insert({
-        workspace_id:         task.workspace_id,
-        created_by:           task.created_by,
-        title:                task.title,
-        notes:                task.notes,
-        status:               'not_started',
-        category_id:          task.category_id,
-        due_date:             nextDate,
-        is_recurring:         true,
-        recurrence_rule:      task.recurrence_rule,
-        recurrence_end_date:  task.recurrence_end_date,
-        source:               task.source,
-        ...nextHorizon,
-      })
-
-      // The completion itself succeeded — report the failed follow-up rather
-      // than silently dropping the next occurrence.
-      if (nextError) {
-        console.error('Next-occurrence insert failed:', nextError.message)
-        return NextResponse.json({ ...data, recurrenceError: nextError.message })
-      }
-    }
+  // Completing a recurring task also creates its next occurrence. That lives in
+  // lib/tasks-server.ts because `complete_task` does exactly the same thing from
+  // the connector, and two copies of it would eventually disagree (KB.md #24).
+  if (existing.status !== 'done' && allowed.status === 'done') {
+    const { error: recurrenceError } = await advanceRecurrence(supabase, existing)
+    // The completion itself succeeded — report the failed follow-up rather than
+    // silently dropping the next occurrence.
+    if (recurrenceError) return NextResponse.json({ ...data, recurrenceError })
   }
 
   return NextResponse.json(data)
@@ -166,12 +108,7 @@ export async function DELETE(request: Request, { params }: { params: { id: strin
   if (!taskToDelete) return new NextResponse(null, { status: 204 })
 
   if (taskToDelete.created_by !== userId) {
-    const { data: membership } = await supabase
-      .from('workspace_members')
-      .select('id')
-      .eq('workspace_id', taskToDelete.workspace_id)
-      .eq('user_id', userId)
-      .single()
+    const membership = await requireMember(supabase, taskToDelete.workspace_id, userId)
     if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 

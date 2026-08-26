@@ -136,6 +136,10 @@ Every entry, in number order. Statuses are the point of this table.
 | 44 | A bearer token cannot be signed here, so it is exchanged for a session | The app | Live |
 | 45 | A route is session-only until it opts in to a token scope | The app | Live |
 | 46 | A pasted token reaches Claude Code, never claude.ai | The app | Live |
+| 47 | The MCP endpoint is JSON-RPC by hand, and scope is per tool | The app | Live |
+| 48 | One capture budget, whichever door the call came through | The app | Live |
+| 49 | `nextOccurrence` compared a moment, not a day | The app | Live |
+| 50 | A string given to Playwright as `data` is JSON-encoded | The e2e suite | Live |
 
 ---
 
@@ -461,6 +465,28 @@ shape, which is why it is worth stating once. The check itself is not wrong; it 
 thing for this class of bug, and the only guard that catches it is looking at the page on a phone
 viewport ([PLAN.md](PLAN.md) §Open items 1).
 
+### 50. A string given to Playwright as `data` is JSON-encoded
+
+Testing that `/api/mcp` answers a JSON parse error to a malformed body, the obvious spec was
+`request.post(url, { data: '{ not json' })` — and it failed, reporting `-32600` (invalid request)
+where `-32700` (parse error) was expected. The route was right and the test was wrong:
+Playwright serialises a `data` string **as JSON**, so the body on the wire was `"{ not json"`,
+which is a perfectly valid JSON string. `request.json()` parsed it happily and the dispatcher
+then rejected it for not being a request object.
+
+**To send bytes that are genuinely not JSON, pass a `Buffer`** and set the content type
+yourself:
+
+```ts
+await request.post('/api/mcp', {
+  headers: { 'Content-Type': 'application/json' },
+  data: Buffer.from('{ not json'),
+})
+```
+
+Worth knowing beyond this one test: any spec asserting on how a route handles a *malformed*
+payload is at risk of asserting on how it handles a well-formed one instead.
+
 ---
 
 ## The app
@@ -751,6 +777,83 @@ written on the assumption that pasting a token was a universal fallback.
 terminal and nowhere else, and the phone — the place most thoughts actually happen — waits for
 4.11's OAuth. That is a sequencing fact, not a detail: it moved 4.11 from "someday, it is polish"
 to "next" ([PLAN.md](PLAN.md) §"The Claude connector", §Decisions log 26 Aug 2026).
+
+### 47. The MCP endpoint is JSON-RPC by hand, and scope is per tool
+
+`/api/mcp` implements the streamable-HTTP transport directly rather than through
+`@modelcontextprotocol/sdk`, and the reason is a shape mismatch rather than a preference: the
+SDK's HTTP transport takes a Node `req`/`res` pair and writes a stream into the response, while
+an App Router route handler receives a Web `Request` and returns a `Response`. Adapting the two
+is more code than the protocol Clarity actually uses — `initialize`, `tools/list`, `tools/call`,
+`ping`, and notifications acknowledged with a bare 202.
+
+**It is stateless.** No `Mcp-Session-Id` is issued, so there is no session for a cold Vercel
+instance to have lost, and every request carries its own credential.
+
+Three things about it that are decisions, not accidents:
+
+- **Scope is checked per tool, not at the door.** Reaching the endpoint needs `tasks:read`; a
+  tool that writes checks `tasks:write` on its own. A read-only token therefore gets a working
+  connector that refuses to write, rather than a 403 on `initialize` — and a tool added later is
+  unreachable until it names a scope, which is #45's default one level down.
+- **A tool refusal is a *result* with `isError`, never a JSON-RPC error.** A protocol error ends
+  the exchange; a result carries a sentence the model can act on ("which workspace?", "that
+  token cannot write"). Statuses stay out of the text — the model has no use for the number.
+- **The tools never touch a table.** Every one goes through the same `lib/` helper the web app's
+  own route uses, so a tool cannot come to mean something the app does not
+  ([PLAN.md](PLAN.md) §"The tool surface").
+
+**4.11 changes none of this.** OAuth becomes a third way for `requireCaller` to produce a
+`Caller` (#44, #46). The one addition here will be a `WWW-Authenticate` header on the 401,
+pointing at the protected-resource metadata — which is what makes a claude.ai connector offer to
+sign in rather than simply fail.
+
+### 48. One capture budget, whichever door the call came through
+
+The brain dump's daily quota is consumed in **`lib/brain-dump.ts`**, not in the route and not in
+the MCP tool. That is the whole point: the textarea and the `capture` tool are the same
+operation, so a limit of twenty enforced in each place would be a limit of forty, and nobody
+reasoning about it at 2am would get that right.
+
+- **`MAX_CAPTURES_PER_DAY` in [lib/limits.ts](lib/limits.ts)**, with the other input limits.
+  `consume_capture_quota(p_limit)` takes it as an argument rather than hard-coding it: the
+  database's job is to make the count atomic, not to hold the policy.
+- **The count and the decision are one statement** — a conditional `on conflict do update … where
+  count < p_limit`. At the limit the update matches no row, nothing is returned, and the function
+  reports a refusal rather than a raised count. Two calls arriving together cannot both see
+  nineteen.
+- **`capture_usage` has no write policy at all.** Only the security definer function writes it, so
+  a caller cannot raise their own limit by editing the row that enforces it.
+- **429, not 403.** It is a rate limit, and the difference is what tells a model to stop for now
+  rather than to stop for good.
+- **The day is UTC.** A British summer evening's dumps after 01:00 BST count against the next
+  day. A blunt rule people can predict beats a precise one they cannot.
+- **The e2e suite spends from the same budget** — one call per default run, from the
+  "exactly at the cap" test, plus one more when `E2E_LIVE=1`. Twenty runs in a day is enough to
+  exhaust it, and the symptom is a 429 rather than a failure. Clearing it on dev is one delete
+  from `capture_usage`.
+
+### 49. `nextOccurrence` compared a moment, not a day
+
+Completing a recurring task creates its next occurrence, and it could create one **due the same
+day it had just been completed** — sometimes. The Phase 4.10 e2e run found it: a weekly Monday
+task due Monday 7 September came back with 7 September again.
+
+A stored recurrence rule carries no `DTSTART`, so `rrule` takes the time of day from the clock
+**when the string is parsed**. `nextOccurrence` then asked for the first occurrence after
+`afterDate + 'T12:00:00Z'` — so whether that day's own occurrence counted as "after" depended on
+whether the code happened to run before or after midday. Before midday it advanced correctly;
+after midday it returned the day just finished.
+
+The fix is to compare at the granularity the function actually deals in — the end of that day,
+`afterDate + 'T23:59:59.999Z'`. The unit of a recurrence here is a day, so the comparison has to
+be one.
+
+**`firstOccurrence` has the mirror-image version of this** — inclusive against midday, so an
+occurrence earlier in the day is missed and the form offers the next period instead of today. It
+is deliberately left alone: it feeds the task form, nothing tests it, and changing what the form
+offers on the strength of a code reading is not a change to make blind
+([PLAN.md](PLAN.md) §Open items 11).
 
 ---
 

@@ -114,27 +114,47 @@ happened rather than only in the app.
     `503` that a missing secret key produces, and not the `500` a missing table would. What has
     not been done is minting a real token on prod and calling a route with it; the whole path is
     proven on dev.
-15. ⏭ **Next** — **4.10**, the Claude connector itself: `/api/mcp` and the tool surface,
-    authenticated with a pasted token, then **4.11** OAuth immediately after it. 4.11 stopped
-    being polish on 26 Aug 2026: **a pasted token cannot reach claude.ai**, so 4.10 alone puts
-    Clarity in Claude Code and nowhere near the phone ([KB.md](KB.md) #46, §"The Claude
-    connector"). SSO (4.4, now Google *and* Microsoft) and push reminders come after both.
-    **The brain-dump quota stops being optional the day 4.10 ships** (§Open items 6); the Pro
-    decision was taken the same day (§Decisions log).
-16. ✅ **Supabase Pro on prod, agreed 26 Aug 2026.** Dev stays on the free tier. It stops the
+15. 🔄 **Phase 4.10 — the Claude connector.** PR #27, 26 Aug 2026, migration
+    `20260826000003_capture_quota` applied to **dev**. `/api/mcp` speaks JSON-RPC over POST and
+    exposes the seven tools; a personal access token in an `Authorization` header is how a client
+    gets in. Two endpoints the tools needed and the app had never had — `GET /api/tasks` and
+    `GET /api/workspaces` — went in with it, because a page knows its workspace from the URL and
+    a connector has to ask ([KB.md](KB.md) #47).
+
+    **The capture quota shipped with it, as agreed** — twenty a day per user, counted in
+    `lib/brain-dump.ts` so the textarea and the `capture` tool draw on one budget rather than one
+    each ([KB.md](KB.md) #48). §Open items 6 is closed.
+
+    **The e2e run found a bug that predates the connector.** Completing a recurring task could
+    create its replacement due the *same day*, depending on the time of day the call happened —
+    `nextOccurrence` compared timestamps where its unit is a day ([KB.md](KB.md) #49). Fixed
+    here, since `complete_task` is a tool now and a model completing a weekly task would have
+    produced a duplicate.
+
+    **Not finished.** Nothing has connected to it from a real client yet: that needs a token
+    minted in a browser and one `claude mcp add` on Warwick's machine (§Open items 12). **The
+    migration does not reach prod by merging** — nothing in CI or Vercel touches the database, so
+    it is a `supabase db push` against the prod project by hand
+    ([CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration", §Open items 13).
+16. ⏭ **Next** — **4.11**, connector OAuth. It stopped being polish on 26 Aug 2026: **a pasted
+    token cannot reach claude.ai**, so 4.10 puts Clarity in Claude Code and nowhere near the
+    phone ([KB.md](KB.md) #46, §"The Claude connector"). 4.10 was built so OAuth is a third way
+    to produce a `Caller` rather than a rewrite ([KB.md](KB.md) #47). SSO (4.4, now Google *and*
+    Microsoft) and push reminders come after it.
+17. ✅ **Supabase Pro on prod, agreed 26 Aug 2026.** Dev stays on the free tier. It stops the
     live app sleeping, unblocks leaked-password protection, and matters more with a connector in
     the picture than it ever did for a web page (§Decisions log, §Risks).
-17. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+18. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-18. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+19. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-19. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
-    until an external user exists. None block 4.10. **Two of them stop being optional the day
-    4.10 ships** — the brain-dump quota and the Pro decision.
+20. **Open manual items** — see §Open items. Both of the items that 4.10 was going to force are
+    settled: the quota shipped with it, and the Pro decision was taken. What is left is manual —
+    the Pro upgrade itself, the prod VAPID pair, and connecting a real client to the connector.
 
 ---
 
@@ -288,14 +308,14 @@ paper. Met.
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
 | 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | ✅ PR #18, merged 26 Aug 2026 — prod VAPID pair outstanding |
-| 4.4 | **Google and Microsoft** OAuth — **additive**, not a replacement for email/password | After 4.10 |
+| 4.4 | **Google and Microsoft** OAuth — **additive**, not a replacement for email/password | After 4.11 |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
 | 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, merged 26 Aug 2026, live on prod |
-| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | **Next** |
-| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | After 4.10, not deferred — §"The Claude connector" |
+| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ PR #27, 26 Aug 2026 — nothing has connected from a real client yet |
+| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | **Next** — §"The Claude connector" |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
 alpha channel at all, and the fix is per icon rather than global: the `purpose: "any"` pair is
@@ -445,6 +465,20 @@ Two rules the tools inherit rather than reimplement:
 `create_tasks` and `capture` return what they actually wrote, with ids, so the calling model can
 report it back instead of guessing.
 
+**Built 26 Aug 2026, and three things about it are worth knowing before changing it**
+([KB.md](KB.md) #47):
+
+- **Two endpoints had to be added first.** `GET /api/tasks` did not exist — every page reads its
+  tasks server-side and renders them, so listing was the one thing the API could not do — and
+  nothing anywhere listed workspaces, because a page knows which one it is on from its URL. Both
+  are now real routes, session or token, and the tools use them through the same `lib/` helpers.
+- **Scope is checked per tool, not at the endpoint.** Reaching `/api/mcp` needs `tasks:read`; a
+  tool that writes checks `tasks:write` itself. A read-only token gets a connector that lists and
+  refuses to write, instead of a 403 on `initialize`.
+- **`capture` saves what it extracts**, and returns the rows with ids — there is no review panel
+  on the other end of a tool call. `save: false` extracts without writing, which still spends one
+  of the day's twenty.
+
 ### What it forces
 
 Two things stop being deferrable the day this ships, and both are already open items:
@@ -458,8 +492,14 @@ Two things stop being deferrable the day this ships, and both are already open i
 ### Sequence
 
 4.8 small fixes ✅ → 4.9 tokens, bearer auth and the `/api` redirect exemption ✅ → 4.10 `/api/mcp`
-and the tools, used from Claude Code → 4.11 OAuth, which is what reaches claude.ai and the phone. Then 5.6, the unattended sweep, only if it still
-looks worth it.
+and the tools ✅ → **live with it from Claude Code** → 4.11 OAuth, which is what reaches claude.ai
+and the phone. Then 5.6, the unattended sweep, only if it still looks worth it.
+
+**Adding it to Claude Code**, once a token exists on the Connections page:
+
+```bash
+claude mcp add --transport http clarity https://task-planner-nine-sigma.vercel.app/api/mcp   --header "Authorization: Bearer clr_…"
+```
 
 ---
 
@@ -472,7 +512,7 @@ looks worth it.
 | A push to `main` is a production deploy, with no staging step | A bad merge is live in ~2 minutes | Branch-per-change, PR-only, squash merges. See [CONTRIBUTING.md](CONTRIBUTING.md) |
 | The e2e suite is not wired into CI | A regression reaches `main` unnoticed | Deliberate — a sleeping dev project would turn `verify` red for unrelated reasons. Revisit with the Pro decision |
 | Two GitHub accounts on the machine, and `gh auth switch` is global | A bare `403` on push, naming no cause | Repo-local credential pin, enforced by `pre-push`. See [KB.md](KB.md) #27 |
-| The brain dump has no per-user quota | An authenticated user could run up the Anthropic bill | Deferred deliberately while single-user. A 10,000-character cap is in place |
+| The brain dump calls a model on demand | A caller in a loop could run up the Anthropic bill | **Fixed in 4.10:** twenty captures per user per UTC day, counted atomically and shared between the textarea and the `capture` tool ([KB.md](KB.md) #48), on top of the 10,000-character cap |
 | Prod is on the free tier with no backups worth the name | Data loss with no restore | Accepted for now. Revisit before any external household joins |
 | A token-authed API is a way in that needs no browser and no session (4.9) | A leaked token is silent, durable write access to every workspace its owner belongs to | Hash at rest, show once, scope it, expire it, list and revoke it in the UI, record last use. §"The Claude connector" |
 
@@ -581,13 +621,12 @@ all.
    dev project still sleeps after ~7 days, so the e2e suite still meets a paused project after a
    quiet week (§Risks, [KB.md](KB.md) #4) — an annoyance with a known cause, which is why wiring
    the suite into CI stays out of scope (§Decisions log, 25 Aug 2026).
-6. **Per-user daily quota on the brain dump.** Deferred while single-user. **Required before
-   4.10 ships**, not before an external user arrives — `capture` exposed as an MCP tool can be
-   called in a loop by a model, which is not a thing a person with a textarea does. The shape
-   agreed on 26 Aug 2026: a count of calls per user per day, refused past a limit of the order of
-   20, and enforced **in the brain-dump route rather than in the MCP tool**, so the textarea and
-   the tool share one budget instead of having one each. `MAX_BRAIN_DUMP_CHARS` in
-   [lib/limits.ts](lib/limits.ts) is where the limit belongs; the count needs a small migration.
+6. ✅ **Per-user daily quota on the brain dump — shipped with 4.10**, 26 Aug 2026.
+   `MAX_CAPTURES_PER_DAY` is 20, in [lib/limits.ts](lib/limits.ts) with the other input limits,
+   and the count lives in `capture_usage` with `consume_capture_quota()` doing the increment and
+   the decision in one statement. It is consumed in **`lib/brain-dump.ts`**, which is one level
+   below the route the agreed shape named — the textarea and the tool both go through the helper,
+   which is what "one budget" required ([KB.md](KB.md) #48).
 7. **Whether 1.18 has anything left in it** after 4.1. Look at what 4.1 changed before
    scheduling any of it.
 8. **`shopping_list` UPDATE column rule lives only in the route layer.** RLS cannot express
@@ -601,6 +640,22 @@ all.
     is in Vercel, the migration is applied, and prod answers 401 rather than 503 to an unknown
     token, which is what proves the key is being read. What is left is one real token used once,
     which needs a browser session on the live app and is therefore the only part nobody has done.
+11. **`firstOccurrence` has the same day-vs-moment bug `nextOccurrence` had.** It asks for the
+    first occurrence on or after midday, so an occurrence earlier that day is missed and the task
+    form offers the next period instead of today ([KB.md](KB.md) #49). Left alone on purpose:
+    nothing tests what the form offers, and the fix is a behaviour change made on a code reading.
+    Worth doing with a test rather than without one.
+12. **Connect a real client to `/api/mcp`.** The whole surface is proven by the e2e suite through
+    the protocol, but no Claude has spoken to it yet — and the questions 4.10 exists to answer are
+    whether the seven tools are the right seven and whether the descriptions are enough to be
+    used correctly. It needs a token from the Connections page and one `claude mcp add`
+    (§"The Claude connector"). **This is what closes 4.10.**
+13. **Push `20260826000003_capture_quota` to prod.** It is on dev. **Merging does not apply it** —
+    CI runs lint and build, Vercel builds and deploys the app, and neither touches the database.
+    Until it is pushed, the live app answers 500 from the brain dump and from `capture`, because
+    `consume_capture_quota` does not exist there. Commands in
+    [CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration"; the prod password is
+    `SUPABASE_DB_PASSWORD_PROD` in `.env.local`, and the last step is re-linking the CLI to dev.
 
 ---
 
@@ -760,3 +815,30 @@ re-litigated.**
   thought happened, and that is usually a phone, so stopping after 4.10 would ship the mechanism
   without the goal. 4.10 still goes first, because what needs proving is whether the seven tools
   are the right seven and Claude Code proves that perfectly well ([KB.md](KB.md) #46).
+
+- **26 Aug 2026** — **the MCP endpoint is written by hand, not with the MCP SDK.** The SDK's
+  streamable-HTTP transport wants a Node request and response pair to write a stream into; an App
+  Router route handler has a Web `Request` and returns a `Response`. Bridging them is more code
+  than the protocol Clarity uses, which is four methods, no streaming and no session. The cost of
+  the decision is that a future protocol revision is ours to follow rather than something a
+  dependency does for us — accepted, because the surface is small enough to read in one sitting
+  ([KB.md](KB.md) #47).
+
+- **26 Aug 2026** — **scope is checked per tool rather than at the endpoint.** `/api/mcp` could
+  have required `tasks:write` and been done with it. Instead reaching it needs `tasks:read` and
+  each tool names what it needs, so a read-only token gets a connector that lists and refuses to
+  write rather than a 403 on `initialize`. It also keeps #45's default intact one level down: a
+  tool added next month is unreachable by every token in existence until it declares a scope.
+
+- **26 Aug 2026** — **`capture` writes, and `create_tasks` does not parse.** The app's brain dump
+  extracts, shows a review panel, and saves on confirmation. There is no review panel on the far
+  end of a tool call, so `capture` saves what it extracted and returns the rows with their ids for
+  the calling model to report back; `save: false` is there for a genuine preview and still spends
+  one of the day's captures, because the model call is what the quota exists to limit. The two
+  tools stay distinct for the same reason they read differently to a model: prose goes to
+  `capture`, a decided list goes to `create_tasks`.
+
+- **26 Aug 2026** — **the quota is enforced in `lib/brain-dump.ts`, one level below where
+  §Open items 6 said "the route".** The intent of that wording was one budget rather than two, and
+  the route is the wrong altitude for it now that the tool calls the same helper directly. Putting
+  the count in the helper is what makes twenty mean twenty ([KB.md](KB.md) #48).

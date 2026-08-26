@@ -72,7 +72,21 @@ export function parseRrule(rruleStr: string): RecurrenceOptions | null {
 export function nextOccurrence(rruleStr: string, afterDate: string): string | null {
   try {
     const rule = RRule.fromString(rruleStr)
-    const after = new Date(afterDate + 'T12:00:00Z')
+
+    /**
+     * The end of that day, not the middle of it.
+     *
+     * A stored rule carries no DTSTART, so rrule takes the time of day from the
+     * clock when the string is parsed — which meant this comparison was against
+     * a moving target. Completing a weekly Monday task on its own Monday
+     * returned *that* Monday whenever the parse happened after midday, so the
+     * "next occurrence" was a duplicate of the one just finished, and whether it
+     * happened depended on the time of day. Found by the Phase 4.10 e2e run,
+     * where `complete_task` produced a task due the same day (KB.md #49).
+     *
+     * The unit of a recurrence here is a day, so the comparison has to be one.
+     */
+    const after = new Date(afterDate + 'T23:59:59.999Z')
 
     // Generate the next occurrence after the completed date
     const next = rule.after(after, false)
