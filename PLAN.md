@@ -96,8 +96,9 @@ happened rather than only in the app.
     iOS icon is full bleed for the mirror-image reason ([KB.md](KB.md) #40). A household owner
     can revoke a pending invitation, which stops a link that has already been shared; an
     accepted one deliberately cannot be revoked ([KB.md](KB.md) #41).
-14. 🔄 **Phase 4.9 — the token-authed API.** PR #25, 26 Aug 2026, migration
-    `20260826000002_api_tokens` applied to **dev**. A Connections page mints personal access
+14. ✅ **Phase 4.9 — the token-authed API.** PR #25, merged 26 Aug 2026, migration
+    `20260826000002_api_tokens` applied to **dev and prod**, and `SUPABASE_SECRET_KEY` set in
+    Vercel. A Connections page mints personal access
     tokens, shows each once, and revokes them; `/api` no longer redirects an unauthenticated
     caller to a login page ([KB.md](KB.md) #37); and a route accepts a bearer token only where it
     names a scope ([KB.md](KB.md) #45).
@@ -108,22 +109,30 @@ happened rather than only in the app.
     exactly as it is rather than reaching for the service-role key ([KB.md](KB.md) #44). That
     needs `SUPABASE_SECRET_KEY` per environment.
 
-    **Not finished.** Prod has no `SUPABASE_SECRET_KEY`, so token calls there answer 503
-    (§Open items 10). The migration reaches prod when this merges.
+    **Live and checked on prod:** `/api/tokens` answers `401` JSON to a session-less caller
+    rather than an HTML login page, and an unknown bearer token gets a clean `401` — not the
+    `503` that a missing secret key produces, and not the `500` a missing table would. What has
+    not been done is minting a real token on prod and calling a route with it; the whole path is
+    proven on dev.
 15. ⏭ **Next** — **4.10**, the Claude connector itself: `/api/mcp` and the tool surface,
-    authenticated with a pasted token. SSO (4.4, now Google *and* Microsoft) and push reminders
-    come after it, not before. The design is in §"The Claude connector"; the reasoning is in
-    §Decisions log, 26 Aug 2026. **Two open items stop being optional the day it ships** — the
-    brain-dump quota and the Pro decision.
-16. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+    authenticated with a pasted token, then **4.11** OAuth immediately after it. 4.11 stopped
+    being polish on 26 Aug 2026: **a pasted token cannot reach claude.ai**, so 4.10 alone puts
+    Clarity in Claude Code and nowhere near the phone ([KB.md](KB.md) #46, §"The Claude
+    connector"). SSO (4.4, now Google *and* Microsoft) and push reminders come after both.
+    **The brain-dump quota stops being optional the day 4.10 ships** (§Open items 6); the Pro
+    decision was taken the same day (§Decisions log).
+16. ✅ **Supabase Pro on prod, agreed 26 Aug 2026.** Dev stays on the free tier. It stops the
+    live app sleeping, unblocks leaked-password protection, and matters more with a connector in
+    the picture than it ever did for a web page (§Decisions log, §Risks).
+17. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-17. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+18. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-18. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+19. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
     until an external user exists. None block 4.10. **Two of them stop being optional the day
     4.10 ships** — the brain-dump quota and the Pro decision.
 
@@ -284,9 +293,9 @@ paper. Met.
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
-| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, 26 Aug 2026 — prod secret key outstanding |
+| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, merged 26 Aug 2026, live on prod |
 | 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | **Next** |
-| 4.11 | Connector OAuth 2.1 — one-click install as a claude.ai connector | Deferred — §"The Claude connector" |
+| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | After 4.10, not deferred — §"The Claude connector" |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
 alpha channel at all, and the fix is per icon rather than global: the `purpose: "any"` pair is
@@ -388,11 +397,27 @@ HTML page ([KB.md](KB.md) #37) — a bearer client would have received that HTML
 depended on it. `/api` is exempt from the redirect as of 26 Aug 2026 and every route answers 401
 itself, which each of them already did.
 
-**Deferred to 4.11: OAuth 2.1.** A claude.ai custom connector installs cleanly when the server
-advertises protected-resource metadata and supports dynamic client registration — authorize,
-token, registration and metadata endpoints, layered over the Supabase session. That is the
-difference between pasting a token once and clicking Connect. It is polish over real work, so
-it waits until the tool surface has proved itself.
+**4.11: OAuth 2.1 — and it is not polish.** This section said it was, on the grounds that it is
+"the difference between pasting a token once and clicking Connect". That was wrong, and the
+correction is the most important thing on this page: **a pasted token cannot reach claude.ai at
+all.** Claude Code takes a static header —
+`claude mcp add --transport http clarity <url>/api/mcp --header "Authorization: Bearer clr_…"` —
+and Claude Desktop can be configured the same way. But a claude.ai custom connector, on the web
+and in the phone app, is added by URL and authenticated by **OAuth only**; its advanced settings
+take an OAuth client ID and secret, and there is no field for a static token or header
+([KB.md](KB.md) #46).
+
+So the split is not convenience versus effort, it is **the terminal versus the phone**. 4.10 with
+a pasted token puts Clarity in Claude Code on this machine, which is enough to find out whether
+the seven tools are the right seven. It does not put Clarity anywhere near the place most thoughts
+actually happen, which is the goal the connector exists to serve. 4.11 is therefore the next thing
+after 4.10 rather than a someday item: the server advertises protected-resource metadata and
+supports dynamic client registration — authorize, token, registration and metadata endpoints,
+layered over the Supabase session.
+
+**Build 4.10 so that OAuth is an added path, not a rewrite.** `requireCaller()` already resolves a
+credential into a `Caller`; an OAuth access token becomes a third way to produce one, alongside the
+session cookie and the personal access token ([KB.md](KB.md) #44, #45).
 
 ### The tool surface
 
@@ -433,7 +458,7 @@ Two things stop being deferrable the day this ships, and both are already open i
 ### Sequence
 
 4.8 small fixes ✅ → 4.9 tokens, bearer auth and the `/api` redirect exemption ✅ → 4.10 `/api/mcp`
-and the tools → live with it → 4.11 OAuth. Then 5.6, the unattended sweep, only if it still
+and the tools, used from Claude Code → 4.11 OAuth, which is what reaches claude.ai and the phone. Then 5.6, the unattended sweep, only if it still
 looks worth it.
 
 ---
@@ -442,7 +467,7 @@ looks worth it.
 
 | Risk | What is lost | Mitigation |
 |---|---|---|
-| Prod Supabase pauses after ~7 days idle on the free tier | The live app goes down until manually restored from the dashboard | Fine once in daily use. A keep-alive or the Pro upgrade fixes it properly — the same upgrade unblocks leaked-password protection |
+| Prod Supabase pauses after ~7 days idle on the free tier | The live app goes down until manually restored from the dashboard | **Being fixed: Pro on prod, agreed 26 Aug 2026** (§Decisions log). Dev stays free and still pauses, which only ever costs the e2e suite a wake-up |
 | `verify` cannot be *required* on a free GitHub plan | A red check merged to `main` deploys straight to production | Convention plus the `pre-push` hook. Wait for green before merging — nothing enforces it |
 | A push to `main` is a production deploy, with no staging step | A bad merge is live in ~2 minutes | Branch-per-change, PR-only, squash merges. See [CONTRIBUTING.md](CONTRIBUTING.md) |
 | The e2e suite is not wired into CI | A regression reaches `main` unnoticed | Deliberate — a sleeping dev project would turn `verify` red for unrelated reasons. Revisit with the Pro decision |
@@ -547,16 +572,22 @@ all.
    handset — that is what closes 4.3.
 3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
-4. **Leaked password protection — blocked on plan.** Authentication → Providers → Email, and
-   the setting is Pro-plan and above. Both projects are free tier, so there is nothing to
-   toggle. Revisit with the Pro decision.
-5. **The Pro decision itself.** It would unblock item 4, stop the projects pausing (§Risks), and
-   make wiring the e2e suite into CI sensible. Settle it as one decision, not three — **now
-   four**: a connector that 500s because the project is asleep is materially worse than a web
-   page that is slow for the same reason (§"The Claude connector").
+4. **Leaked password protection — unblocked the moment prod is on Pro.** Authentication →
+   Providers → Email, and the setting is Pro-plan and above ([KB.md](KB.md) #12). Prod is going to
+   Pro (agreed 26 Aug 2026), so this becomes a single toggle there; dev stays free and therefore
+   stays without it, which is the right way round — the passwords that matter are the live ones.
+5. **The Pro decision — taken on 26 Aug 2026: Pro on prod, dev stays free.** What is left is the
+   upgrade itself, in the Supabase dashboard, and then item 4's toggle. Dev staying free means the
+   dev project still sleeps after ~7 days, so the e2e suite still meets a paused project after a
+   quiet week (§Risks, [KB.md](KB.md) #4) — an annoyance with a known cause, which is why wiring
+   the suite into CI stays out of scope (§Decisions log, 25 Aug 2026).
 6. **Per-user daily quota on the brain dump.** Deferred while single-user. **Required before
    4.10 ships**, not before an external user arrives — `capture` exposed as an MCP tool can be
-   called in a loop by a model, which is not a thing a person with a textarea does.
+   called in a loop by a model, which is not a thing a person with a textarea does. The shape
+   agreed on 26 Aug 2026: a count of calls per user per day, refused past a limit of the order of
+   20, and enforced **in the brain-dump route rather than in the MCP tool**, so the textarea and
+   the tool share one budget instead of having one each. `MAX_BRAIN_DUMP_CHARS` in
+   [lib/limits.ts](lib/limits.ts) is where the limit belongs; the count needs a small migration.
 7. **Whether 1.18 has anything left in it** after 4.1. Look at what 4.1 changed before
    scheduling any of it.
 8. **`shopping_list` UPDATE column rule lives only in the route layer.** RLS cannot express
@@ -566,13 +597,10 @@ all.
    Supabase Auth provider toggle, a redirect URL on the allow-list and a button — the same work
    either way, so do the pair together. Both need an app registration on the provider side,
    which is the manual half and the reason this is listed here rather than only in §Phases.
-10. **Set `SUPABASE_SECRET_KEY` in Vercel, Production scope.** Dev has its own in `.env.local`;
-    prod needs the prod project's, and until it exists every token call there answers 503 and
-    nothing can authenticate without a cookie. Vercel applies new variables to **new deployments
-    only**, so redeploy after adding it. It is the project's *secret* key from Project Settings →
-    API Keys — never with a `NEXT_PUBLIC_` prefix, since it can bypass RLS entirely; the app uses
-    it for one thing, exchanging a token for that user's session ([KB.md](KB.md) #44). Then create
-    a token on the Connections page in prod and call one route with it — that is what closes 4.9.
+10. **Mint a token on prod and call one route with it.** Everything under it is done — the key
+    is in Vercel, the migration is applied, and prod answers 401 rather than 503 to an unknown
+    token, which is what proves the key is being read. What is left is one real token used once,
+    which needs a browser session on the live app and is therefore the only part nobody has done.
 
 ---
 
@@ -713,3 +741,22 @@ re-litigated.**
   would be reachable by every token in existence before anyone had thought about it. It also keeps
   the token surface honestly small — tasks and categories — matching the tool surface rather than
   quietly exceeding it ([KB.md](KB.md) #45).
+
+- **26 Aug 2026** — Supabase **Pro on prod, dev stays free**. The upgrade was on the list as one
+  decision wearing four hats: leaked-password protection is Pro-only, both projects sleep after
+  ~7 days idle, the e2e suite cannot sensibly join CI while dev sleeps, and a connector makes the
+  sleeping worse. Splitting it by project settles all four honestly rather than paying twice: the
+  live app must not sleep and its passwords must be checked against known breaches, while dev
+  sleeping costs one wake-up before a test run and nothing else. It also keeps the e2e-in-CI
+  decision where it already was — out of scope, for the same reason as before, now stated as a
+  consequence rather than a coincidence.
+
+- **26 Aug 2026** — **4.11 OAuth moves to immediately after 4.10**, and this file's description of
+  it as polish is withdrawn (§"The Claude connector"). A claude.ai custom connector authenticates
+  by OAuth only: it is added by URL, its advanced settings take an OAuth client ID and secret, and
+  there is no field for a static token or header. Claude Code and Claude Desktop can both pass
+  `Authorization: Bearer` from configuration, so a pasted token is genuinely useful — but only in
+  the terminal and on the desktop. The connector exists so that a task gets in from wherever the
+  thought happened, and that is usually a phone, so stopping after 4.10 would ship the mechanism
+  without the goal. 4.10 still goes first, because what needs proving is whether the seven tools
+  are the right seven and Claude Code proves that perfectly well ([KB.md](KB.md) #46).

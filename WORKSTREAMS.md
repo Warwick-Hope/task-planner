@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 2026-08-26 | `docs/pro-and-connector-oauth` | Recording the Supabase Pro decision and the claude.ai OAuth finding — **merge before starting 4.10** | PLAN.md §"Where we are", §"The Claude connector", §Risks, §Open items, §Decisions log · KB.md · CLAUDE.md retired table · this row |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch

@@ -135,6 +135,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 43 | The overflow guard cannot see an overlap | The e2e suite | Live |
 | 44 | A bearer token cannot be signed here, so it is exchanged for a session | The app | Live |
 | 45 | A route is session-only until it opts in to a token scope | The app | Live |
+| 46 | A pasted token reaches Claude Code, never claude.ai | The app | Live |
 
 ---
 
@@ -729,6 +730,27 @@ session.
 **Revoking stamps `revoked_at`; it does not delete the row.** `last_used_at` on a revoked token is
 the only way to answer "was this being used when I killed it?", which is the first question anyone
 asks after revoking one in a hurry.
+
+### 46. A pasted token reaches Claude Code, never claude.ai
+
+**Where a personal access token works:**
+
+- **Claude Code** — a static header, by flag or in `.mcp.json`:
+  `claude mcp add --transport http clarity <url>/api/mcp --header "Authorization: Bearer clr_…"`.
+  The JSON form takes a `headers` object, and `headersHelper` if the token has to be generated at
+  connect time.
+- **Claude Desktop** — the same idea through its configuration file.
+
+**Where it does not:** a **claude.ai custom connector**, on the web or in the phone app. A
+connector is added by URL and authenticated by OAuth; its advanced settings offer an OAuth client
+ID and secret, and there is no field for a static token or a custom header. Checked against
+Anthropic's own documentation on 26 Aug 2026 rather than assumed, because the plan had been
+written on the assumption that pasting a token was a universal fallback.
+
+**Why it matters here more than it looks:** it means Phase 4.10's pasted token puts Clarity in the
+terminal and nowhere else, and the phone — the place most thoughts actually happen — waits for
+4.11's OAuth. That is a sequencing fact, not a detail: it moved 4.11 from "someday, it is polish"
+to "next" ([PLAN.md](PLAN.md) §"The Claude connector", §Decisions log 26 Aug 2026).
 
 ---
 
