@@ -96,20 +96,35 @@ happened rather than only in the app.
     iOS icon is full bleed for the mirror-image reason ([KB.md](KB.md) #40). A household owner
     can revoke a pending invitation, which stops a link that has already been shared; an
     accepted one deliberately cannot be revoked ([KB.md](KB.md) #41).
-14. ⏭ **Next, in this order** — **4.9** the token-authed API, then **4.10** the Claude
-    connector itself. SSO (4.4, now Google *and* Microsoft) and push reminders come after them,
-    not before. The design is in §"The Claude connector"; the reasoning is in §Decisions log,
-    26 Aug 2026.
-15. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+14. 🔄 **Phase 4.9 — the token-authed API.** PR #25, 26 Aug 2026, migration
+    `20260826000002_api_tokens` applied to **dev**. A Connections page mints personal access
+    tokens, shows each once, and revokes them; `/api` no longer redirects an unauthenticated
+    caller to a login page ([KB.md](KB.md) #37); and a route accepts a bearer token only where it
+    names a scope ([KB.md](KB.md) #45).
+
+    **One assumption in the design was wrong, and the fix is worth knowing.** A token cannot be
+    turned into a Supabase JWT here — the project's signing key is asymmetric — so a token is
+    exchanged for a genuine user session through the Auth admin API instead, which keeps RLS
+    exactly as it is rather than reaching for the service-role key ([KB.md](KB.md) #44). That
+    needs `SUPABASE_SECRET_KEY` per environment.
+
+    **Not finished.** Prod has no `SUPABASE_SECRET_KEY`, so token calls there answer 503
+    (§Open items 10). The migration reaches prod when this merges.
+15. ⏭ **Next** — **4.10**, the Claude connector itself: `/api/mcp` and the tool surface,
+    authenticated with a pasted token. SSO (4.4, now Google *and* Microsoft) and push reminders
+    come after it, not before. The design is in §"The Claude connector"; the reasoning is in
+    §Decisions log, 26 Aug 2026. **Two open items stop being optional the day it ships** — the
+    brain-dump quota and the Pro decision.
+16. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-16. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+17. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-17. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
-    until an external user exists. None block 4.9. **Two of them stop being optional the day
+18. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+    until an external user exists. None block 4.10. **Two of them stop being optional the day
     4.10 ships** — the brain-dump quota and the Pro decision.
 
 ---
@@ -269,8 +284,8 @@ paper. Met.
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
-| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | **Next** |
-| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | Then |
+| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, 26 Aug 2026 — prod secret key outstanding |
+| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | **Next** |
 | 4.11 | Connector OAuth 2.1 — one-click install as a claude.ai connector | Deferred — §"The Claude connector" |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
@@ -353,19 +368,25 @@ nothing open. That is Phase 5.6, and deliberately after.
 - Scopes stay coarse to begin with — `tasks:read`, `tasks:write` — because a scope nobody can
   explain is a scope nobody sets correctly.
 
-**The API accepts either a session cookie or a bearer token.** Every route today resolves the
-caller through `createClient()` and `supabase.auth.getUser()`. A single helper in
-[lib/api.ts](lib/api.ts) resolves from whichever is present and returns the same shape, so route
-bodies do not change. RLS is untouched: a token resolves to a `user_id`, and every existing
-policy already keys off workspace membership for that user rather than off how they
-authenticated.
+**The API accepts either a session cookie or a bearer token.** Built 26 Aug 2026 as
+`requireCaller()` in [lib/api-auth.ts](lib/api-auth.ts) — its own file rather than
+[lib/api.ts](lib/api.ts), which holds response helpers and has no Supabase dependency. It resolves
+from whichever credential is present and returns the same two things either way, so route bodies
+barely change. **A route stays session-only until it names the scope it needs**, so the token
+surface is what somebody chose rather than everything that exists ([KB.md](KB.md) #45).
 
-**One prerequisite that is already written down.** The middleware matcher covers `/api/**`, so a
-request with no session is redirected to `/login` and the caller gets a 200 and an HTML page
-([KB.md](KB.md) #37). A bearer-token client would receive that HTML instead of JSON. #37 records
-this as "worth fixing one day… nothing currently depends on it" — 4.9 is the thing that depends
-on it. Exempting `/api` from the redirect and letting the routes answer for themselves is part
-of that item, not a separate tidy-up.
+RLS is untouched, and that took more than the sentence above it implies: a token resolves to a
+`user_id`, but the client acting for that user has to hold a Supabase JWT, and this project's
+signing key is asymmetric — so the session is bought from the Auth admin API and cached, rather
+than signed here or faked with the service-role key ([KB.md](KB.md) #44, §Decisions log
+26 Aug 2026).
+
+**One prerequisite that was already written down, and is now done.** The middleware matcher covers
+`/api/**`, so a request with no session was redirected to `/login` and the caller got a 200 and an
+HTML page ([KB.md](KB.md) #37) — a bearer client would have received that HTML instead of JSON.
+#37 recorded it as "worth fixing one day… nothing currently depends on it"; 4.9 was the thing that
+depended on it. `/api` is exempt from the redirect as of 26 Aug 2026 and every route answers 401
+itself, which each of them already did.
 
 **Deferred to 4.11: OAuth 2.1.** A claude.ai custom connector installs cleanly when the server
 advertises protected-resource metadata and supports dynamic client registration — authorize,
@@ -411,7 +432,7 @@ Two things stop being deferrable the day this ships, and both are already open i
 
 ### Sequence
 
-4.8 small fixes → 4.9 tokens, bearer auth and the `/api` redirect exemption → 4.10 `/api/mcp`
+4.8 small fixes ✅ → 4.9 tokens, bearer auth and the `/api` redirect exemption ✅ → 4.10 `/api/mcp`
 and the tools → live with it → 4.11 OAuth. Then 5.6, the unattended sweep, only if it still
 looks worth it.
 
@@ -482,6 +503,15 @@ It asserts Chrome parses the manifest without errors, the worker reaches `activa
 navigation lands on the offline page, and **nothing but hashed build assets is in the cache** —
 that last one is the check that would catch a well-meant change starting to cache user data.
 
+**Token auth is verified end to end, and needs a server secret to be.** `e2e/tokens.spec.ts`
+covers the lifecycle (shown once, listed by prefix, revoked, revoked twice), scope enforcement,
+that `/api/tokens` refuses a token, that a revoked token stops working on its next call, and —
+the one that matters most — that a token cannot read another user's task. That last assertion is
+what proves the token is a *user session* rather than a service-role client; if it ever passes
+for the wrong reason, one token is a way into every workspace in the database. These tests are
+deliberately **not** skipped when `SUPABASE_SECRET_KEY` is missing, because a deployment without
+it answers 503 to every token call and a silent skip would read as a pass ([KB.md](KB.md) #44).
+
 **Push is verified up to the push service, not onto a device.** `e2e/push.spec.ts` covers the
 storage boundary — a registration needs a session, malformed endpoints are refused, re-registering
 a device does not duplicate it, and one account can neither delete nor read another's devices,
@@ -536,6 +566,13 @@ all.
    Supabase Auth provider toggle, a redirect URL on the allow-list and a button — the same work
    either way, so do the pair together. Both need an app registration on the provider side,
    which is the manual half and the reason this is listed here rather than only in §Phases.
+10. **Set `SUPABASE_SECRET_KEY` in Vercel, Production scope.** Dev has its own in `.env.local`;
+    prod needs the prod project's, and until it exists every token call there answers 503 and
+    nothing can authenticate without a cookie. Vercel applies new variables to **new deployments
+    only**, so redeploy after adding it. It is the project's *secret* key from Project Settings →
+    API Keys — never with a `NEXT_PUBLIC_` prefix, since it can bypass RLS entirely; the app uses
+    it for one thing, exchanging a token for that user's session ([KB.md](KB.md) #44). Then create
+    a token on the Connections page in prod and call one route with it — that is what closes 4.9.
 
 ---
 
@@ -655,3 +692,24 @@ re-litigated.**
   which lives in `workspace_members`. Removing a member is a different feature and is not built.
   The route filters on `accepted_at is null` and answers 404 otherwise, so the two cases cannot
   be confused by a caller ([KB.md](KB.md) #41).
+
+- **26 Aug 2026** — a bearer token is exchanged for a real user session, not run against the
+  service-role key. The plan assumed a token could resolve to a `user_id` and leave RLS untouched,
+  which is right about the goal and silent about the mechanism: doing that properly means signing a
+  Supabase JWT, and this project's in-use signing key is ES256, so the private half is not ours to
+  sign with. Of the three ways out — trust the legacy HS256 key that is already marked
+  `previously_used`, register our own JWKS as a third-party auth provider on both projects, or buy
+  a genuine session from the Auth admin API — the third is the only one that adds no project-level
+  configuration and no key of our own to rotate. It costs a privileged secret in the environment
+  and three Auth calls per hour per instance. The first was rejected because it works until Supabase
+  finishes a rotation nobody here controls, and the second because it makes the app a token issuer
+  for the whole project to save a cache lookup. Using the service-role key directly was rejected
+  outright: it would turn 53 RLS policies into comments and leave the route layer as the only thing
+  between a leaked token and every household in the database ([KB.md](KB.md) #44).
+
+- **26 Aug 2026** — routes are session-only until they name a token scope, rather than accepting
+  tokens everywhere and blocking the sensitive ones. Both directions are one line per route; they
+  differ in what happens to the route somebody adds next month, which under the other default
+  would be reachable by every token in existence before anyone had thought about it. It also keeps
+  the token surface honestly small — tasks and categories — matching the tool surface rather than
+  quietly exceeding it ([KB.md](KB.md) #45).
