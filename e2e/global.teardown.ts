@@ -79,5 +79,11 @@ teardown('remove rows created by the suite', async () => {
     'like.*googleapis.com/e2e/*'
   )
 
-  if (tasks + households + subscriptions === 0) console.log('teardown: nothing to clean up')
+  // API tokens are named by their owner, so the marker goes in the name. A stray
+  // one is not inert like a dead push endpoint is — it is a live credential —
+  // which is the reason this sweep exists rather than being left to each spec.
+  const tokens = await sweep('api_tokens', 'name', 'api token(s)')
+
+  if (tasks + households + subscriptions + tokens === 0)
+    console.log('teardown: nothing to clean up')
 })

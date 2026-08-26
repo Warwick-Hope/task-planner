@@ -1,7 +1,7 @@
-import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { requireMember } from '@/lib/workspace-server'
-import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
+import { forbidden, parseJson, badBody } from '@/lib/api'
+import { requireCaller } from '@/lib/api-auth'
 import type { TaskStatus, TaskSource } from '@/types'
 
 interface CreateTaskBody {
@@ -27,11 +27,11 @@ interface CreateTaskBody {
 }
 
 export async function GET(request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return unauthorised()
+  const auth = await requireCaller(request, { scope: 'tasks:read' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
-  const membership = await requireMember(supabase, params.id, user.id)
+  const membership = await requireMember(supabase, params.id, userId)
   if (!membership) return forbidden()
 
   const { searchParams } = new URL(request.url)
@@ -53,11 +53,11 @@ export async function GET(request: Request, { params }: { params: { id: string }
 }
 
 export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return unauthorised()
+  const auth = await requireCaller(request, { scope: 'tasks:write' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
-  const membership = await requireMember(supabase, params.id, user.id, { blockRestricted: true })
+  const membership = await requireMember(supabase, params.id, userId, { blockRestricted: true })
   if (!membership) return forbidden()
 
   const body = await parseJson<CreateTaskBody>(request)
@@ -91,7 +91,7 @@ export async function POST(request: Request, { params }: { params: { id: string 
     .from('tasks')
     .insert({
       workspace_id: params.id,
-      created_by: user.id,
+      created_by: userId,
       title: title.trim(),
       notes: notes?.trim() || null,
       status: status ?? 'not_started',

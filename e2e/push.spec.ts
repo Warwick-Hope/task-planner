@@ -93,13 +93,13 @@ test.describe('push subscriptions', () => {
       data: { endpoint: e2eEndpoint('anon'), keys: KEYS },
     })
 
-    // Note what this asserts and what it does not. The route returns 401 when it
-    // is reached without a session — but it never is, because the middleware
-    // matcher covers /api and redirects every unauthenticated request to /login.
-    // So the honest assertion is the redirect, not the status code. (That the
-    // whole API answers HTML to a session-less caller is app-wide behaviour, not
-    // something this route chose — see KB.md #37.)
-    expect(res.url(), 'expected the login redirect').toContain('/login')
+    // This asserted the /login redirect until Phase 4.9, because the middleware
+    // matcher covered /api and no route was ever reached without a session. The
+    // API answers for itself now (KB.md #37), so the status code is the honest
+    // assertion — and the stronger one, since a redirect proved only that the
+    // caller was bounced, not that this route would have refused them.
+    expect(res.status(), 'a session-less subscribe must be refused').toBe(401)
+    expect(res.headers()['content-type'], 'and must answer JSON').toContain('application/json')
     await anonymous.close()
   })
 

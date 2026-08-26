@@ -171,6 +171,29 @@ Read through the `get_invitation_by_token` RPC, never by selecting the table —
 `20260815000001_sec_invitation_token_rpc.sql`. See
 [SECURITY_HARDENING.md](SECURITY_HARDENING.md) §1.1.
 
+## Access
+
+### `api_tokens`
+
+`id, user_id, name, token_hash (unique), token_prefix, scopes (text[]), expires_at, revoked_at,
+last_used_at, created_at`
+
+Personal access tokens for bearer auth on `/api` (Phase 4.9). **Only the SHA-256 hash is stored** —
+the token is shown once at creation and cannot be recovered. `token_prefix` is the first ten
+characters, kept so the UI can tell two rows apart without being able to reconstruct either.
+Scopes are coarse on purpose: `tasks:read`, `tasks:write`.
+
+Owner-only under RLS. An incoming token cannot be resolved through RLS at all, because the caller
+has no session yet — that is what the token is for — so it goes through
+`resolve_api_token(p_token_hash)`, a security definer function that stamps `last_used_at` in the
+same statement and returns nothing for a token that is unknown, revoked or expired. It is
+executable by `anon` for the same reason `get_invitation_by_token` is: presenting the hash of a
+32-byte secret is proof of holding it. See [KB.md](KB.md) #44 and #45 for the mechanism and the
+opt-in rule.
+
+Revoking sets `revoked_at` rather than deleting the row, so `last_used_at` survives the
+revocation.
+
 ## Notifications
 
 ### `push_subscriptions`

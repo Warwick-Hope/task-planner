@@ -1,9 +1,9 @@
-import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { nextOccurrence } from '@/lib/recurrence'
 import type { TaskStatus, Task } from '@/types'
 import { buildHorizonFields, getMondayOfWeek, monthFromDate, yearFromDate, monthToQuarter, quarterToHalf } from '@/lib/horizon'
 import { parseJson, badBody } from '@/lib/api'
+import { requireCaller } from '@/lib/api-auth'
 import { requireMember } from '@/lib/workspace-server'
 
 const HORIZON_FIELDS = [
@@ -16,13 +16,10 @@ const HORIZON_FIELDS = [
   'horizon_time_slot',
 ] as const
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const auth = await requireCaller(request, { scope: 'tasks:read' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
   const { data: task } = await supabase
     .from('tasks')
@@ -32,8 +29,8 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 
   if (!task) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  if (task.created_by !== user.id) {
-    const membership = await requireMember(supabase, task.workspace_id, user.id)
+  if (task.created_by !== userId) {
+    const membership = await requireMember(supabase, task.workspace_id, userId)
     if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -41,12 +38,9 @@ export async function GET(_request: Request, { params }: { params: { id: string 
 }
 
 export async function PATCH(request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+  const auth = await requireCaller(request, { scope: 'tasks:write' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
   const body = await parseJson<Record<string, unknown>>(request)
   if (!body) return badBody()
@@ -80,8 +74,8 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   if (!existing) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
   // Verify user has access: either they created it, or they're a member of its workspace
-  if (existing.created_by !== user.id) {
-    const membership = await requireMember(supabase, existing.workspace_id, user.id)
+  if (existing.created_by !== userId) {
+    const membership = await requireMember(supabase, existing.workspace_id, userId)
     if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }
 
@@ -157,13 +151,10 @@ export async function PATCH(request: Request, { params }: { params: { id: string
   return NextResponse.json(data)
 }
 
-export async function DELETE(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+export async function DELETE(request: Request, { params }: { params: { id: string } }) {
+  const auth = await requireCaller(request, { scope: 'tasks:write' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
   // Allow deletion by creator or any workspace member
   const { data: taskToDelete } = await supabase
@@ -174,12 +165,12 @@ export async function DELETE(_request: Request, { params }: { params: { id: stri
 
   if (!taskToDelete) return new NextResponse(null, { status: 204 })
 
-  if (taskToDelete.created_by !== user.id) {
+  if (taskToDelete.created_by !== userId) {
     const { data: membership } = await supabase
       .from('workspace_members')
       .select('id')
       .eq('workspace_id', taskToDelete.workspace_id)
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .single()
     if (!membership) return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
   }

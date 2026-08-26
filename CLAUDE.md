@@ -37,6 +37,7 @@ from memory.
 | `role_categories` | Replaced by `categories` in Phase 0 ([SCHEMA.md](SCHEMA.md)) |
 | `task_roles` | Dropped 17 Aug 2026 — a pre-Phase-0 leftover with no code and no rows ([SECURITY_HARDENING.md](SECURITY_HARDENING.md)) |
 | `Internal task planning web application for Plant Plan Ltd` | Wrong — this is a personal project on personal accounts, for personal and household use ([PLAN.md](PLAN.md) §Context) |
+| `An unauthenticated API call gets an HTML login page` | Fixed 26 Aug 2026 — `/api` is exempt from the redirect and answers 401 JSON ([KB.md](KB.md) #37) |
 | Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 
 Current figures come from [PLAN.md](PLAN.md) §"Where we are" — not from memory, and not from an
@@ -86,8 +87,14 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   API responses to it would be a bug, not an improvement ([KB.md](KB.md) #32).
 - **A push subscription is a capability** — `push_subscriptions` is owner-only, and cross-member
   sends go through a security definer function that checks both sides ([KB.md](KB.md) #38).
-- **An unauthenticated call to any API route gets an HTML login page, not a 401** — the
-  middleware matcher covers `/api` ([KB.md](KB.md) #37).
+- **An unauthenticated call to any API route gets a 401 JSON** — `/api` is exempt from the login
+  redirect as of Phase 4.9, and each route answers for itself ([KB.md](KB.md) #37).
+- **A route is session-only until it names a token scope** — `requireCaller(request)` refuses a
+  bearer token; `requireCaller(request, { scope })` accepts one. `/api/tokens` is session-only on
+  purpose ([KB.md](KB.md) #45).
+- **A bearer token is exchanged for a real user session, never a service-role client** — the
+  project's signing key is asymmetric, so we cannot mint one; `SUPABASE_SECRET_KEY` buys it from
+  the Auth admin API and RLS stays untouched ([KB.md](KB.md) #44).
 - **Icon alpha is per icon, not a setting** — the `purpose: "any"` PNGs need transparent corners,
   the maskable and iOS ones need full-bleed opaque ones. Regenerate with `npm run build:icons`
   and let `e2e/pwa.spec.ts` check it ([KB.md](KB.md) #40).

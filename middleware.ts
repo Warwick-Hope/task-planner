@@ -31,14 +31,27 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   const isAuthRoute = pathname === '/login' || pathname === '/signup'
-  const isCallbackRoute = pathname.startsWith('/api/auth/callback')
   // The invite landing page has to render for a logged-out visitor — that is
   // the entire point of the emailed token link. It reads nothing but the
   // get_invitation_by_token RPC, and accepting still requires a session.
   const isInviteRoute = pathname.startsWith('/invite/')
+  /**
+   * The API answers for itself (Phase 4.9, KB.md #37).
+   *
+   * Redirecting an unauthenticated API call to /login handed the caller a 200
+   * and an HTML page where it expected JSON — survivable while every caller was
+   * a browser doing fetch() from a page that already had a session, and not
+   * survivable for a bearer-token client, which has no session cookie by
+   * definition and would receive a login form instead of its data.
+   *
+   * Every route under /api resolves its own caller and answers 401 itself, so
+   * the redirect here was never the thing protecting them. The session refresh
+   * above still runs, which is what keeps cookie-authed API calls working.
+   */
+  const isApiRoute = pathname.startsWith('/api/')
 
   // Redirect unauthenticated users away from protected routes
-  if (!user && !isAuthRoute && !isCallbackRoute && !isInviteRoute) {
+  if (!user && !isAuthRoute && !isApiRoute && !isInviteRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.search = ''

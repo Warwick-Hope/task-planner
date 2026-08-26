@@ -1,6 +1,6 @@
-import { createClient } from '@/lib/supabase-server'
 import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { NextResponse } from 'next/server'
+import { requireCaller } from '@/lib/api-auth'
 import type { TaskStatus } from '@/types'
 
 interface CreateTaskBody {
@@ -22,14 +22,11 @@ interface CreateTaskBody {
 }
 
 export async function POST(request: Request) {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const auth = await requireCaller(request, { scope: 'tasks:write' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
-  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
-
-  const workspaceId = await getPersonalWorkspaceId(supabase, user.id)
+  const workspaceId = await getPersonalWorkspaceId(supabase, userId)
   if (!workspaceId) return NextResponse.json({ error: 'No workspace found' }, { status: 400 })
 
   let body: CreateTaskBody
@@ -59,7 +56,7 @@ export async function POST(request: Request) {
     .from('tasks')
     .insert({
       workspace_id: workspaceId,
-      created_by: user.id,
+      created_by: userId,
       title: title.trim(),
       notes: notes?.trim() || null,
       status: status ?? 'not_started',

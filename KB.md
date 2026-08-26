@@ -56,6 +56,10 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=<public key from: npx web-push generate-vapid-keys>
 VAPID_PRIVATE_KEY=<the matching private key — server only, never NEXT_PUBLIC_>
 VAPID_SUBJECT=mailto:warwickhope93@gmail.com
 
+# Bearer auth (#44). The project's *secret* key, not the publishable one: the
+# only thing it does is exchange an API token for that user's session.
+SUPABASE_SECRET_KEY=<sb_secret_… from Project Settings → API Keys>
+
 # Supabase CLI only — NOT read by the app (#5)
 SUPABASE_ACCESS_TOKEN=<personal-account token from supabase.com → Account → Access Tokens>
 ```
@@ -64,8 +68,10 @@ SUPABASE_ACCESS_TOKEN=<personal-account token from supabase.com → Account → 
 
 Set in Vercel → Project → Settings → Environment Variables, Production scope only:
 `NEXT_PUBLIC_SUPABASE_URL` (prod), `NEXT_PUBLIC_SUPABASE_ANON_KEY` (prod), `ANTHROPIC_API_KEY`
-(the same key), `NEXT_PUBLIC_APP_URL` = the Vercel URL, and the **prod** web push pair —
-`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (#38).
+(the same key), `NEXT_PUBLIC_APP_URL` = the Vercel URL, the **prod** web push pair —
+`NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (#38) — and the **prod**
+`SUPABASE_SECRET_KEY` (#44), which is a different key from dev's and must never carry a
+`NEXT_PUBLIC_` prefix.
 
 `NEXT_PUBLIC_APP_URL` was missing here for months and nothing said so, because the only thing
 that read it was the invitation link — which quietly came out as a bare path (#36). Nothing reads
@@ -127,6 +133,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 41 | An accepted invitation is a record, not a pending action | The app | Live |
 | 42 | An optimistic UI means a reload can beat the write it is asserting | The e2e suite | Live |
 | 43 | The overflow guard cannot see an overlap | The e2e suite | Live |
+| 44 | A bearer token cannot be signed here, so it is exchanged for a session | The app | Live |
+| 45 | A route is session-only until it opts in to a token scope | The app | Live |
 
 ---
 
@@ -303,20 +311,28 @@ answers **logged out**, which is the only state in which this breaks.
 
 ### 37. The whole API answers HTML to a caller with no session
 
-The middleware matcher covers `/api/**`, so an unauthenticated request to any route is redirected
-to `/login` and the caller receives a 200 and an HTML page. The `unauthorised()` 401 in each route
-is therefore **unreachable from a browser without a session** — it only fires for a request that
-carries a session cookie the route itself rejects.
+**Fixed on 26 Aug 2026 (Phase 4.9). `/api` is exempt from the login redirect and every route
+answers 401 JSON itself.** What follows describes the behaviour before that, because tests and
+client code written against it read strangely otherwise.
 
-Two consequences. Writing a test that asserts 401 for an anonymous caller will fail with a
-confusing `Received: 200`, and the honest assertion is that the response URL is `/login`
-(`e2e/push.spec.ts` does this). And client code that assumes a failed `fetch` returns JSON will
-throw a parse error rather than see a status — which is a real if minor wart in the app, not
-something any one route chose.
+The middleware matcher covers `/api/**`, and an unauthenticated request to any route *used to be*
+redirected to `/login`, so the caller received a 200 and an HTML page. The `unauthorised()` 401 in
+each route was therefore unreachable without a session — it only fired for a request that carried
+a session cookie the route itself rejected.
 
-Worth fixing one day by exempting `/api` from the redirect and letting the routes answer for
-themselves. Not done: it changes the behaviour of every route at once, and nothing currently
-depends on it.
+Two consequences, both now gone. A test asserting 401 for an anonymous caller failed with a
+confusing `Received: 200`, so the honest assertion was that the response URL is `/login` —
+`e2e/push.spec.ts` did exactly that, and the 4.9 change turned it red, which is the one thing in
+the suite that noticed the behaviour had moved. It asserts 401 and a JSON content type now. And
+client code assuming a failed `fetch` returns JSON threw a parse error rather than seeing a
+status.
+
+"Worth fixing one day… nothing currently depends on it" is what this entry said until bearer
+tokens depended on it: a token client has no session cookie by definition, so it would have
+received a login form where it expected JSON. Every route already guarded itself, which is why
+the fix was one condition in `middleware.ts` rather than a change to 62 handlers — the redirect
+was never the thing protecting them. The session refresh in middleware still runs, so
+cookie-authed API calls are unaffected.
 
 ---
 
@@ -663,6 +679,56 @@ the row through `get_invitation_by_token`, so deleting it is what makes the toke
 **A route that creates something the UI can then act on has to return its id.** `InviteForm`
 built its own optimistic row with `crypto.randomUUID()`, so Revoke on a just-created invitation
 would have 404'd on an id the database never saw. The POST returns the inserted row now.
+
+### 44. A bearer token cannot be signed here, so it is exchanged for a session
+
+**The obvious implementation is impossible on this project.** The standard way to make a personal
+access token behave like a login is to mint a Supabase JWT yourself with `sub` set to the user —
+RLS then applies untouched, because every policy keys off the user, not off how they signed in.
+That needs the project's JWT signing secret. Clarity's in-use signing key is **ES256**, an
+asymmetric key whose private half never leaves Supabase (the older HS256 key is present but marked
+`previously_used`, i.e. on its way out, so signing with it would work until it silently did not).
+`NEXT_PUBLIC_SUPABASE_ANON_KEY` is an `sb_publishable_…` key, not a legacy JWT, which is the quick
+way to spot a project in this state.
+
+**So `lib/api-auth.ts` buys a real session instead.** The token hash resolves to a user, and then
+the Auth *admin* API generates a magic link for that user's email and immediately redeems it
+server-side — `generateLink` sends no email; it returns the token an email would have carried.
+The resulting access token is cached in memory per token hash for the hour it lives, so the
+exchange is three Auth calls per cold instance per hour, not per request.
+
+**Why not the service-role key directly.** It would be one line, and it would make every RLS
+policy a comment: a token would read every workspace in the database and the route layer would be
+the only thing in the way. The secret key is used for the exchange and nothing else, and the
+client handed to routes is a plain publishable-key client carrying that user's access token.
+
+- `SUPABASE_SECRET_KEY` must be set per environment. Without it every token call answers **503**,
+  deliberately — the same shape as push with no VAPID pair (#38), because a missing server secret
+  is a deployment problem and saying so beats a 401 that sends someone hunting their token.
+- **Caching does not delay revocation.** The resolver RPC runs on every request; the cache only
+  skips the exchange. A revoked token 401s on its next call.
+- Each exchange creates a row in `auth.sessions`. Caching keeps that to roughly one per hour per
+  instance rather than one per request, which is the practical reason the cache exists at all.
+
+### 45. A route is session-only until it opts in to a token scope
+
+`requireCaller(request)` with **no `scope`** is session-only: a bearer token gets a 403 saying so.
+A route becomes reachable by token only by naming the scope it needs —
+`requireCaller(request, { scope: 'tasks:write' })`. The default is the safe direction: a route
+written next month is unreachable by every token in existence until somebody decides otherwise.
+
+What is opted in as of Phase 4.9: `POST /api/tasks`, `GET|PATCH|DELETE /api/tasks/[id]`,
+`GET|POST /api/household/[id]/tasks`, `GET /api/roles` and `GET /api/household/[id]/categories`.
+Everything else — meals, shopping, rooms, profiles, invitations, push — stays session-only until a
+tool needs it.
+
+**`/api/tokens` is session-only on purpose.** A token that could mint tokens could not be revoked:
+you would be chasing children of children. Creating and revoking tokens requires a browser
+session.
+
+**Revoking stamps `revoked_at`; it does not delete the row.** `last_used_at` on a revoked token is
+the only way to answer "was this being used when I killed it?", which is the first question anyone
+asks after revoking one in a hurry.
 
 ---
 
