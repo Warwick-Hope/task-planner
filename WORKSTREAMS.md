@@ -20,9 +20,9 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
+| 2026-08-26 | `docs/connector-plan` | Writing the Claude connector into the plan — no code | `PLAN.md` §"Where we are", §Phases 4 and 5, §Risks, §Open items, §Decisions log, and a new §"The Claude connector" |
 
-**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
-what's next".
+Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
