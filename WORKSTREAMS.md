@@ -20,7 +20,6 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 2026-08-26 | `docs/workstreams-trim` | Removing the "Recently finished" table — it conflicted on every overlapping PR | all of `WORKSTREAMS.md` |
 
 **Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
 what's next".
