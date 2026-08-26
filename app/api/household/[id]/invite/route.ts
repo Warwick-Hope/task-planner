@@ -32,21 +32,28 @@ export async function POST(request: Request, { params }: { params: { id: string 
   const token = randomBytes(32).toString('hex')
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 7 days
 
-  const { error } = await supabase.from('household_invitations').insert({
-    workspace_id: params.id,
-    email,
-    role,
-    token,
-    expires_at: expiresAt,
-    created_by: user.id,
-  })
+  // The row comes back because the page lists pending invitations with a Revoke
+  // button, and revoking one needs its real id — a client-invented placeholder
+  // would 404 on the way back out.
+  const { data: invitation, error } = await supabase
+    .from('household_invitations')
+    .insert({
+      workspace_id: params.id,
+      email,
+      role,
+      token,
+      expires_at: expiresAt,
+      created_by: user.id,
+    })
+    .select('id, email, role, expires_at, accepted_at, created_at')
+    .single()
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })
 
   // Absolute: this link is copied into a message and opened elsewhere.
   const inviteUrl = `${requestOrigin(request)}/invite/${token}`
 
-  return NextResponse.json({ token, inviteUrl, expiresAt })
+  return NextResponse.json({ token, inviteUrl, expiresAt, invitation })
 }
 
 export async function GET(_request: Request, { params }: { params: { id: string } }) {

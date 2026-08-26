@@ -147,3 +147,75 @@ test('a restricted member can read but not write', async ({ request, browser }) 
 
   await context.close()
 })
+
+/**
+ * Revoking an invitation, and the two things it must refuse.
+ *
+ * The revoke is a delete on the invitation row, so what matters is that the
+ * *token* stops resolving — the row is what the landing page's RPC reads, and
+ * the link is already out in a message by the time anyone changes their mind.
+ *
+ * An accepted invitation is deliberately not revokable: it is the only record
+ * that this person was invited, and deleting it would not remove their
+ * membership. That is the second assertion here.
+ */
+test('an owner can revoke a pending invitation, but not an accepted one', async ({
+  page,
+  request,
+  browser,
+}) => {
+  const inviteeEmail = process.env.E2E_USER2_EMAIL
+  expect(inviteeEmail, 'E2E_USER2_EMAIL must be set').toBeTruthy()
+
+  const created = await request.post('/api/household', {
+    data: { name: `[e2e] revoke household ${Date.now()}` },
+  })
+  expect(created.ok()).toBe(true)
+  const { workspaceId } = await created.json()
+
+  // ── a pending invitation, revoked ──────────────────────────────────────────
+  const pending = await request.post(`/api/household/${workspaceId}/invite`, {
+    data: { email: inviteeEmail, role: 'adult' },
+  })
+  expect(pending.ok(), `invite failed: ${pending.status()}`).toBe(true)
+  const { token, invitation } = await pending.json()
+  // The client needs the real row back to be able to revoke what it just made.
+  expect(invitation?.id, 'the POST must return the created invitation').toBeTruthy()
+
+  const revoked = await request.delete(`/api/household/${workspaceId}/invite/${invitation.id}`)
+  expect(revoked.status(), 'revoking a pending invitation').toBe(204)
+
+  // The link is what was shared, so the link is what has to stop working.
+  await page.goto(`/invite/${token}`)
+  await expect(page.getByRole('heading', { name: 'Invalid invite link' })).toBeVisible()
+
+  // And it is gone, not merely hidden.
+  const again = await request.delete(`/api/household/${workspaceId}/invite/${invitation.id}`)
+  expect(again.status(), 'revoking it twice').toBe(404)
+
+  // ── a non-owner cannot revoke ──────────────────────────────────────────────
+  const second = await request.post(`/api/household/${workspaceId}/invite`, {
+    data: { email: inviteeEmail, role: 'adult' },
+  })
+  expect(second.ok()).toBe(true)
+  const { token: secondToken, invitation: secondInvitation } = await second.json()
+
+  const outsider = await browser.newContext({ storageState: INVITEE_STATE })
+  const asOutsider = await outsider.request.delete(
+    `/api/household/${workspaceId}/invite/${secondInvitation.id}`
+  )
+  expect(asOutsider.status(), 'a non-member must not revoke an invitation').toBe(403)
+
+  // ── accepted, and therefore not revokable ──────────────────────────────────
+  const inviteePage = await outsider.newPage()
+  await inviteePage.goto(`/invite/${secondToken}`)
+  await inviteePage.getByRole('button', { name: 'Accept invitation' }).click()
+  await inviteePage.waitForURL(`**/household/${workspaceId}`, { timeout: 20_000 })
+
+  const afterAccept = await request.delete(
+    `/api/household/${workspaceId}/invite/${secondInvitation.id}`
+  )
+  expect(afterAccept.status(), 'an accepted invitation must not be revokable').toBe(404)
+
+  await outsider.close()
+})

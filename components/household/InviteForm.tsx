@@ -1,15 +1,14 @@
 'use client'
 
 import { useState } from 'react'
+import type { HouseholdInvitation } from '@/types'
 
-interface Invitation {
-  id: string
-  email: string
-  role: string
-  expires_at: string
-  accepted_at: string | null
-  created_at: string
-}
+// The columns the invite page and the API both select — the token is never sent
+// to the client except in the freshly generated link.
+type Invitation = Pick<
+  HouseholdInvitation,
+  'id' | 'email' | 'role' | 'expires_at' | 'accepted_at' | 'created_at'
+>
 
 interface Props {
   workspaceId: string
@@ -24,6 +23,8 @@ export default function InviteForm({ workspaceId, initialInvitations }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [invitations, setInvitations] = useState<Invitation[]>(initialInvitations)
+  const [revoking, setRevoking] = useState<string | null>(null)
+  const [lastInvited, setLastInvited] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -46,18 +47,34 @@ export default function InviteForm({ workspaceId, initialInvitations }: Props) {
     }
 
     setInviteUrl(json.inviteUrl)
+    setLastInvited(json.invitation.id)
     setEmail('')
-    setInvitations((prev) => [
-      {
-        id: crypto.randomUUID(),
-        email: email.toLowerCase(),
-        role,
-        expires_at: json.expiresAt,
-        accepted_at: null,
-        created_at: new Date().toISOString(),
-      },
-      ...prev,
-    ])
+    // The row the API returns, not a locally built one: its id is what Revoke
+    // sends back, so an invented one would 404 on the invitation just created.
+    setInvitations((prev) => [json.invitation, ...prev])
+  }
+
+  async function handleRevoke(invitation: Invitation) {
+    if (!confirm(`Revoke the invitation for ${invitation.email}? The link stops working.`)) return
+
+    setError(null)
+    setRevoking(invitation.id)
+
+    const res = await fetch(`/api/household/${workspaceId}/invite/${invitation.id}`, {
+      method: 'DELETE',
+    })
+
+    setRevoking(null)
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      setError(json.error ?? 'Could not revoke that invitation')
+      return
+    }
+
+    setInvitations((prev) => prev.filter((i) => i.id !== invitation.id))
+    // The link still on screen may be the one just revoked.
+    if (lastInvited === invitation.id) setInviteUrl(null)
   }
 
   async function copyLink() {
@@ -151,7 +168,18 @@ export default function InviteForm({ workspaceId, initialInvitations }: Props) {
                     Expires {new Date(inv.expires_at).toLocaleDateString()}
                   </p>
                 </div>
-                <span className="text-xs text-gray-400 capitalize">{inv.role}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-gray-400 capitalize">{inv.role}</span>
+                  {/* Always visible, never on hover: a hover-only control does
+                      not render at all on a touch screen (KB.md #26). */}
+                  <button
+                    onClick={() => handleRevoke(inv)}
+                    disabled={revoking === inv.id}
+                    className="rounded px-2 py-1.5 text-xs text-red-500 hover:bg-red-50 hover:text-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {revoking === inv.id ? 'Revoking…' : 'Revoke'}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
