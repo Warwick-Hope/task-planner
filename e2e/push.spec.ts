@@ -143,6 +143,32 @@ test.describe('push subscriptions', () => {
     expect(again.ok()).toBe(true)
   })
 
+  test('the test notification only ever reaches your own devices', async ({ request }) => {
+    // The route exists because push is otherwise untestable by one person: an
+    // assignment to yourself notifies nobody. What matters is that it cannot be
+    // aimed anywhere else — it takes no arguments, and reads the caller's own
+    // rows under RLS.
+    const endpoint = e2eEndpoint('self-test')
+    const owner = await supabaseSession('owner')
+
+    const withNoDevices = await request.post('/api/push/test')
+    expect(withNoDevices.ok(), `test send failed: ${withNoDevices.status()}`).toBe(true)
+    expect((await withNoDevices.json()).delivered, 'reported a delivery with no devices').toBe(0)
+
+    // With a dead endpoint registered, the send is attempted for real and the
+    // push service answers 404 — so nothing is delivered and the row is retired.
+    const registered = await request.post('/api/push/subscribe', { data: { endpoint, keys: KEYS } })
+    expect(registered.ok()).toBe(true)
+
+    const withDeadDevice = await request.post('/api/push/test')
+    expect(withDeadDevice.ok()).toBe(true)
+    expect((await withDeadDevice.json()).delivered).toBe(0)
+    expect(
+      await owner.countSubscriptions(endpoint),
+      'a 404 from the push service should have retired the endpoint'
+    ).toBe(0)
+  })
+
   test('a dead subscription cannot break the assignment that triggered it', async ({
     request,
     browser,

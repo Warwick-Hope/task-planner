@@ -576,6 +576,14 @@ push is attempted; a push service that is down is not a reason to tell the user 
 failed. `pushToMember` swallows everything, and retires the endpoint only on 404/410 — anything
 else is transient and the row stays.
 
+**One account cannot trigger a real push except through the test route.** The only thing that
+sends is an assignment, and assigning to yourself deliberately notifies nobody — so a single user
+can turn push on, see the toggle say it is on, and have no way to find out whether anything would
+ever arrive. `POST /api/push/test` sends to the caller's own devices, and the bell offers it once
+push is on. It takes no arguments and reads the caller's own rows under RLS, so it cannot be
+aimed at anyone else. This is the same trap the install offer shipped in (#35): a feature that is
+working and cannot be seen to be working is indistinguishable from a broken one.
+
 **What cannot be tested here:** delivery. The worker registers in production builds only (#32), so
 the dev server never has one, and a real push needs a live push service and a browser
 registration. What `e2e/push.spec.ts` does cover is the storage boundary and the send path up to

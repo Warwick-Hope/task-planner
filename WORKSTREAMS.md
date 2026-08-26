@@ -34,6 +34,7 @@ what's next".
 
 | Landed | What it was |
 |---|---|
+| 2026-08-26 | **PR #22** — a test notification, because push was verifiable only by two people |
 | 2026-08-26 | **PR #21** — 4.3's migration applied to prod. The code shipped with #18; the table did not |
 | 2026-08-26 | **PR #20** — the Claude connector written into the plan as 4.8–4.11, and Phase 5.6 narrowed to the unattended sweep |
 | 2026-08-26 | **PR #18** — web push for task assignments. Phase 4.3 in part; scheduled reminders deliberately excluded |
