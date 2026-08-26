@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 26 Aug 2026 | `docs/4-10-live` | Recording 4.10 live on prod — the migration is applied, and what "up to date" hid | `PLAN.md` §"Where we are" item 15, §Phases 4.10, §Open items 13; `KB.md` §Supabase and migrations |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
