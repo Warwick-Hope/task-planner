@@ -90,21 +90,26 @@ happened rather than only in the app.
     (`scripts/session-check.mjs`, on a `SessionStart` hook) and
     [WORKSTREAMS.md](WORKSTREAMS.md), the claim board. Prompted by two sessions colliding in one
     checkout the same morning ([KB.md](KB.md) #39).
-13. ⏭ **Next, in this order** — **4.8** two small fixes (the install icon's white corners and
-    revoking a household invitation), then **4.9** the token-authed API, then **4.10** the
-    Claude connector itself. SSO (4.4, now Google *and* Microsoft) and push reminders come
-    after them, not before. The design is in §"The Claude connector"; the reasoning is in
-    §Decisions log, 26 Aug 2026.
-14. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+13. ✅ **Phase 4.8 — two small fixes.** PR #24, 26 Aug 2026. The install icon's four
+    white wedges on a dark taskbar were the page background baked into the corners, and the PNGs
+    had no alpha channel at all; the `purpose: "any"` icons are transparent there now, and the
+    iOS icon is full bleed for the mirror-image reason ([KB.md](KB.md) #40). A household owner
+    can revoke a pending invitation, which stops a link that has already been shared; an
+    accepted one deliberately cannot be revoked ([KB.md](KB.md) #41).
+14. ⏭ **Next, in this order** — **4.9** the token-authed API, then **4.10** the Claude
+    connector itself. SSO (4.4, now Google *and* Microsoft) and push reminders come after them,
+    not before. The design is in §"The Claude connector"; the reasoning is in §Decisions log,
+    26 Aug 2026.
+15. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-15. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+16. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-16. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
-    until an external user exists. None block 4.8. **Two of them stop being optional the day
+17. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+    until an external user exists. None block 4.9. **Two of them stop being optional the day
     4.10 ships** — the brain-dump quota and the Pro decision.
 
 ---
@@ -263,22 +268,21 @@ paper. Met.
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
-| 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | **Next** |
-| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | Then |
+| 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
+| 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | **Next** |
 | 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | Then |
 | 4.11 | Connector OAuth 2.1 — one-click install as a claude.ai connector | Deferred — §"The Claude connector" |
 
-**4.8 in detail, because both halves are already diagnosed.** The install icon shows four white
-wedges on a dark Windows taskbar: `scripts/generate-icons.mjs` rasterises the SVG with
-`omitBackground: false`, so the page's white background bakes into the corners outside the
-`rx="112"` rounded rect, and the PNGs have no alpha channel at all — `icon-192`, `icon-512` and
-`apple-touch-icon` are 24bpp RGB with a `#FFFFFF` corner pixel. The fix is `omitBackground: true`
-for the two `purpose: "any"` icons; **not** for `apple-touch-icon.png`, which wants the maskable
-treatment instead, because iOS ignores `purpose`, composites transparency to black and applies
-its own rounding. Revoking an invitation is smaller than it looks: the DELETE policy already
-exists in `20260420000011`, the list already renders on the invite page and the API already has
-a GET — what is missing is a DELETE route and a button. Both get a `KB.md` entry when they land,
-not before.
+**4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
+alpha channel at all, and the fix is per icon rather than global: the `purpose: "any"` pair is
+transparent outside the rounded rect, while the maskable icon and `apple-touch-icon.png` stay
+opaque and are now *both* full bleed — iOS applies its own rounding to whatever square it is
+handed, so the rounded artwork left slivers there for the same reason the taskbar showed wedges
+([KB.md](KB.md) #40). Revoking an invitation was as small as expected — a DELETE route and a
+button — with one addition: an *accepted* invitation is not revokable, because the row is the only
+record that the person was invited and deleting it would not remove their membership
+([KB.md](KB.md) #41). The invite POST returns the row it created, since the client was inventing
+an id it could not then revoke.
 
 **Exit criterion:** the app is usable on a phone as the primary device, installs to an Android
 home screen, tells you about things without you opening it, **and a task can be created in it
@@ -463,7 +467,9 @@ Properties that must hold, because they are what catch the bugs that look fine o
 **The PWA is verified in two halves, because the suite cannot see all of it.** `e2e/pwa.spec.ts`
 covers what the dev server can prove, all of it logged out — the manifest, the worker script,
 the offline page and the icons are served rather than redirected to `/login`, and every page
-links the manifest. Registration itself is production-only ([KB.md](KB.md) #32), so it is
+links the manifest. It also asserts each icon's PNG colour type, which is the only observable
+trace of the white-corner bug: the icons were the right size and type at the right URL and simply
+looked wrong ([KB.md](KB.md) #40). Registration itself is production-only ([KB.md](KB.md) #32), so it is
 checked by `npm run verify:pwa` against a real build:
 
 ```bash
@@ -642,3 +648,10 @@ re-litigated.**
   endpoints over the Supabase session. Pasting a token once buys the entire capability for a
   fraction of that, and the thing worth learning early is whether the *tool surface* is right,
   which a pasted token tests just as well. OAuth stays as 4.11, after the tools have been used.
+
+- **26 Aug 2026** — an accepted invitation cannot be revoked. Revoking deletes the invitation
+  row, which is what makes the shared link stop resolving; on an accepted one that would destroy
+  the only record that the person was invited and by whom, and would not remove their membership,
+  which lives in `workspace_members`. Removing a member is a different feature and is not built.
+  The route filters on `accepted_at is null` and answers 404 otherwise, so the two cases cannot
+  be confused by a caller ([KB.md](KB.md) #41).
