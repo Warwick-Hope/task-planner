@@ -20,9 +20,9 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
+| 2026-08-26 | `feat/phase-4-8-small-fixes` | Phase 4.8 — install-icon alpha, revoking an invitation | PLAN.md §"Where we are" and the Phase 4 table · KB.md new entries · this row |
 
-**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and
-what's next".
+Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
