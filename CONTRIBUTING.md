@@ -34,6 +34,12 @@ global to fix this repo.
 
 ## Starting a piece of work
 
+**Run `npm run session` first.** It prints which working tree you are in, every other working
+tree and whether it has uncommitted work, how far behind `origin/main` you are, the open PRs,
+and the claim board. A `SessionStart` hook in `.claude/settings.json` runs it automatically, so
+in practice you read it rather than run it — but run it by hand after a long gap, because the
+answer changes while you think.
+
 **Branch per piece of work**, named `<type>/<slug>` — `feat/`, `fix/`, `docs/`, `chore/`, lower
 case, hyphenated. Phase work keeps the `feat/phase-N-description` convention. Claude names the
 branch; never accept an auto-generated name.
@@ -41,14 +47,50 @@ branch; never accept an auto-generated name.
 **Never commit or push to `main` directly** — everything merges through a PR, documentation
 included.
 
-**Parallel sessions each get a worktree, outside the repository:**
+## Two sessions at once
+
+**Git handles concurrent work. It does not handle two sessions in one directory.** Its unit of
+isolation is a branch *with its own working tree* — one HEAD, one index, one set of files on
+disk. Two Claude sessions in `C:\Dev\task-planner` are not two contributors; they are two hands
+on one keyboard, and GitHub never sees the conflict because it never gets that far. This is not
+theory: it happened on 26 Aug 2026 and cost a session's work ([KB.md](KB.md) #39).
+
+**So: one session, one working tree. No exceptions, including "this will only take a minute".**
 
 ```bash
+git fetch origin
 git worktree add C:/Dev/.worktrees/task-planner/<slug> -b <type>/<slug> origin/main
+cp .env.local C:/Dev/.worktrees/task-planner/<slug>/.env.local
 ```
 
-Never nest a worktree inside the repo — [KB.md](KB.md) #30 explains what breaks. `.claude/worktrees`
-is the harness's own; leave it gitignored and clean it up when sessions end.
+**A new worktree has no `node_modules`**, so `npm run lint`, `build` and `dev` all fail with
+`'next' is not recognized` until you deal with it. Either `npm install` in the worktree, or —
+faster, and no second copy on disk — junction it to the main checkout's. A junction needs no
+administrator rights on Windows:
+
+```powershell
+cmd /c mklink /J C:\Dev\.worktrees\task-planner\<slug>\node_modules C:\Dev\task-planner\node_modules
+```
+
+Worktrees the harness creates itself get this from `worktree.symlinkDirectories` in
+`.claude/settings.json`; one made by hand with `git worktree add` does not.
+
+- **Branch from `origin/main`, not from local `HEAD`** — the shared checkout is often sitting on
+  somebody else's feature branch.
+- **Copy `.env.local` in.** It is untracked, so a new worktree has none, and both the dev server
+  and the Supabase CLI need it ([KB.md](KB.md) §Environment).
+- **Never nest a worktree inside the repo** — [KB.md](KB.md) #30 explains what breaks.
+  `.claude/worktrees` is the harness's own; leave it gitignored and clean it up when sessions
+  end.
+- **Remove it when the work lands:** `git worktree remove C:/Dev/.worktrees/task-planner/<slug>`,
+  then `git branch -D <branch>` (`-d` refuses after a squash merge — [KB.md](KB.md) #29).
+
+**Then claim your sections** in [WORKSTREAMS.md](WORKSTREAMS.md), in your first commit. A
+worktree stops two sessions overwriting each other's *files*; it does not stop them both
+rewriting `PLAN.md` §"Where we are" and meeting as a merge conflict. Claim sections, not files.
+
+**Remove your claim in the last commit before the PR is ready** — the branch dies on squash
+merge, and `npm run check:docs` fails on a claim naming a branch that no longer exists.
 
 ## While you work
 
@@ -160,7 +202,16 @@ The documents are the contended resource, not the code.
    cannot come back. `npm run check:docs` fails on any revival.
 5. **The decisions log is append-only, with absolute dates** — `25 Aug 2026`, never "today".
 6. **Claim the section, not the file.** Two sessions can both edit `PLAN.md`; they cannot both
-   edit §"Where we are".
+   edit §"Where we are". The board is [WORKSTREAMS.md](WORKSTREAMS.md).
+7. **Re-read a shared section immediately before you edit it** — not at the start of the
+   session. Reading `PLAN.md` and writing it back forty minutes later is how the 26 Aug
+   collision happened, and the gap is where the other session's work lands
+   ([KB.md](KB.md) #39). `git fetch && git log origin/main..HEAD --oneline` is the cheap check.
+8. **Take a `KB.md` number from `origin/main`, not from your branch.** Two branches both
+   appending "#39" merge cleanly when the entries land in different sections, and you get two
+   #39s. `npm run check:docs` catches it as `duplicate-kb-entry` — on the *second* PR. If that
+   is yours, renumber yours; the merged one keeps the number, because other documents already
+   cite it.
 
 Do **not** add `merge=union` to `.gitattributes` for the documents. Union merge interleaves both
 sides silently, and in a document where corrections supersede earlier claims, silent

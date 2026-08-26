@@ -19,7 +19,7 @@ file wins.
 
 ## Where we are, and what's next
 
-**Updated:** 2026-08-25
+**Updated:** 2026-08-26
 
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
@@ -30,7 +30,11 @@ The documents were retrofitted to the standard set the same day, and Phase 4.2, 
 that evening. **The app was then used on a real handset for the first time**, which produced
 three findings in an hour — a section nav you had to scroll to see, no install offer, and a
 production invitation link with no host on it — all fixed on PRs #15 and #16. Clarity is now
-installed on Android and running standalone. The next build item is 4.3, web push.
+installed on Android and running standalone. Web push for assignments merged on 26 Aug 2026 as
+PR #18. **That morning also produced a process failure worth more than the feature** — two
+sessions worked the same checkout at once and nearly overwrote each other, which is now guarded
+by a worktree per session, `npm run session` and the claim board
+([WORKSTREAMS.md](WORKSTREAMS.md), [KB.md](KB.md) #39).
 
 1. ✅ **Phases 0–3** — schema rebuild, personal workspace, household foundation, cleaning /
    shopping / meals. Live on prod. Detail in §Phases.
@@ -71,19 +75,23 @@ installed on Android and running standalone. The next build item is 4.3, web pus
 
     **The app is installed on an Android handset and running standalone**, and the invitation
     link was confirmed correct on production after #16 deployed.
-11. 🔄 **Phase 4.3 — web push, assignment notifications.** Code-complete on
-    `feat/phase-4-3-push-assignments`, open as PR #18 since 26 Aug 2026. Being assigned a task
+11. ✅ **Phase 4.3 — web push, assignment notifications.** PR #18, merged 26 Aug 2026 and
+    auto-deployed. Being assigned a task
     by another adult now pushes to whatever devices that person has turned on, from the
     notification bell. **Scheduled reminders are deliberately not in it** — see the decisions
     log for 26 Aug 2026. *Done* means a real notification arrives on the handset, which needs
-    the merge and the prod VAPID pair (§Open items 2).
-12. ⏭ **Next — Phase 4.4, Microsoft OAuth.** Additive to email/password, never a replacement —
+    the prod VAPID pair, which is still to be generated and set (§Open items 2).
+12. ✅ **Parallel-session guard — 26 Aug 2026.** A worktree per session, `npm run session`
+    (`scripts/session-check.mjs`, on a `SessionStart` hook) and
+    [WORKSTREAMS.md](WORKSTREAMS.md), the claim board. Prompted by two sessions colliding in one
+    checkout the same morning ([KB.md](KB.md) #39).
+13. ⏭ **Next — Phase 4.4, Microsoft OAuth.** Additive to email/password, never a replacement —
     removing the password path would strand the e2e accounts and the invite flow.
-13. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+14. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-14. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
+15. **Open manual items** — see §Open items. Two are blocked on Supabase Pro, one is deferred
     until an external user exists. None block 4.3.
 
 ---
@@ -433,3 +441,19 @@ re-litigated.**
   reason about. Neither is worth it while the only user is one person who opens the app anyway.
   The push stack — subscriptions, worker, permission flow — is all built, so adding a scheduler
   later is an endpoint and a trigger, not a rewrite. Revisit with the Pro decision.
+
+- **26 Aug 2026** — one session, one working tree, enforced by convention plus a briefing rather
+  than by a gate. Two sessions ran in `C:\Dev\task-planner` at once and nearly overwrote each
+  other's work on `PLAN.md`; the rule that would have prevented it was already written in
+  `CONTRIBUTING.md` and simply not followed, so writing it more firmly was not the answer.
+  `scripts/session-check.mjs` runs on a `SessionStart` hook and states the position — other
+  working trees, their dirtiness, distance from `origin/main`, open PRs, live claims — because
+  the failure was never disobedience, it was not knowing. It exits 0 always: a session blocked by
+  its own tooling at startup is a session that disables the tooling.
+
+- **26 Aug 2026** — `WORKSTREAMS.md` added, the second of the standard document set's Tier 2
+  files. Its trigger is "the second concurrent session", and that fired. It is deliberately the
+  *second* line of defence: a claim board cannot stop two processes writing the same file on
+  disk, only two branches rewriting the same section of a document. The guard already validated
+  the file before it existed — `check-docs` has looked for it since the retrofit — so adopting
+  it cost a template and a seed, not a mechanism.

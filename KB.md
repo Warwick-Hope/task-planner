@@ -122,6 +122,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 36 | A link that leaves the app is built from the request, not `NEXT_PUBLIC_APP_URL` | The app | Live |
 | 37 | The whole API answers HTML to a caller with no session | Auth, RLS and security | Live |
 | 38 | Web push: a VAPID pair per environment, and what cannot be tested | The app | Live |
+| 39 | Two sessions in one working tree — git isolates branches, not directories | Git and deploy | Live |
 
 ---
 
@@ -637,3 +638,40 @@ to skip it, including the documentation guard, which would read each document tw
 dead command resolve against a copy of the manifest.
 
 `.env.local` is untracked, so **copy it into a new worktree** — dev and the CLI both need it.
+
+### 39. Two sessions in one working tree — git isolates branches, not directories
+
+On **26 Aug 2026** two Claude Code sessions ran in `C:\Dev\task-planner` at the same time. One
+read `PLAN.md` §"Where we are", spent forty minutes designing a feature, and went to write it
+back. In that gap the other session had committed twice, opened PR #18 and rewritten the same
+section. The write was caught only because a string replacement failed to match — had the
+section been untouched, it would have silently clobbered the other session's work.
+
+**The mistake was not using git wrong. It was expecting git to help at all.** Its unit of
+isolation is a branch *with its own working tree*: one HEAD, one index, one set of files. Two
+processes in one directory share all three, so a checkout in one yanks the files out from under
+the other, and GitHub never sees a conflict because nothing ever reaches it. Concurrency support
+does not begin until the second working tree exists.
+
+Three things guard it now, in descending order of how much they actually help:
+
+1. **A worktree per session**, at `C:/Dev/.worktrees/task-planner/<slug>`, branched from
+   `origin/main` — not local `HEAD`, which is usually somebody else's feature branch.
+   `.env.local` must be copied in; it is untracked (#30, and [CONTRIBUTING.md](CONTRIBUTING.md)
+   §"Two sessions at once").
+2. **`npm run session`** — `scripts/session-check.mjs`, wired to a `SessionStart` hook in
+   `.claude/settings.json`. It prints the other working trees and whether they are dirty, the
+   distance from `origin/main`, the open PRs and the claim board, and warns loudly when you are
+   in the shared checkout while another tree is live. It is a briefing and always exits 0 — the
+   gates are `pre-push` and `npm run check:docs`.
+3. **[WORKSTREAMS.md](WORKSTREAMS.md)**, the claim board — which `check-docs` already validated
+   before the file existed: it fails on a claim naming a dead branch, or one more than two days
+   old.
+
+Two smaller consequences worth knowing:
+
+- **Re-read a shared document section immediately before writing it**, not at session start. The
+  gap between read and write is the whole exposure, and nothing about it is visible.
+- **`KB.md` numbering races across branches.** Two branches appending "#39" in different
+  sections merge cleanly and produce two #39s. `duplicate-kb-entry` catches it on the second PR
+  to merge; renumber that one, because the first is already cited elsewhere.
