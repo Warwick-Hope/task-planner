@@ -123,6 +123,10 @@ Every entry, in number order. Statuses are the point of this table.
 | 37 | The whole API answers HTML to a caller with no session | Auth, RLS and security | Live |
 | 38 | Web push: a VAPID pair per environment, and what cannot be tested | The app | Live |
 | 39 | Two sessions in one working tree — git isolates branches, not directories | Git and deploy | Live |
+| 40 | An app icon needs alpha in some places and not others | The app | Live |
+| 41 | An accepted invitation is a record, not a pending action | The app | Live |
+| 42 | An optimistic UI means a reload can beat the write it is asserting | The e2e suite | Live |
+| 43 | The overflow guard cannot see an overlap | The e2e suite | Live |
 
 ---
 
@@ -411,6 +415,35 @@ to `next.config.mjs`, `middleware.ts` or anything else Next reads once at boot �
 dev server before reading anything into the error message, which describes a symptom rather than
 a cause.
 
+### 42. An optimistic UI means a reload can beat the write it is asserting
+
+`tasks.spec.ts` clicks the status indicator, asserts the title says `wip`, then reloads to prove
+the change reached the database. The assertion passes the instant the click lands, because the
+row updates optimistically — so the reload can start before the PATCH has been answered, and the
+page comes back saying `not_started`. It failed exactly that way once in forty tests, and passed
+on every re-run, which is what a race looks like.
+
+**Wait for the response, not for the rendered value:** set up
+`page.waitForResponse(res => res.request().method() === 'PATCH' && res.url().includes('/api/tasks/'))`
+*before* the click, then await it before reloading. A `waitForTimeout` would hide the same race
+behind a delay that is either wasted or insufficient. This applies to every optimistic control in
+the app — the status cycle, task-status toggling, the shopping tick — so any new spec that
+reloads to check persistence needs the same treatment.
+
+### 43. The overflow guard cannot see an overlap
+
+`mobile.spec.ts` asks whether any element sticks out past the side of the screen. Adding a Revoke
+button to the invitation row on the invite page produced a different failure it is blind to: the
+email address and the role label sat *on top of each other*, both comfortably inside the
+viewport. Nothing overflowed, so nothing failed, and it was only visible in a screenshot.
+
+**A flex row with a right-hand control needs `min-w-0` on the growing side and `truncate` on the
+text**, or the text keeps its intrinsic width and runs underneath the control — plus `shrink-0` on
+the control group so it is the text that gives way. Every list row with a trailing button has this
+shape, which is why it is worth stating once. The check itself is not wrong; it measures the wrong
+thing for this class of bug, and the only guard that catches it is looking at the page on a phone
+viewport ([PLAN.md](PLAN.md) §Open items 1).
+
 ---
 
 ## The app
@@ -589,6 +622,47 @@ the dev server never has one, and a real push needs a live push service and a br
 registration. What `e2e/push.spec.ts` does cover is the storage boundary and the send path up to
 the push service — including a deliberately dead endpoint, which proves both that a 404 retires
 the subscription and that it cannot break the assignment.
+
+### 40. An app icon needs alpha in some places and not others
+
+**The `purpose: "any"` icons must be transparent outside the rounded rect; the maskable and iOS
+ones must not.** `scripts/generate-icons.mjs` rasterises `public/icon.svg` in Chromium, and a
+screenshot keeps the page background unless `omitBackground` is set — so `icon-192`, `icon-512`
+and `apple-touch-icon` shipped as 24bpp RGB with white corners, which showed as four white
+wedges on a dark Windows taskbar. Byte 25 of a PNG is the IHDR colour type: 6 is RGBA, 2 is RGB,
+and it is the quickest way to tell whether an icon has an alpha channel at all.
+
+**The rule is per icon, and iOS is the opposite of the other two:**
+
+- `purpose: "any"` — composited onto a tab or a taskbar, so **alpha**, rounded corners.
+- `purpose: "maskable"` — the launcher crops it to its own shape, so **full bleed, opaque**, and
+  the mark shrunk to 62% to stay inside the safe area.
+- `apple-touch-icon.png` — iOS ignores `purpose`, applies its **own** rounding to whatever
+  square it is handed, and composites transparency to **black**. So: full bleed, opaque, mark at
+  full size. Handing it the rounded artwork leaves slivers outside the radius; handing it alpha
+  turns those slivers black.
+
+**Nothing about the icon's size, type or URL was wrong**, which is why every existing check
+passed — `e2e/pwa.spec.ts` now asserts the colour type of all four, because the appearance of an
+icon is not otherwise observable from a test.
+
+### 41. An accepted invitation is a record, not a pending action
+
+**Revoking a household invitation deletes the row, so it can only apply to one nobody has
+accepted.** `DELETE /api/household/[id]/invite/[invitationId]` filters on `accepted_at is null`
+and answers 404 otherwise. Deleting an accepted one would not remove the person's membership —
+that is `workspace_members` — and would destroy the only record that they were invited and by
+whom. The owner-only DELETE policy has existed since `20260420000011`; the route and the button
+are what was missing.
+
+**What has to stop working is the link, not the row.** An invitation is shared as a URL, and by
+the time anyone changes their mind it is already in somebody's messages. The landing page reads
+the row through `get_invitation_by_token`, so deleting it is what makes the token fall through to
+"Invalid invite link" — which is the assertion worth making in a test, rather than the 404.
+
+**A route that creates something the UI can then act on has to return its id.** `InviteForm`
+built its own optimistic row with `crypto.randomUUID()`, so Revoke on a just-created invitation
+would have 404'd on an id the database never saw. The POST returns the inserted row now.
 
 ---
 

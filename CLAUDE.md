@@ -88,6 +88,11 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   sends go through a security definer function that checks both sides ([KB.md](KB.md) #38).
 - **An unauthenticated call to any API route gets an HTML login page, not a 401** — the
   middleware matcher covers `/api` ([KB.md](KB.md) #37).
+- **Icon alpha is per icon, not a setting** — the `purpose: "any"` PNGs need transparent corners,
+  the maskable and iOS ones need full-bleed opaque ones. Regenerate with `npm run build:icons`
+  and let `e2e/pwa.spec.ts` check it ([KB.md](KB.md) #40).
+- **An accepted invitation cannot be revoked** — the row is the record that someone was invited,
+  and deleting it would not remove their membership ([KB.md](KB.md) #41).
 - **Never call `preventDefault()` on `beforeinstallprompt`** — it suppresses the browser's own
   install offer, which is the one people expect ([KB.md](KB.md) #35).
 - **Below `md` the nav is a bottom tab bar** — the first four entries in `PersonalNav`/

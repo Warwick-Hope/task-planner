@@ -17,18 +17,33 @@ import path from 'node:path'
 const PUBLIC_DIR = path.join(process.cwd(), 'public')
 
 /**
- * A maskable icon is cropped to whatever shape the launcher likes, so the mark
- * has to sit inside the middle 80% and the background has to bleed to the edge.
- * The "any" icons keep the rounded square, which is what shows in a browser tab
- * and on the install prompt.
+ * Two independent knobs, because the four outputs need three different
+ * combinations of them:
+ *
+ * `bleed` — the background is a full-bleed square rather than the `rx="112"`
+ * rounded rect. A maskable icon needs it because the launcher crops the icon to
+ * its own shape, and iOS needs it because it applies its own rounding to the
+ * square it is given: hand iOS the rounded artwork and the corners outside the
+ * radius show as slivers of whatever is behind them.
+ *
+ * `transparent` — the corners outside the rounded rect become alpha instead of
+ * the page's white background. Only the `purpose: "any"` icons want this: they
+ * are composited onto a browser tab or a taskbar, and baked white showed as four
+ * white wedges on a dark Windows taskbar. The bleeding icons have no exposed
+ * corners to make transparent, and iOS composites transparency to *black*, so
+ * an alpha channel there would trade white slivers for black ones.
+ *
+ * `markScale` — the mark is shrunk only for the maskable icon, so it sits inside
+ * the middle 80% that survives a launcher cropping it to a circle. iOS does not
+ * crop, so `apple-touch-icon.png` keeps the mark at full size.
  */
 const OUTPUTS = [
-  { file: 'icon-192.png', size: 192, maskable: false },
-  { file: 'icon-512.png', size: 512, maskable: false },
-  { file: 'icon-maskable-512.png', size: 512, maskable: true },
-  // iOS applies its own rounding and does not understand `purpose`, so this is
-  // the square artwork at Apple's touch-icon size.
-  { file: 'apple-touch-icon.png', size: 180, maskable: false },
+  { file: 'icon-192.png', size: 192, bleed: false, transparent: true, markScale: 1 },
+  { file: 'icon-512.png', size: 512, bleed: false, transparent: true, markScale: 1 },
+  { file: 'icon-maskable-512.png', size: 512, bleed: true, transparent: false, markScale: 0.62 },
+  // iOS ignores `purpose`, so this is the square artwork at Apple's touch-icon
+  // size — full bleed, opaque, and left for iOS to round.
+  { file: 'apple-touch-icon.png', size: 180, bleed: true, transparent: false, markScale: 1 },
 ]
 
 const source = await readFile(path.join(PUBLIC_DIR, 'icon.svg'), 'utf8')
@@ -37,24 +52,29 @@ const svg = source.slice(source.indexOf('<svg'))
 
 const browser = await chromium.launch()
 
-for (const { file, size, maskable } of OUTPUTS) {
+for (const { file, size, bleed, transparent, markScale } of OUTPUTS) {
   const page = await browser.newPage({ viewport: { width: size, height: size } })
 
-  // Maskable: square corners, mark scaled to 62% about the centre — comfortably
-  // inside the 80% safe zone once a launcher crops it to a circle.
-  const markup = maskable
-    ? svg
-        .replace(/rx="112"/, 'rx="0"')
-        .replace(/<g fill="#ffffff">/, '<g fill="#ffffff" transform="translate(256 256) scale(0.62) translate(-256 -256)">')
-    : svg
+  // The mark is drawn on a 512 grid centred on (256, 256), so scaling it about
+  // that point is all the safe zone needs.
+  let markup = bleed ? svg.replace(/rx="112"/, 'rx="0"') : svg
+  if (markScale !== 1) {
+    markup = markup.replace(
+      /<g fill="#ffffff">/,
+      `<g fill="#ffffff" transform="translate(256 256) scale(${markScale}) translate(-256 -256)">`
+    )
+  }
 
   await page.setContent(
     `<!doctype html><style>html,body{margin:0;padding:0}svg{display:block;width:${size}px;height:${size}px}</style>${markup}`
   )
-  const png = await page.locator('svg').screenshot({ omitBackground: false })
+  const png = await page.locator('svg').screenshot({ omitBackground: transparent })
   await writeFile(path.join(PUBLIC_DIR, file), png)
   await page.close()
-  console.log(`${file.padEnd(24)} ${size}x${size}${maskable ? ' (maskable)' : ''}`)
+  console.log(
+    `${file.padEnd(24)} ${size}x${size}  ${bleed ? 'full bleed' : 'rounded   '}  ` +
+      `${transparent ? 'alpha ' : 'opaque'}  mark ${markScale === 1 ? 'full' : `${markScale * 100}%`}`
+  )
 }
 
 await browser.close()
