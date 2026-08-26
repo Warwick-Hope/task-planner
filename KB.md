@@ -126,6 +126,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 40 | An app icon needs alpha in some places and not others | The app | Live |
 | 41 | An accepted invitation is a record, not a pending action | The app | Live |
 | 42 | An optimistic UI means a reload can beat the write it is asserting | The e2e suite | Live |
+| 43 | The overflow guard cannot see an overlap | The e2e suite | Live |
 
 ---
 
@@ -428,6 +429,20 @@ on every re-run, which is what a race looks like.
 behind a delay that is either wasted or insufficient. This applies to every optimistic control in
 the app — the status cycle, task-status toggling, the shopping tick — so any new spec that
 reloads to check persistence needs the same treatment.
+
+### 43. The overflow guard cannot see an overlap
+
+`mobile.spec.ts` asks whether any element sticks out past the side of the screen. Adding a Revoke
+button to the invitation row on the invite page produced a different failure it is blind to: the
+email address and the role label sat *on top of each other*, both comfortably inside the
+viewport. Nothing overflowed, so nothing failed, and it was only visible in a screenshot.
+
+**A flex row with a right-hand control needs `min-w-0` on the growing side and `truncate` on the
+text**, or the text keeps its intrinsic width and runs underneath the control — plus `shrink-0` on
+the control group so it is the text that gives way. Every list row with a trailing button has this
+shape, which is why it is worth stating once. The check itself is not wrong; it measures the wrong
+thing for this class of bug, and the only guard that catches it is looking at the page on a phone
+viewport ([PLAN.md](PLAN.md) §Open items 1).
 
 ---
 

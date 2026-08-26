@@ -161,14 +161,17 @@ export default function InviteForm({ workspaceId, initialInvitations }: Props) {
           </h2>
           <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white overflow-hidden">
             {pending.map((inv) => (
-              <li key={inv.id} className="flex items-center justify-between px-4 py-3">
-                <div>
-                  <p className="text-sm font-medium text-gray-900">{inv.email}</p>
+              <li key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                {/* min-w-0 and truncate together: without them a long email
+                    keeps its intrinsic width and runs under the controls on a
+                    phone, rather than being cut off. */}
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-medium text-gray-900">{inv.email}</p>
                   <p className="text-xs text-gray-400">
                     Expires {new Date(inv.expires_at).toLocaleDateString()}
                   </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex shrink-0 items-center gap-3">
                   <span className="text-xs text-gray-400 capitalize">{inv.role}</span>
                   {/* Always visible, never on hover: a hover-only control does
                       not render at all on a touch screen (KB.md #26). */}
@@ -193,9 +196,9 @@ export default function InviteForm({ workspaceId, initialInvitations }: Props) {
           </h2>
           <ul className="divide-y divide-gray-100 rounded-lg border border-gray-200 bg-white overflow-hidden">
             {accepted.map((inv) => (
-              <li key={inv.id} className="flex items-center justify-between px-4 py-3">
-                <p className="text-sm text-gray-900">{inv.email}</p>
-                <span className="text-xs text-green-600">Joined</span>
+              <li key={inv.id} className="flex items-center justify-between gap-3 px-4 py-3">
+                <p className="truncate text-sm text-gray-900">{inv.email}</p>
+                <span className="shrink-0 text-xs text-green-600">Joined</span>
               </li>
             ))}
           </ul>
