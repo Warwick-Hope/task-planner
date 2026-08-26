@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "session": "node scripts/session-check.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",

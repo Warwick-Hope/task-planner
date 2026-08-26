@@ -23,6 +23,7 @@ from memory.
 | [PLAN.md](PLAN.md) | **The plan.** Status, context, locked decisions, phases, risks, verification, decisions log |
 | [KB.md](KB.md) | **Read before any non-trivial task.** 30 numbered gotchas — start at its index. Also holds the environment: project refs, env vars, accounts |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Branch model, hooks, commit and PR flow, migration deploys, document rules |
+| [WORKSTREAMS.md](WORKSTREAMS.md) | **The claim board.** Who is working on what, right now. Read it before editing a shared document |
 | [SCHEMA.md](SCHEMA.md) | The database shape — enums, tables, columns. Not the authority; the migrations are |
 | [SECURITY_HARDENING.md](SECURITY_HARDENING.md) | Evidence: the 14 Aug 2026 security review, every finding and what was done about it |
 | [README.md](README.md) | Public-facing: what the app is, how to run it locally |
@@ -52,6 +53,10 @@ older section of any document. If two numbers disagree, say so rather than picki
 - **When you learn something non-obvious, append a numbered `KB.md` entry** rather than only
   fixing the immediate issue.
 - **Run `npm run check:docs` before reporting finished.**
+- **One session, one working tree.** More than one session works this repo at a time. Take a
+  worktree before editing anything, claim your sections in [WORKSTREAMS.md](WORKSTREAMS.md), and
+  re-read a shared section immediately before writing it — not at session start
+  ([KB.md](KB.md) #39, [CONTRIBUTING.md](CONTRIBUTING.md) §"Two sessions at once").
 - **One step at a time** — confirm before moving to the next phase item.
 
 Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTRIBUTING.md).
@@ -110,6 +115,7 @@ npm run format       # prettier --write .
 npm run test:e2e     # Playwright suite; starts the dev server itself
 npm run test:e2e:ui  # the same, in Playwright's interactive UI
 npm run check:docs   # the documentation guard — run before reporting finished
+npm run session      # what else is running: other worktrees, open PRs, claims (KB.md #39)
 npm run verify:pwa   # the PWA, against a production build (PLAN.md §Verification)
 npm run build:icons  # regenerate the app icons from public/icon.svg
 npm run setup:hooks  # one-time, per clone: hooks path, long paths, GitHub account pin
@@ -146,6 +152,8 @@ e2e/               the Playwright suite — the only tests there are
 - **Do not use `any`.** TypeScript is strict, and it stays strict.
 - **Do not fix a push `403` with `gh auth switch`** — it moves the breakage to the other repo
   ([KB.md](KB.md) #27).
+- **Do not edit anything from the shared checkout while another working tree is live.** Take
+  your own. `npm run session` says whether one is ([KB.md](KB.md) #39).
 - **Do not leave the Supabase CLI linked to prod.** Re-link to dev, then check you did
   ([KB.md](KB.md) #1).
 - **Do not commit `.env.local`.**
