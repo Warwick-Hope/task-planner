@@ -2,20 +2,21 @@ import { createClient } from '@/lib/supabase-server'
 import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { NextResponse } from 'next/server'
 import { parseJson, badBody } from '@/lib/api'
+import { requireCaller } from '@/lib/api-auth'
 import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
-export async function GET() {
-  const supabase = createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  if (!user) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
+// A category is what decides who can see a task, so anything creating tasks
+// needs to be able to read them. Creating one stays session-only: the connector's
+// tool surface lists categories and does not invent them.
+export async function GET(request: Request) {
+  const auth = await requireCaller(request, { scope: 'tasks:read' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
   const { data, error } = await supabase
     .from('categories')
     .select('id, name, colour, parent_id, sort_order')
-    .eq('owner_id', user.id)
+    .eq('owner_id', userId)
     .order('sort_order', { ascending: true })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

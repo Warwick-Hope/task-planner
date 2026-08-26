@@ -203,6 +203,23 @@ export interface PushSubscriptionRecord {
   last_used_at: string | null
 }
 
+// A personal access token for bearer auth on /api. The token itself is never
+// stored or returned after creation — see 20260826000002_api_tokens.sql.
+export type ApiTokenScope = 'tasks:read' | 'tasks:write'
+
+export interface ApiToken {
+  id: string
+  user_id: string
+  name: string
+  token_hash: string
+  token_prefix: string
+  scopes: ApiTokenScope[]
+  expires_at: string | null
+  revoked_at: string | null
+  last_used_at: string | null
+  created_at: string
+}
+
 // ─── Joined/view types ────────────────────────────────────────────────────────
 
 // Task with its category joined — used in list/detail views

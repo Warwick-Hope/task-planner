@@ -2,7 +2,7 @@
  * The icons for the mobile tab bar and its More sheet.
  *
  * Hand-written 24px stroke paths rather than an icon dependency: there are
- * twelve of them, they never change, and a package would be the largest thing
+ * thirteen of them, they never change, and a package would be the largest thing
  * in the bundle it joined.
  */
 export type NavIconKey =
@@ -13,6 +13,7 @@ export type NavIconKey =
   | 'brain-dump'
   | 'categories'
   | 'mission'
+  | 'connections'
   | 'cleaning'
   | 'shopping'
   | 'meals'
@@ -32,6 +33,8 @@ const PATHS: Record<NavIconKey, string> = {
     'M8 17a4 4 0 01-.8-7.9A5 5 0 0117 8.5a3.5 3.5 0 01-.5 8.5H8zM6.5 20a1 1 0 100-2 1 1 0 000 2z',
   // A tag.
   categories: 'M11 4H6a2 2 0 00-2 2v5l9 9 7-7-9-9zm-4 4h.01',
+  // A key: what a token is.
+  connections: 'M9 15a3 3 0 100-6 3 3 0 000 6zm2.1-4.9L19 3m-2 4l2 2m-5-5l2 2',
   // A compass.
   mission: 'M12 21a9 9 0 100-18 9 9 0 000 18zm3.5-12.5l-2 5.5-5.5 2 2-5.5 5.5-2z',
   // A spray bottle.

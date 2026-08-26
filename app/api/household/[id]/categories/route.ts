@@ -2,14 +2,15 @@ import { createClient } from '@/lib/supabase-server'
 import { NextResponse } from 'next/server'
 import { requireMember } from '@/lib/workspace-server'
 import { unauthorised, forbidden, parseJson, badBody } from '@/lib/api'
+import { requireCaller } from '@/lib/api-auth'
 import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 
-export async function GET(_request: Request, { params }: { params: { id: string } }) {
-  const supabase = createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return unauthorised()
+export async function GET(request: Request, { params }: { params: { id: string } }) {
+  const auth = await requireCaller(request, { scope: 'tasks:read' })
+  if (!auth.ok) return auth.response
+  const { supabase, userId } = auth.caller
 
-  const membership = await requireMember(supabase, params.id, user.id)
+  const membership = await requireMember(supabase, params.id, userId)
   if (!membership) return forbidden()
 
   const { data, error } = await supabase
