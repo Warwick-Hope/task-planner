@@ -321,9 +321,10 @@ each route was therefore unreachable without a session — it only fired for a r
 a session cookie the route itself rejected.
 
 Two consequences, both now gone. A test asserting 401 for an anonymous caller failed with a
-confusing `Received: 200`, so the honest assertion was that the response URL is `/login`
-(`e2e/push.spec.ts` still does this, and is still right — it checks a *page*, not an API route).
-And client code assuming a failed `fetch` returns JSON threw a parse error rather than seeing a
+confusing `Received: 200`, so the honest assertion was that the response URL is `/login` —
+`e2e/push.spec.ts` did exactly that, and the 4.9 change turned it red, which is the one thing in
+the suite that noticed the behaviour had moved. It asserts 401 and a JSON content type now. And
+client code assuming a failed `fetch` returns JSON threw a parse error rather than seeing a
 status.
 
 "Worth fixing one day… nothing currently depends on it" is what this entry said until bearer
