@@ -140,6 +140,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 48 | One capture budget, whichever door the call came through | The app | Live |
 | 49 | `nextOccurrence` compared a moment, not a day | The app | Live |
 | 50 | A string given to Playwright as `data` is JSON-encoded | The e2e suite | Live |
+| 51 | `db push` compares against the working directory, so a stale checkout says "up to date" | Supabase and migrations | Live |
+| 52 | The credential pin does not work on gh 2.90 — the hint returns nothing | Git and deploy | Live rule, corrects #27 |
 
 ---
 
@@ -215,6 +217,37 @@ supabase db push --linked
 
 `SUPABASE_DB_PASSWORD` matters as much as the token: without it the CLI prompts for the
 password, and **in a non-interactive shell that hangs** rather than failing.
+
+### 51. `db push` compares against the working directory, so a stale checkout says "up to date"
+
+Pushing Phase 4.10's migration to prod, correctly linked to prod, `supabase db push --linked`
+answered **"Remote database is up to date"** and applied nothing. It was telling the truth: the
+shared checkout was still on the commit before the merge, so `supabase/migrations` on disk ended
+one file earlier than the repository did, and prod genuinely had everything the *directory* knew
+about.
+
+**`db push` diffs the remote against the migration files in the current working directory — not
+against the branch, the remote, or the PR you just merged.** A checkout that has not been pulled
+therefore reports success while doing nothing, which is the worst possible failure: it looks like
+the step is complete.
+
+- **`git pull` before `db push`, every time**, and check the file is on disk:
+  `ls supabase/migrations | tail -3`.
+- **Never trust "up to date" as confirmation.** Confirm from the other side, with the Management
+  API, which is a read and needs no link:
+
+  ```powershell
+  $h = @{ Authorization = "Bearer $env:SUPABASE_ACCESS_TOKEN" }
+  Invoke-RestMethod -Uri "https://api.supabase.com/v1/projects/<ref>/database/migrations" -Headers $h |
+    Select-Object -Last 3
+  ```
+
+- It cost four rounds on 26 Aug 2026 because every individual command reported success: the link
+  worked, the push "worked", and prod stayed one migration behind while the deployed code called a
+  function that did not exist there.
+
+Related: `db push` takes no project reference (#1), and the CLI must be re-linked to dev
+afterwards ([CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration").
 
 ---
 
@@ -861,6 +894,11 @@ offers on the strength of a code reading is not a change to make blind
 
 ### 27. Two GitHub accounts — pin per repo, never switch
 
+> **Withdrawn, 26 Aug 2026: "gh returns that account's token whatever is globally active" is not
+> true on the installed gh (2.90.0).** The pin is still correct and still required — but on its own
+> it now fails to push rather than pushing as the wrong account. See #52 for what actually happens
+> and what to do instead. Everything else in this entry stands.
+
 There are two GitHub accounts on this machine, `Warwick-Hope` (personal, owns this repo) and
 `WarwickHope` (Plant Plan). **`gh auth switch` changes the active one globally**, so working on
 a Plant Plan repo leaves the wrong account active here. The symptom is a bare `403` on push
@@ -882,6 +920,48 @@ an account `gh` is not logged into.
 **Never resolve a 403 with `gh auth switch`** — that moves the breakage to the other repo rather
 than fixing it. Pin both sides. A fresh clone needs pinning again: the pin is repo-local config
 and does not survive cloning.
+
+### 52. The credential pin does not work on gh 2.90 — the hint returns nothing
+
+#27 says the repo-local pin makes `gh auth git-credential` return that account's token whatever is
+globally active. **On the installed gh (2.90.0) it returns nothing at all.** Asked directly:
+
+```bash
+printf 'protocol=https
+host=github.com
+username=Warwick-Hope
+
+' | gh auth git-credential get
+# → no output, non-zero exit
+
+printf 'protocol=https
+host=github.com
+
+' | gh auth git-credential get
+# → username=WarwickHope … the *active* account, hint or no hint
+```
+
+So when the active account is the other one, git gets no credential, falls through to Git
+Credential Manager, and — with no terminal, as in a Claude Code session — dies with
+`/dev/tty: No such device or address` followed by `could not read Password`. **That error is the
+pin failing, not a missing login.** Both accounts were logged in throughout.
+
+**The `pre-push` hook does not catch it**: it checks that the pin names an account `gh` is logged
+into, which was true. Being logged in and being *served* are different things.
+
+**What works, without touching the global active account:**
+
+```bash
+git -c credential.helper=     -c credential.helper='!f() { test "$1" = get && { echo username=Warwick-Hope; echo "password=$(gh auth token --user Warwick-Hope)"; }; }; f'     push -u origin <branch>
+```
+
+`gh auth token --user <account>` does honour the account name — it is only the credential-helper
+path that ignores it. The first `-c credential.helper=` clears the list so Credential Manager is
+not tried first.
+
+**Still never `gh auth switch`** (#27). The push above changes no global state; switching moves the
+breakage to the other repo, and this failure is silent-ish rather than a 403, so it would be
+diagnosed twice.
 
 ### 28. A push to `main` is a production deploy
 

@@ -41,6 +41,7 @@ from memory.
 | `4.11 OAuth is polish, deferred until the tools have proved themselves` | Withdrawn 26 Aug 2026 — a pasted token cannot reach claude.ai at all, so 4.11 is what puts the connector on a phone. It follows 4.10 immediately ([KB.md](KB.md) #46) |
 | `There is no GET /api/tasks, and nothing lists workspaces` | Both exist as of Phase 4.10 — the connector's tools needed them and the app never had ([PLAN.md](PLAN.md) §"The tool surface") |
 | `The brain dump has no quota` | Twenty captures per user per UTC day since Phase 4.10, shared between the textarea and the `capture` tool ([KB.md](KB.md) #48) |
+| `The credential pin makes gh return that account's token whatever is active` | Not true on gh 2.90.0 — the username hint returns *nothing*, and the push dies with a TTY error rather than a 403 ([KB.md](KB.md) #52 corrects #27) |
 | Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 
 Current figures come from [PLAN.md](PLAN.md) §"Where we are" — not from memory, and not from an
@@ -78,7 +79,10 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **Two GitHub accounts on this machine, and `gh auth switch` is global.** A bare `403` on push
   means the pin, never the switch ([KB.md](KB.md) #27).
 - **A push to `main` deploys to production in ~2 minutes**, and `verify` cannot be required
-  ([KB.md](KB.md) #28).
+  ([KB.md](KB.md) #28). **It does not apply a migration** — that is `supabase db push` by hand.
+- **`db push` diffs the remote against the migration files in the current directory** — an unpulled
+  checkout answers "Remote database is up to date" and applies nothing. Pull first, and confirm
+  from the Management API rather than from the CLI ([KB.md](KB.md) #51).
 - **Build horizon fields through [lib/horizon.ts](lib/horizon.ts)**, never by setting
   `horizon_*` columns directly ([KB.md](KB.md) #22).
 - **The status cycle, colour inheritance, task-status toggling, drag sensors and the app shell

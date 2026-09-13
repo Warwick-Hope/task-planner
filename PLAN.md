@@ -114,8 +114,8 @@ happened rather than only in the app.
     `503` that a missing secret key produces, and not the `500` a missing table would. What has
     not been done is minting a real token on prod and calling a route with it; the whole path is
     proven on dev.
-15. 🔄 **Phase 4.10 — the Claude connector.** PR #27, 26 Aug 2026, migration
-    `20260826000003_capture_quota` applied to **dev**. `/api/mcp` speaks JSON-RPC over POST and
+15. 🔄 **Phase 4.10 — the Claude connector.** PR #27, merged 26 Aug 2026, migration
+    `20260826000003_capture_quota` applied to **dev and prod**. `/api/mcp` speaks JSON-RPC over POST and
     exposes the seven tools; a personal access token in an `Authorization` header is how a client
     gets in. Two endpoints the tools needed and the app had never had — `GET /api/tasks` and
     `GET /api/workspaces` — went in with it, because a page knows its workspace from the URL and
@@ -131,11 +131,12 @@ happened rather than only in the app.
     here, since `complete_task` is a tool now and a model completing a weekly task would have
     produced a duplicate.
 
+**Merged the same day as 65e4ccb, and `20260826000003_capture_quota` is applied to prod** —
+    confirmed against the Management API rather than the CLI's own word, for the reason in
+    [KB.md](KB.md) #51.
+
     **Not finished.** Nothing has connected to it from a real client yet: that needs a token
-    minted in a browser and one `claude mcp add` on Warwick's machine (§Open items 12). **The
-    migration does not reach prod by merging** — nothing in CI or Vercel touches the database, so
-    it is a `supabase db push` against the prod project by hand
-    ([CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration", §Open items 13).
+    minted in a browser and one `claude mcp add` on Warwick's machine (§Open items 12).
 16. ⏭ **Next** — **4.11**, connector OAuth. It stopped being polish on 26 Aug 2026: **a pasted
     token cannot reach claude.ai**, so 4.10 puts Clarity in Claude Code and nowhere near the
     phone ([KB.md](KB.md) #46, §"The Claude connector"). 4.10 was built so OAuth is a third way
@@ -314,7 +315,7 @@ paper. Met.
 | 4.7 | Onboarding improvements — guided household setup | Not started |
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
 | 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, merged 26 Aug 2026, live on prod |
-| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ PR #27, 26 Aug 2026 — nothing has connected from a real client yet |
+| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ PR #27, merged 26 Aug 2026, live on prod — nothing has connected from a real client yet |
 | 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | **Next** — §"The Claude connector" |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
@@ -650,12 +651,17 @@ all.
     whether the seven tools are the right seven and whether the descriptions are enough to be
     used correctly. It needs a token from the Connections page and one `claude mcp add`
     (§"The Claude connector"). **This is what closes 4.10.**
-13. **Push `20260826000003_capture_quota` to prod.** It is on dev. **Merging does not apply it** —
-    CI runs lint and build, Vercel builds and deploys the app, and neither touches the database.
-    Until it is pushed, the live app answers 500 from the brain dump and from `capture`, because
-    `consume_capture_quota` does not exist there. Commands in
-    [CONTRIBUTING.md](CONTRIBUTING.md) §"Deploying a database migration"; the prod password is
-    `SUPABASE_DB_PASSWORD_PROD` in `.env.local`, and the last step is re-linking the CLI to dev.
+13. ✅ **`20260826000003_capture_quota` is on prod**, 26 Aug 2026, and the CLI is re-linked to dev.
+    Merging did not do it and never does — CI runs lint and build, Vercel builds and deploys the
+    app, and neither touches the database.
+
+    **It took four attempts, and each failure reported success in its own terms.** The env vars
+    did not reach the shell that ran the CLI, so `link` refused the token format and `db push`
+    silently kept the previous link; then the prod password met the dev host. The one worth
+    remembering is the last: correctly linked to prod, `db push` answered **"Remote database is up
+    to date"** and applied nothing, because the shared checkout had not been pulled since the merge
+    and the migration file was not on disk. `db push` diffs the remote against the **working
+    directory** ([KB.md](KB.md) #51). Confirm from the Management API, not from the CLI's word.
 
 ---
 
