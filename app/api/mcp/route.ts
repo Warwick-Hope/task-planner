@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { requireCaller, type Caller } from '@/lib/api-auth'
 import { findTool, toolListing, type ToolOutcome } from '@/lib/mcp-tools'
+import { requestOrigin } from '@/lib/api'
+import { challengeHeader } from '@/lib/oauth'
 
 /**
  * The Clarity MCP server (Phase 4.10).
@@ -22,10 +24,13 @@ import { findTool, toolListing, type ToolOutcome } from '@/lib/mcp-tools'
  * `tasks:write` on top. A read-only token therefore gets a useful connector
  * rather than a 403 at the door.
  *
- * **What 4.11 adds, and where.** OAuth becomes a third way for `requireCaller`
- * to produce a `Caller`; nothing in this file or in `lib/mcp-tools.ts` changes,
- * except that a 401 from here will want a `WWW-Authenticate` header pointing at
- * the protected-resource metadata (KB.md #46).
+ * **4.11 changed one line of it.** OAuth became a third way for `requireCaller`
+ * to produce a `Caller`, and nothing here or in `lib/mcp-tools.ts` had to know —
+ * except the 401, which now carries `WWW-Authenticate` pointing at the
+ * protected-resource metadata. That header is what turns "this failed" into
+ * "sign in here": a client with no credential reads it, discovers the
+ * authorization server, registers itself and sends its user to the consent
+ * screen, with nobody pasting anything (KB.md #54).
  */
 
 /**
@@ -186,7 +191,17 @@ export async function POST(request: Request) {
   // The endpoint's own gate. `tasks:read` is the floor — the tool then decides
   // whether this credential may write.
   const auth = await requireCaller(request, { scope: 'tasks:read' })
-  if (!auth.ok) return auth.response
+  if (!auth.ok) {
+    // RFC 9728: a 401 from a protected resource says where its metadata lives, so
+    // a client that has never seen this server can find its way to a token
+    // without being configured. Only a 401 gets it — a 403 means the credential
+    // is real and insufficient, and sending that client back through discovery
+    // would loop it.
+    if (auth.response.status === 401) {
+      auth.response.headers.set('WWW-Authenticate', challengeHeader(requestOrigin(request)))
+    }
+    return auth.response
+  }
 
   let body: unknown
   try {

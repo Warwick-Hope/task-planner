@@ -5,6 +5,24 @@ import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
 
+/**
+ * Where to go after signing in — a path on this site, or the dashboard.
+ *
+ * `next` comes from the query string, so it is whatever a link said it was.
+ * Anything that is not a same-origin path is dropped: an absolute URL here would
+ * make a sign-in page into an open redirect, which is the classic way a phishing
+ * link borrows a real domain. `//evil.example` is a protocol-relative URL, not a
+ * path, which is why the second test is there.
+ *
+ * Since Phase 4.11 it legitimately carries a query string of its own — the OAuth
+ * consent screen is nothing but its parameters — so only the leading characters
+ * are checked, not the shape of the rest.
+ */
+function safeNext(next?: string): string {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return '/dashboard'
+  return next
+}
+
 export default function LoginForm({ next }: { next?: string }) {
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -26,7 +44,7 @@ export default function LoginForm({ next }: { next?: string }) {
       return
     }
 
-    router.push(next ?? '/dashboard')
+    router.push(safeNext(next))
     router.refresh()
   }
 

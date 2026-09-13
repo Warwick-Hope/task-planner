@@ -210,6 +210,32 @@ decision happen in one statement — a conditional `on conflict do update … wh
 so two calls arriving together cannot both proceed on the same remaining call
 ([KB.md](KB.md) #48).
 
+### `oauth_clients`, `oauth_authorization_codes`, `oauth_grants`
+
+OAuth 2.1 for the connector (Phase 4.11) — what makes a claude.ai connector installable, since one
+authenticates by OAuth only and has no field for a pasted token ([KB.md](KB.md) #46).
+
+- **`oauth_clients`** — `id, name, secret_hash, redirect_uris, created_at, last_used_at`. Written
+  by open dynamic client registration, so anyone can create one. A row grants nothing: a token
+  still needs a person to approve it in a browser. Nothing deletes these, deliberately
+  ([KB.md](KB.md) #54).
+- **`oauth_authorization_codes`** — `code_hash (pk), client_id, user_id, redirect_uri, scopes,
+  code_challenge, resource, expires_at, used_at`. Ten minutes, single use, bound to a PKCE
+  challenge. Hash only: a code travels in a URL, which is the least private place a secret can be.
+- **`oauth_grants`** — `id, client_id, user_id, scopes, access_token_hash, refresh_token_hash,
+  access_expires_at, refresh_expires_at, revoked_at, last_used_at`. One row per app a user
+  approved. Access an hour, refresh thirty days and rotating; revoking stamps `revoked_at` so
+  `last_used_at` survives it.
+
+**RLS is on with no anon policy anywhere**, because every one of these is written before the writer
+has a session. The anonymous steps go through security definer functions that each do one thing:
+`oauth_register_client`, `oauth_authenticate_client` (compares the secret hash *inside* the
+database, so none ever leaves it), `oauth_redeem_code`, `oauth_store_grant`, `oauth_rotate_grant`,
+`resolve_oauth_token`, `oauth_revoke_grant` and `oauth_sweep_codes`. `oauth_issue_code` and
+`oauth_client_public` are `authenticated` only — the first takes its user from `auth.uid()`, so a
+caller cannot mint a code for somebody else. A person can read, revoke and delete their own grants
+under plain owner-only policies.
+
 ## Notifications
 
 ### `push_subscriptions`

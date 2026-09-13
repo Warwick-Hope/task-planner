@@ -143,6 +143,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 51 | `db push` compares against the working directory, so a stale checkout says "up to date" | Supabase and migrations | Live |
 | 52 | The credential pin does not work on gh 2.90 — the hint returns nothing | Git and deploy | Live rule, corrects #27 |
 | 53 | A category could be written across workspaces, because only the UI ever stopped it | The app | Live |
+| 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
+| 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
 
 ---
 
@@ -930,6 +932,68 @@ Alongside it: a malformed `due_date` used to come back as Postgres's own
 deep inside the horizon builder. Both are now refused by name, with `isIsoDate` shared out of
 [lib/horizon.ts](lib/horizon.ts) — "2026-02-31" passes the regex and is not a date, which is why
 the check round-trips through `toISOString` rather than trusting the pattern.
+
+### 54. OAuth: what the connector needed, and the five things that are decisions
+
+Phase 4.11. A claude.ai custom connector authenticates by OAuth only (#46), so the server had to
+become an authorization server: discovery metadata, dynamic client registration, authorization
+codes with PKCE, and access tokens `requireCaller` can resolve.
+
+**It is a third credential and nothing more.** `resolveBearer` in
+[lib/api-auth.ts](lib/api-auth.ts) takes the resolver's name as an argument — `resolve_api_token`
+or `resolve_oauth_token` — and everything after the lookup is identical. No route and no tool
+knows which arrived; `caller.via` exists for logging, not for branching. That was 4.10's design
+holding up under the thing it was designed for.
+
+Five decisions worth knowing before changing any of it:
+
+1. **Registration is open, and has to be.** Nobody is watching when a client first meets this
+   server. What makes that safe is that a client row grants nothing: it cannot read a task, and it
+   cannot get a token without a person pressing Allow in a browser. The consent screen is the
+   whole security boundary, which is why it names the client and lists the scopes in sentences.
+2. **A wrong PKCE verifier spends the code.** `oauth_redeem_code` consumes it in the statement
+   that reads it, so verification failure costs the attempt entirely. Deliberate: whoever presents
+   the wrong verifier either stole the code or is broken, and a retry is what makes a code
+   brute-forceable.
+3. **Client authentication happens in the database.** The token endpoint has no session, so RLS
+   shows it nothing; the obvious fix — an anon function returning the stored secret hash — hands a
+   hash to anyone who asks. `oauth_authenticate_client` takes the presented hash and compares
+   inside, returning no rows for both "unknown client" and "wrong secret".
+4. **Refresh tokens rotate, in one statement.** The old one dies the moment the new one exists, so
+   a stolen refresh token works until its owner next uses theirs — and then one of the two fails
+   loudly instead of both working quietly.
+5. **The discovery documents are built from the request's origin**, like invitation links (#36),
+   and `/.well-known/*` is exempt from the middleware redirect. A client reads them *because* it
+   has no credential; a 307 to `/login` there means the connector cannot be installed at all, and
+   the client has nothing to report but a failure.
+
+Two mechanical notes. A folder beginning with a dot is not a route in the App Router, so
+`/.well-known/...` is a rewrite in `next.config.mjs` to `/api/oauth/metadata/...`; both the bare
+path and the RFC 9728 path-suffixed form (`/.well-known/oauth-protected-resource/api/mcp`) are
+served, because which one a client builds is not ours to choose. And `/api/mcp` answers 401 with
+`WWW-Authenticate: Bearer resource_metadata="…"` — without that header a client has a failure and
+no way to discover what to do about it.
+
+**Registered client rows are never deleted.** A client has no owner, so nobody can delete one, and
+the e2e suite leaves one per run on dev. A client with no live grant can do nothing at all, so
+they are litter rather than risk — but that is a decision, not an oversight.
+
+### 55. The login redirect dropped the query string, which is most of an OAuth request
+
+The middleware sent a signed-out visitor to `/login?next=<pathname>` — **the path only**. For
+every page in the app that was fine, because a page is its path. The OAuth consent screen is the
+opposite: `/oauth/authorize` on its own means nothing, and `client_id`, `redirect_uri`, `scope`,
+`state` and the PKCE challenge are the entire request.
+
+So a signed-out person clicking Connect signed in successfully and arrived at a consent screen with
+nothing to consent to. Nothing errored. The fix is one line — `pathname + search` — and the reason
+it had never mattered is that no route before this one carried meaning in its query string.
+
+While fixing it, `LoginForm` gained the same same-origin guard the middleware already had on its
+other branch: `router.push(next)` pushed whatever the query string said, so `?next=https://…`
+would have been an open redirect on a sign-in page. It predates 4.11 and nothing was exploiting
+it — but a `next` that now legitimately carries a query string is one somebody is more likely to
+look at.
 
 ---
 

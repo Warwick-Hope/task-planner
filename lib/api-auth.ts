@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient as createSupabaseClient, type SupabaseClient } from '@supabase/supabase-js'
 import { createClient as createSessionClient } from '@/lib/supabase-server'
-import { bearerToken, hashToken } from '@/lib/api-tokens'
+import { bearerToken, hashToken, isOAuthToken } from '@/lib/api-tokens'
 import type { ApiTokenScope } from '@/types'
 
 /**
@@ -30,7 +30,12 @@ export interface Caller {
   /** Acts as the user: RLS applies exactly as it does for a browser session. */
   supabase: SupabaseClient
   userId: string
-  via: 'session' | 'token'
+  /**
+   * How the caller proved who they are. Three ways in and one `Caller` out —
+   * routes and tools never branch on this; it exists for logging and for the
+   * places that care that a session is a person at a keyboard.
+   */
+  via: 'session' | 'token' | 'oauth'
   /** A session is the owner and holds every scope; a token holds what it was granted. */
   scopes: ApiTokenScope[]
 }
@@ -48,6 +53,18 @@ export interface RequireCallerOptions {
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+/**
+ * A client with no session at all, for the handful of calls that happen before
+ * one exists: resolving a presented credential, and the OAuth endpoints a client
+ * reaches with no cookie. Everything it can do is a security definer function
+ * that was granted to `anon` on purpose (KB.md #9).
+ */
+export function anonClient(): SupabaseClient {
+  return createSupabaseClient(SUPABASE_URL, PUBLISHABLE_KEY, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  })
+}
 
 /**
  * Sessions minted for tokens, keyed by token hash.
@@ -77,7 +94,12 @@ export async function requireCaller(
         ),
       }
     }
-    return resolveToken(token, opts.scope)
+    // Two kinds of bearer credential, told apart by their prefix and resolved by
+    // different tables — and identical from here on, which is the point: a tool
+    // or a route never learns which it was (KB.md #54).
+    return isOAuthToken(token)
+      ? resolveBearer(token, opts.scope, 'resolve_oauth_token', 'oauth')
+      : resolveBearer(token, opts.scope, 'resolve_api_token', 'token')
   }
 
   const supabase = createSessionClient()
@@ -98,7 +120,21 @@ export async function requireCaller(
   }
 }
 
-async function resolveToken(token: string, required: ApiTokenScope): Promise<CallerResult> {
+/**
+ * Resolves either kind of bearer credential.
+ *
+ * A personal access token (4.9) and an OAuth access token (4.11) differ in which
+ * table holds them and nothing else: both are a hash that resolves to a user and
+ * a set of scopes, and both then buy the same Supabase session. One function, two
+ * resolver names — because the day they diverge is the day a route starts caring
+ * how its caller signed in, which is the thing this file exists to prevent.
+ */
+async function resolveBearer(
+  token: string,
+  required: ApiTokenScope,
+  resolver: 'resolve_api_token' | 'resolve_oauth_token',
+  via: 'token' | 'oauth'
+): Promise<CallerResult> {
   const secretKey = process.env.SUPABASE_SECRET_KEY
 
   if (!secretKey) {
@@ -118,14 +154,12 @@ async function resolveToken(token: string, required: ApiTokenScope): Promise<Cal
 
   // Resolving cannot go through RLS — the caller has no session yet. The
   // security definer function takes the hash, stamps last_used_at, and returns
-  // nothing at all for a token that is unknown, revoked or expired.
-  const anon = createSupabaseClient(SUPABASE_URL, PUBLISHABLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
+  // nothing at all for a credential that is unknown, revoked or expired.
+  const { data, error } = await anonClient().rpc(resolver, {
+    p_token_hash: tokenHash,
   })
 
-  const { data, error } = await anon.rpc('resolve_api_token', { p_token_hash: tokenHash })
-
-  const resolved = (data as { token_id: string; user_id: string; scopes: string[] }[] | null)?.[0]
+  const resolved = (data as { user_id: string; scopes: string[] }[] | null)?.[0]
 
   if (error || !resolved) {
     sessionCache.delete(tokenHash)
@@ -136,7 +170,7 @@ async function resolveToken(token: string, required: ApiTokenScope): Promise<Cal
     return {
       ok: false,
       response: NextResponse.json(
-        { error: `This token does not hold the ${required} scope` },
+        { error: `This credential does not hold the ${required} scope` },
         { status: 403 }
       ),
     }
@@ -158,7 +192,7 @@ async function resolveToken(token: string, required: ApiTokenScope): Promise<Cal
         global: { headers: { Authorization: `Bearer ${accessToken}` } },
       }),
       userId: resolved.user_id,
-      via: 'token',
+      via,
       scopes: resolved.scopes as ApiTokenScope[],
     },
   }

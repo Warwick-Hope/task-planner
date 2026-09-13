@@ -229,6 +229,29 @@ export interface CaptureUsage {
   count: number
 }
 
+// OAuth, Phase 4.11 — see 20260913000001_connector_oauth.sql. Token and secret
+// hashes are columns on these tables and are deliberately absent here: nothing
+// outside a security definer function ever selects one.
+export interface OAuthClientRow {
+  id: string
+  name: string
+  redirect_uris: string[]
+  created_at: string
+  last_used_at: string | null
+}
+
+export interface OAuthGrantRow {
+  id: string
+  client_id: string
+  user_id: string
+  scopes: ApiTokenScope[]
+  access_expires_at: string | null
+  refresh_expires_at: string | null
+  revoked_at: string | null
+  last_used_at: string | null
+  created_at: string
+}
+
 // ─── Joined/view types ────────────────────────────────────────────────────────
 
 // Task with its category joined — used in list/detail views

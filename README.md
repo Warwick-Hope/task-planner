@@ -52,8 +52,10 @@ Seven tools: `list_workspaces`, `list_categories`, `list_tasks`, `create_tasks`,
 `complete_task` and `capture` — the brain dump, callable, so a transcript becomes tasks in one
 step.
 
-**A pasted token works in Claude Code and Claude Desktop, and not on claude.ai** — a connector
-there authenticates by OAuth only, which is the next phase of work.
+On **claude.ai**, including the phone app, add it as a custom connector instead — Settings →
+Connectors → Add custom connector, with the same URL. There is nothing to paste: it discovers the
+rest, registers itself, and asks your permission on a Clarity consent screen. Connected apps are
+listed alongside your tokens on the Connections page, and disconnecting one stops it immediately.
 
 ## Project structure
 
