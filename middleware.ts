@@ -28,7 +28,7 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
+  const { pathname, search } = request.nextUrl
 
   const isAuthRoute = pathname === '/login' || pathname === '/signup'
   // The invite landing page has to render for a logged-out visitor — that is
@@ -49,13 +49,26 @@ export async function middleware(request: NextRequest) {
    * above still runs, which is what keeps cookie-authed API calls working.
    */
   const isApiRoute = pathname.startsWith('/api/')
+  /**
+   * OAuth discovery is public by definition (Phase 4.11).
+   *
+   * A client reads `/.well-known/oauth-protected-resource` precisely because it
+   * has no credential yet — a 307 to `/login` there means the connector cannot be
+   * installed at all, and the client has no way to report anything more useful
+   * than a failure. The documents say where to sign in; they expose nothing else.
+   */
+  const isDiscoveryRoute = pathname.startsWith('/.well-known/')
 
   // Redirect unauthenticated users away from protected routes
-  if (!user && !isAuthRoute && !isApiRoute && !isInviteRoute) {
+  if (!user && !isAuthRoute && !isApiRoute && !isInviteRoute && !isDiscoveryRoute) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
     url.search = ''
-    url.searchParams.set('next', pathname)
+    // The query string comes along, which it did not before Phase 4.11. The
+    // OAuth consent screen *is* its query string — client_id, redirect_uri, the
+    // PKCE challenge and the state — so dropping it sent the visitor to a page
+    // with nothing to approve, after a sign-in that looked like it worked.
+    url.searchParams.set('next', pathname + (search || ''))
     return NextResponse.redirect(url)
   }
 

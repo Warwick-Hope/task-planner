@@ -16,6 +16,12 @@ import type { ApiTokenScope } from '@/types'
  */
 
 export const TOKEN_PREFIX = 'clr_'
+/**
+ * OAuth access tokens, Phase 4.11. Kept here beside `clr_` rather than in
+ * `lib/oauth.ts`, because the two are only meaningful next to each other — this
+ * is the file that decides what a bearer header is allowed to contain.
+ */
+export const OAUTH_TOKEN_PREFIX = 'clro_'
 
 /** How much of the token the UI may show. Enough to tell two rows apart. */
 const DISPLAY_PREFIX_LENGTH = TOKEN_PREFIX.length + 6
@@ -45,9 +51,14 @@ export function hashToken(token: string): string {
 /**
  * The bearer token on a request, or null.
  *
- * Anything that is not a `Bearer clr_…` is treated as absent rather than
+ * Anything that is not a `Bearer clr…` is treated as absent rather than
  * rejected: a caller with a session cookie and a stray Authorization header
  * should still be able to use the app.
+ *
+ * Two kinds now share the header — a personal access token (`clr_`) and an OAuth
+ * access token (`clro_`, Phase 4.11). The prefix is what tells them apart, which
+ * is why they were given distinguishable ones: the alternative is looking the
+ * value up in two tables to find out what it was.
  */
 export function bearerToken(request: Request): string | null {
   const header = request.headers.get('authorization')
@@ -56,7 +67,12 @@ export function bearerToken(request: Request): string | null {
   const [scheme, value] = header.split(' ')
   if (scheme?.toLowerCase() !== 'bearer' || !value) return null
 
-  return value.startsWith(TOKEN_PREFIX) ? value : null
+  return value.startsWith(TOKEN_PREFIX) || value.startsWith(OAUTH_TOKEN_PREFIX) ? value : null
+}
+
+/** True for an OAuth access token rather than a personal access token. */
+export function isOAuthToken(token: string): boolean {
+  return token.startsWith(OAUTH_TOKEN_PREFIX)
 }
 
 /** Narrows unknown input to the scopes we actually recognise. */

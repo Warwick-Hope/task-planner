@@ -85,6 +85,26 @@ teardown('remove rows created by the suite', async () => {
   // which is the reason this sweep exists rather than being left to each spec.
   const tokens = await sweep('api_tokens', 'name', 'api token(s)')
 
-  if (tasks + households + subscriptions + tokens === 0)
+  /**
+   * OAuth grants have no name to match on, so they are swept wholesale: these
+   * accounts exist only for the suite, and a grant on one is by definition
+   * something a test made. The client rows behind them are left — a client has no
+   * owner, so nothing here can delete one, and a registered client with no live
+   * grant can do nothing at all ([KB.md](KB.md) #54).
+   */
+  const listedGrants = await fetch(`${url}/rest/v1/oauth_grants?select=id`, { headers })
+  expect(listedGrants.ok, `teardown could not list oauth grants: ${listedGrants.status}`).toBe(true)
+  const grantRows: Array<{ id: string }> = await listedGrants.json()
+
+  if (grantRows.length > 0) {
+    const deleted = await fetch(`${url}/rest/v1/oauth_grants?id=not.is.null`, {
+      method: 'DELETE',
+      headers,
+    })
+    expect(deleted.ok, `teardown could not delete oauth grants: ${deleted.status}`).toBe(true)
+    console.log(`teardown: removed ${grantRows.length} oauth grant(s)`)
+  }
+
+  if (tasks + households + subscriptions + tokens + grantRows.length === 0)
     console.log('teardown: nothing to clean up')
 })
