@@ -197,11 +197,20 @@ run them.
 
 ### 4. Free-tier projects pause after ~7 days idle
 
-Both projects are on the free tier. A paused **prod** project takes the live app down until
-somebody restores it by hand from the dashboard. A paused **dev** project breaks the Playwright
-suite and produces #2's misleading network error.
+> **Superseded for this project, 13 Sep 2026.** The organisation is on **Pro**, so neither
+> `taskplanner-dev` nor `taskplanner-prod` pauses any more. The rest of the entry stands as a fact
+> about the free tier, and applies again to any new project created outside a paid organisation.
+>
+> **Pro is billed per organisation, not per project.** Both projects live in
+> `Warwick-Hope's Personal`, so upgrading it put *both* on Pro — "Pro on prod, dev stays free"
+> (§Decisions log, 26 Aug 2026) was not achievable without moving one project to a separate
+> organisation first ([PLAN.md](PLAN.md) §Decisions log, 13 Sep 2026).
 
-This is the single strongest argument for the Pro decision — it is the same upgrade that
+A free-tier project pauses after ~7 days idle. A paused **prod** project takes the live app down
+until somebody restores it by hand from the dashboard. A paused **dev** project breaks the
+Playwright suite and produces #2's misleading network error.
+
+This was the single strongest argument for the Pro decision — it is the same upgrade that
 unblocks #12.
 
 ### 5. The CLI login is the wrong account, and it prompts for a password

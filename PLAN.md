@@ -153,9 +153,11 @@ happened rather than only in the app.
     phone ([KB.md](KB.md) #46, §"The Claude connector"). 4.10 was built so OAuth is a third way
     to produce a `Caller` rather than a rewrite ([KB.md](KB.md) #47). SSO (4.4, now Google *and*
     Microsoft) and push reminders come after it.
-17. ✅ **Supabase Pro on prod, agreed 26 Aug 2026.** Dev stays on the free tier. It stops the
-    live app sleeping, unblocks leaked-password protection, and matters more with a connector in
-    the picture than it ever did for a web page (§Decisions log, §Risks).
+17. ✅ **Supabase Pro — agreed 26 Aug 2026, upgraded 13 Sep 2026.** It stops the live app
+    sleeping and unblocks leaked-password protection. It is billed **per organisation**, so both
+    projects are on it and "dev stays free" did not survive contact with the billing model
+    (§Open items 5, [KB.md](KB.md) #4). Leaked-password protection is still a toggle nobody has
+    flipped (§Open items 4).
 18. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
@@ -519,10 +521,10 @@ claude mcp add --transport http clarity https://task-planner-nine-sigma.vercel.a
 
 | Risk | What is lost | Mitigation |
 |---|---|---|
-| Prod Supabase pauses after ~7 days idle on the free tier | The live app goes down until manually restored from the dashboard | **Being fixed: Pro on prod, agreed 26 Aug 2026** (§Decisions log). Dev stays free and still pauses, which only ever costs the e2e suite a wake-up |
+| ~~Supabase projects pause after ~7 days idle~~ | — | **Closed 13 Sep 2026** — the organisation is on Pro, so neither project pauses ([KB.md](KB.md) #4) |
 | `verify` cannot be *required* on a free GitHub plan | A red check merged to `main` deploys straight to production | Convention plus the `pre-push` hook. Wait for green before merging — nothing enforces it |
 | A push to `main` is a production deploy, with no staging step | A bad merge is live in ~2 minutes | Branch-per-change, PR-only, squash merges. See [CONTRIBUTING.md](CONTRIBUTING.md) |
-| The e2e suite is not wired into CI | A regression reaches `main` unnoticed | Deliberate — a sleeping dev project would turn `verify` red for unrelated reasons. Revisit with the Pro decision |
+| The e2e suite is not wired into CI | A regression reaches `main` unnoticed | Deliberate, and **its stated reason expired on 13 Sep 2026** — dev no longer sleeps. Undecided rather than settled (§Open items 14) |
 | Two GitHub accounts on the machine, and `gh auth switch` is global | A bare `403` on push, naming no cause | Repo-local credential pin, enforced by `pre-push`. See [KB.md](KB.md) #27 |
 | The brain dump calls a model on demand | A caller in a loop could run up the Anthropic bill | **Fixed in 4.10:** twenty captures per user per UTC day, counted atomically and shared between the textarea and the `capture` tool ([KB.md](KB.md) #48), on top of the 10,000-character cap |
 | Prod is on the free tier with no backups worth the name | Data loss with no restore | Accepted for now. Revisit before any external household joins |
@@ -624,15 +626,20 @@ all.
    handset — that is what closes 4.3.
 3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
-4. **Leaked password protection — unblocked the moment prod is on Pro.** Authentication →
-   Providers → Email, and the setting is Pro-plan and above ([KB.md](KB.md) #12). Prod is going to
-   Pro (agreed 26 Aug 2026), so this becomes a single toggle there; dev stays free and therefore
-   stays without it, which is the right way round — the passwords that matter are the live ones.
-5. **The Pro decision — taken on 26 Aug 2026: Pro on prod, dev stays free.** What is left is the
-   upgrade itself, in the Supabase dashboard, and then item 4's toggle. Dev staying free means the
-   dev project still sleeps after ~7 days, so the e2e suite still meets a paused project after a
-   quiet week (§Risks, [KB.md](KB.md) #4) — an annoyance with a known cause, which is why wiring
-   the suite into CI stays out of scope (§Decisions log, 25 Aug 2026).
+4. **Leaked password protection — now one toggle, and nobody has flipped it.** Authentication →
+   Providers → Email on **prod**, and the setting is Pro-plan and above ([KB.md](KB.md) #12). The
+   organisation went Pro on 13 Sep 2026, so it is available on both projects now; prod is the one
+   that matters, because those are the live passwords.
+5. ✅ **Supabase Pro — upgraded 13 Sep 2026**, and it landed differently from the decision.
+   **Pro is billed per organisation, not per project**, and both projects live in
+   `Warwick-Hope's Personal`, so **dev is on Pro too**. "Dev stays free" (26 Aug 2026) was never
+   available without first moving one project into a separate organisation.
+
+   Two consequences, neither of them decided here. **Neither project pauses now**
+   ([KB.md](KB.md) #4), so the stated reason for keeping the e2e suite out of CI — a sleeping dev
+   project turning `verify` red for unrelated reasons — no longer holds (§Open items 14). And dev
+   now draws compute against the organisation's bill rather than being free; worth a look at the
+   first invoice to decide whether it is worth moving dev out.
 6. ✅ **Per-user daily quota on the brain dump — shipped with 4.10**, 26 Aug 2026.
    `MAX_CAPTURES_PER_DAY` is 20, in [lib/limits.ts](lib/limits.ts) with the other input limits,
    and the count lives in `capture_usage` with `consume_capture_quota()` doing the increment and
@@ -679,6 +686,12 @@ all.
     to date"** and applied nothing, because the shared checkout had not been pulled since the merge
     and the migration file was not on disk. `db push` diffs the remote against the **working
     directory** ([KB.md](KB.md) #51). Confirm from the Management API, not from the CLI's word.
+14. **Whether the e2e suite now belongs in CI.** It was kept out because a sleeping dev project
+    would turn `verify` red for reasons that had nothing to do with the change. Dev does not sleep
+    any more (item 5), so that reason is gone and the question is open again on its own merits: the
+    suite takes ~2 minutes, needs two real accounts and the Anthropic key in CI secrets, writes to
+    the real dev project, and spends a capture from the daily quota on every run
+    ([KB.md](KB.md) #48). **Not decided** — it needs one deliberate call, not a drift.
 
 ---
 
@@ -865,3 +878,11 @@ re-litigated.**
   §Open items 6 said "the route".** The intent of that wording was one budget rather than two, and
   the route is the wrong altitude for it now that the tool calls the same helper directly. Putting
   the count in the helper is what makes twenty mean twenty ([KB.md](KB.md) #48).
+
+- **13 Sep 2026** — the **Pro upgrade was applied to the organisation**, which is the only place
+  Supabase sells it. The 26 Aug decision said "Pro on prod, dev stays free"; both projects live in
+  `Warwick-Hope's Personal`, so that split needed a second organisation and a project move, and
+  neither was done. Recorded rather than reversed: the upgrade buys what it was bought for — a
+  live app that does not sleep and leaked-password protection — and dev not sleeping is a bonus
+  that costs compute. **The e2e-in-CI decision is reopened as a consequence** (§Open items 14),
+  because its stated reason was the sleeping it just removed.

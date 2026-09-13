@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 13 Sep 2026 | `docs/pro-upgraded` | Recording the Pro upgrade — it is per organisation, so dev is Pro too | `PLAN.md` §Open items 4/5, §Risks, §Decisions log; `KB.md` #4; `CLAUDE.md` facts card |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
