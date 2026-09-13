@@ -362,6 +362,94 @@ test.describe('the tool surface', () => {
   })
 })
 
+test.describe('a category cannot cross a workspace', () => {
+  /**
+   * Found by the first real connector test, 13 Sep 2026 (KB.md #53). A model
+   * holding two workspace ids and two category lists will cross them, and both
+   * write paths took it silently — a task whose category lives in another
+   * workspace has a visibility rule pointing at a row its viewers cannot read.
+   *
+   * The app cannot produce it, because a category picker only offers the
+   * workspace it is in, which is why nothing caught it for a phase and a half.
+   */
+  test('neither create_tasks nor update_task accepts a foreign category', async ({ request }) => {
+    const householdName = `[e2e] mcp household ${Date.now()}`
+    const created = await request.post('/api/household', { data: { name: householdName } })
+    expect(created.ok(), `household create failed: ${created.status()}`).toBe(true)
+    const { workspaceId: householdId } = await created.json()
+
+    const personal = await personalWorkspace(request)
+
+    // A household category, which the personal workspace has no business holding.
+    const madeCategory = await request.post(`/api/household/${householdId}/categories`, {
+      data: { name: `[e2e] foreign ${Date.now()}` },
+    })
+    expect(madeCategory.status(), 'creating a household category').toBe(201)
+    const { id: foreignCategoryId } = await madeCategory.json()
+
+    const refusedOnCreate = await callTool(request, 'create_tasks', {
+      workspace_id: personal.id,
+      tasks: [{ title: uniqueTitle('foreign category'), category_id: foreignCategoryId }],
+    })
+    expect(refusedOnCreate.isError, 'creating with a foreign category').toBe(true)
+    expect(refusedOnCreate.content[0].text).toContain('different workspace')
+
+    // And on update, which is how it was found: the task exists, then acquires a
+    // category from somewhere else.
+    const ok = await toolData<{ tasks: { id: string }[] }>(request, 'create_tasks', {
+      workspace_id: personal.id,
+      tasks: [{ title: uniqueTitle('stays clean') }],
+    })
+    const taskId = ok.tasks[0].id
+
+    const refusedOnUpdate = await callTool(request, 'update_task', {
+      task_id: taskId,
+      category_id: foreignCategoryId,
+    })
+    expect(refusedOnUpdate.isError, 'updating to a foreign category').toBe(true)
+
+    const after = await (await request.get(`/api/tasks/${taskId}`)).json()
+    expect(after.task.category_id, 'the refusal wrote nothing').toBeNull()
+
+    // A category from the task's own workspace still works, and so does clearing it.
+    const ownCategories = await toolData<{ categories: { id: string }[] }>(
+      request,
+      'list_categories',
+      { workspace_id: personal.id }
+    )
+    if (ownCategories.categories.length > 0) {
+      const mine = ownCategories.categories[0].id
+      const accepted = await toolData<{ task: { category_id: string } }>(request, 'update_task', {
+        task_id: taskId,
+        category_id: mine,
+      })
+      expect(accepted.task.category_id, 'a category from the same workspace is fine').toBe(mine)
+    }
+
+    await request.delete(`/api/tasks/${taskId}`)
+  })
+
+  test('a malformed date is refused by name, not by Postgres', async ({ request }) => {
+    const personal = await personalWorkspace(request)
+
+    const badDue = await callTool(request, 'create_tasks', {
+      workspace_id: personal.id,
+      tasks: [{ title: uniqueTitle('bad date'), due_date: 'not-a-date' }],
+    })
+    expect(badDue.isError).toBe(true)
+    expect(badDue.content[0].text, 'names the argument, not the SQLSTATE').toContain('due_date')
+
+    const badHorizon = await callTool(request, 'create_tasks', {
+      workspace_id: personal.id,
+      tasks: [
+        { title: uniqueTitle('bad horizon'), horizon_precision: 'day', horizon_date: '2026-02-31' },
+      ],
+    })
+    expect(badHorizon.isError, 'a date the regex accepts and the calendar does not').toBe(true)
+    expect(badHorizon.content[0].text).toContain('horizon_date')
+  })
+})
+
 test.describe('credentials', () => {
   test('a bearer token reaches the connector and RLS still applies', async ({
     request,

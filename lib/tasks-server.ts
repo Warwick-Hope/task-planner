@@ -2,7 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Refusal } from '@/lib/api'
 import type { Task, TaskStatus, TaskSource } from '@/types'
 import { requireMember } from '@/lib/workspace-server'
-import { buildHorizonFields, horizonFromAnchor, type HorizonFields } from '@/lib/horizon'
+import { buildHorizonFields, horizonFromAnchor, isIsoDate, type HorizonFields } from '@/lib/horizon'
 import { nextOccurrence } from '@/lib/recurrence'
 
 /**
@@ -96,6 +96,49 @@ export async function listTasks(
   return { ok: true, tasks: (data ?? []) as Task[] }
 }
 
+/**
+ * Refuses a category that belongs to a different workspace.
+ *
+ * **A task's category is what decides who can see it**, so a task carrying a
+ * category from another workspace has a visibility rule pointing at a row its
+ * own viewers may not be able to read. Nothing in the app can produce that — a
+ * category picker only offers the categories of the workspace it is in — so the
+ * check had never been written down anywhere. The connector's first real write
+ * test found it on 13 Sep 2026: a model holding two workspace ids and two
+ * category lists will cross them, and both write paths accepted it silently
+ * (KB.md #53).
+ *
+ * Personal categories carry their personal workspace's id as well as an
+ * `owner_id`, so one comparison answers for both kinds of workspace.
+ */
+async function checkCategory(
+  supabase: SupabaseClient,
+  workspaceId: string,
+  categoryId: string
+): Promise<Refusal | null> {
+  const { data } = await supabase
+    .from('categories')
+    .select('id')
+    .eq('id', categoryId)
+    .eq('workspace_id', workspaceId)
+    .single()
+
+  if (data) return null
+
+  return {
+    ok: false,
+    status: 400,
+    error: 'That category belongs to a different workspace — list the categories for this one and pick from those',
+  }
+}
+
+/** Refuses a due date Postgres would reject, so the caller gets a sentence rather than a SQLSTATE. */
+function checkDueDate(dueDate: string | null | undefined): Refusal | null {
+  if (dueDate === null || dueDate === undefined) return null
+  if (isIsoDate(dueDate)) return null
+  return { ok: false, status: 400, error: 'due_date must be a calendar date as YYYY-MM-DD' }
+}
+
 export interface CreateTaskInput {
   workspaceId: string
   title: string
@@ -155,6 +198,14 @@ export async function createTask(
       .single()
     if (!profile) return { ok: false, status: 400, error: 'Profile not found' }
   }
+
+  if (input.categoryId) {
+    const wrongWorkspace = await checkCategory(supabase, input.workspaceId, input.categoryId)
+    if (wrongWorkspace) return wrongWorkspace
+  }
+
+  const badDate = checkDueDate(input.dueDate)
+  if (badDate) return badDate
 
   const horizon = input.horizon ?? buildHorizonFields('unplanned', {})
 
@@ -250,7 +301,15 @@ export async function updateTask(
   }
   if (input.notes !== undefined) patch.notes = input.notes?.trim() || null
   if (input.status !== undefined) patch.status = input.status
+
+  if (input.categoryId) {
+    const wrongWorkspace = await checkCategory(supabase, found.task.workspace_id, input.categoryId)
+    if (wrongWorkspace) return wrongWorkspace
+  }
   if (input.categoryId !== undefined) patch.category_id = input.categoryId
+
+  const badDate = checkDueDate(input.dueDate)
+  if (badDate) return badDate
   if (input.dueDate !== undefined) patch.due_date = input.dueDate
   if (input.horizon) Object.assign(patch, input.horizon)
 

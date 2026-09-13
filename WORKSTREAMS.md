@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 13 Sep 2026 | `fix/category-workspace` | A category from another workspace can be written to a task — found by the 4.10 connector test | `PLAN.md` §"Where we are" item 15, §Open items 12; `KB.md` §The app |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch

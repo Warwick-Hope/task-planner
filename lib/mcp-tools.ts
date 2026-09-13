@@ -12,7 +12,12 @@ import {
   type TaskStatusFilter,
 } from '@/lib/tasks-server'
 import { extractTasks, saveParsedTasks } from '@/lib/brain-dump'
-import { horizonFromAnchor, HORIZON_PRECISION_LABELS, type HorizonPrecision } from '@/lib/horizon'
+import {
+  horizonFromAnchor,
+  isIsoDate,
+  HORIZON_PRECISION_LABELS,
+  type HorizonPrecision,
+} from '@/lib/horizon'
 import { MAX_CAPTURES_PER_DAY } from '@/lib/limits'
 
 /**
@@ -107,6 +112,18 @@ function horizonFrom(args: Record<string, unknown>) {
       ok: false as const,
       status: 400,
       error: 'horizon_date is required unless horizon_precision is "unplanned"',
+    }
+  }
+
+  // Checked here rather than left to the builder: a malformed date reaches
+  // `toISOString` and throws `Invalid time value`, which tells the model nothing
+  // about which argument was wrong. The 'time' precision carries a clock time
+  // after a T, so only the date half is checked.
+  if (date && !isIsoDate(date.split('T')[0])) {
+    return {
+      ok: false as const,
+      status: 400,
+      error: 'horizon_date must be a calendar date as YYYY-MM-DD',
     }
   }
 

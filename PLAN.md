@@ -19,7 +19,7 @@ file wins.
 
 ## Where we are, and what's next
 
-**Updated:** 2026-08-26
+**Updated:** 2026-09-13
 
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
@@ -114,7 +114,7 @@ happened rather than only in the app.
     `503` that a missing secret key produces, and not the `500` a missing table would. What has
     not been done is minting a real token on prod and calling a route with it; the whole path is
     proven on dev.
-15. 🔄 **Phase 4.10 — the Claude connector.** PR #27, merged 26 Aug 2026, migration
+15. ✅ **Phase 4.10 — the Claude connector.** PR #27, merged 26 Aug 2026, migration
     `20260826000003_capture_quota` applied to **dev and prod**. `/api/mcp` speaks JSON-RPC over POST and
     exposes the seven tools; a personal access token in an `Authorization` header is how a client
     gets in. Two endpoints the tools needed and the app had never had — `GET /api/tasks` and
@@ -131,12 +131,23 @@ happened rather than only in the app.
     here, since `complete_task` is a tool now and a model completing a weekly task would have
     produced a duplicate.
 
-**Merged the same day as 65e4ccb, and `20260826000003_capture_quota` is applied to prod** —
+    **Merged the same day as 65e4ccb, and `20260826000003_capture_quota` is applied to prod** —
     confirmed against the Management API rather than the CLI's own word, for the reason in
     [KB.md](KB.md) #51.
 
-    **Not finished.** Nothing has connected to it from a real client yet: that needs a token
-    minted in a browser and one `claude mcp add` on Warwick's machine (§Open items 12).
+    **Claude Code connected to prod on 13 Sep 2026 and drove the whole surface**, which is what
+    closes the phase. The seven tools were the right seven: nothing was missing for a real capture
+    or a real reschedule, and the timing words resolved correctly from a Sunday — "tomorrow",
+    "next week", "this quarter", "no deadline". `capture` with `save: false` previewed, `save: true`
+    wrote, and the quota reported 2 of 20.
+
+    **It found one real bug in an hour, and it is a bug the app could never have produced.** Both
+    write paths accepted a `category_id` from a *different workspace* and wrote it — a task whose
+    visibility rule points at a row its own viewers may not be able to read. Nothing in the UI can
+    express that, because a category picker only ever offers the workspace it is in, so the check
+    had never been written. A model holding two workspace ids and two category lists expressed it
+    immediately ([KB.md](KB.md) #53). Fixed in `lib/tasks-server.ts` so both routes and both tools
+    inherit it, with a date-shape check alongside.
 16. ⏭ **Next** — **4.11**, connector OAuth. It stopped being polish on 26 Aug 2026: **a pasted
     token cannot reach claude.ai**, so 4.10 puts Clarity in Claude Code and nowhere near the
     phone ([KB.md](KB.md) #46, §"The Claude connector"). 4.10 was built so OAuth is a third way
@@ -315,7 +326,7 @@ paper. Met.
 | 4.7 | Onboarding improvements — guided household setup | Not started |
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
 | 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, merged 26 Aug 2026, live on prod |
-| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ PR #27, merged 26 Aug 2026, live on prod — nothing has connected from a real client yet |
+| 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ Complete — PR #27, live on prod, driven from Claude Code 13 Sep 2026 |
 | 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | **Next** — §"The Claude connector" |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
@@ -646,11 +657,17 @@ all.
     form offers the next period instead of today ([KB.md](KB.md) #49). Left alone on purpose:
     nothing tests what the form offers, and the fix is a behaviour change made on a code reading.
     Worth doing with a test rather than without one.
-12. **Connect a real client to `/api/mcp`.** The whole surface is proven by the e2e suite through
-    the protocol, but no Claude has spoken to it yet — and the questions 4.10 exists to answer are
-    whether the seven tools are the right seven and whether the descriptions are enough to be
-    used correctly. It needs a token from the Connections page and one `claude mcp add`
-    (§"The Claude connector"). **This is what closes 4.10.**
+12. ✅ **A real client connected**, 13 Sep 2026 — Claude Code against prod, registered at user
+    scope. Seven tools, nothing missing, one bug found ([KB.md](KB.md) #53) and fixed. Two things
+    the test could not reach, both needing a second person: **assignment through the connector**
+    (`assigned_to_user_id`) and **a restricted member being refused a write**. Both are covered for
+    the HTTP routes by `invite.spec.ts`; neither is covered through a tool. Worth adding when the
+    household has a second adult in it rather than manufacturing one.
+
+    One artefact, prompt-level rather than code: `capture` read the test note's own preamble
+    ("MCP write test, disposable") as an action and created a task for it. A model extracting from
+    prose will extract the frame around the prose too — nothing to fix in the server, but worth
+    knowing before feeding it a document with a heading.
 13. ✅ **`20260826000003_capture_quota` is on prod**, 26 Aug 2026, and the CLI is re-linked to dev.
     Merging did not do it and never does — CI runs lint and build, Vercel builds and deploys the
     app, and neither touches the database.

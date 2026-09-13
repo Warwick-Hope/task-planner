@@ -142,6 +142,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 50 | A string given to Playwright as `data` is JSON-encoded | The e2e suite | Live |
 | 51 | `db push` compares against the working directory, so a stale checkout says "up to date" | Supabase and migrations | Live |
 | 52 | The credential pin does not work on gh 2.90 — the hint returns nothing | Git and deploy | Live rule, corrects #27 |
+| 53 | A category could be written across workspaces, because only the UI ever stopped it | The app | Live |
 
 ---
 
@@ -887,6 +888,39 @@ occurrence earlier in the day is missed and the form offers the next period inst
 is deliberately left alone: it feeds the task form, nothing tests it, and changing what the form
 offers on the strength of a code reading is not a change to make blind
 ([PLAN.md](PLAN.md) §Open items 11).
+
+### 53. A category could be written across workspaces, because only the UI ever stopped it
+
+Until 13 Sep 2026, `create_tasks` and `update_task` — and the routes under them — accepted a
+`category_id` belonging to **a different workspace**, wrote it, and returned 200. A personal task
+could carry a household category and the reverse.
+
+**A task's category is what decides who can see it**, so the result is a task whose visibility
+rule points at a row its own viewers may not be able to read. Reads stayed workspace-scoped
+throughout — `list_tasks` filtered by the foreign category returned nothing — so the damage is a
+task that is miscategorised in a way no list will show you, not a leak.
+
+**Nothing had ever been able to do it before.** Every category picker in the app is built from the
+categories of the workspace it is in, so the illegal combination could not be expressed, and the
+check was never written because nothing needed it. A model holding two workspace ids and two
+category lists expresses it immediately — it was found by the first real connector write test,
+inside an hour of Claude using the tools for the first time.
+
+The check lives in `checkCategory()` in [lib/tasks-server.ts](lib/tasks-server.ts), so both routes
+and both tools inherit it — one comparison answers for both kinds of workspace, because a personal
+category carries its personal workspace's id as well as an `owner_id`.
+
+**The general lesson is worth more than the fix.** A constraint enforced only by the shape of a
+form is not enforced at all; it is merely unreachable. Opening an API — and a tool surface is an
+API with a model on the end — makes every such constraint reachable at once. The others in this
+codebase that are still route-level only: the `shopping_list` column rule (#13), and role checks
+generally, which RLS cannot express (`requireMember`).
+
+Alongside it: a malformed `due_date` used to come back as Postgres's own
+`invalid input syntax for type date`, and a malformed `horizon_date` as `Invalid time value` from
+deep inside the horizon builder. Both are now refused by name, with `isIsoDate` shared out of
+[lib/horizon.ts](lib/horizon.ts) — "2026-02-31" passes the regex and is not a date, which is why
+the check round-trips through `toISOString` rather than trusting the pattern.
 
 ---
 
