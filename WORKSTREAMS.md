@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 13 Sep 2026 | `feat/connector-oauth` | Phase 4.11 — OAuth 2.1, so claude.ai and the phone can install the connector | `PLAN.md` §"Where we are", §Phases 4.11, §"The Claude connector", §Decisions log; `KB.md` §The app; `CLAUDE.md`; `SCHEMA.md` |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch

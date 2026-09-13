@@ -111,6 +111,12 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
   the connector's tools both call it, and `complete_task` is separate from an update because
   completing advances a recurrence ([KB.md](KB.md) #24, #49).
+- **OAuth is a third credential, not a second system** — `resolveBearer` takes the resolver's
+  name (`resolve_api_token` or `resolve_oauth_token`) and everything after the lookup is identical.
+  `caller.via` is for logging; nothing branches on it ([KB.md](KB.md) #54).
+- **`/.well-known/*` is exempt from the login redirect, and the login redirect keeps the query
+  string** — a client reads discovery metadata precisely because it has no credential, and an
+  OAuth request *is* its query string ([KB.md](KB.md) #54, #55).
 - **A route is session-only until it names a token scope** — `requireCaller(request)` refuses a
   bearer token; `requireCaller(request, { scope })` accepts one. `/api/tokens` is session-only on
   purpose ([KB.md](KB.md) #45).

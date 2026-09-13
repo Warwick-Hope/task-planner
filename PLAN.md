@@ -148,11 +148,24 @@ happened rather than only in the app.
     had never been written. A model holding two workspace ids and two category lists expressed it
     immediately ([KB.md](KB.md) #53). Fixed in `lib/tasks-server.ts` so both routes and both tools
     inherit it, with a date-shape check alongside.
-16. ⏭ **Next** — **4.11**, connector OAuth. It stopped being polish on 26 Aug 2026: **a pasted
-    token cannot reach claude.ai**, so 4.10 puts Clarity in Claude Code and nowhere near the
-    phone ([KB.md](KB.md) #46, §"The Claude connector"). 4.10 was built so OAuth is a third way
-    to produce a `Caller` rather than a rewrite ([KB.md](KB.md) #47). SSO (4.4, now Google *and*
-    Microsoft) and push reminders come after it.
+16. 🔄 **Phase 4.11 — connector OAuth.** PR #31, 13 Sep 2026, migration
+    `20260913000001_connector_oauth` applied to **dev**. Discovery metadata, open client
+    registration, authorization codes with PKCE, rotating refresh tokens, and a consent screen —
+    the only place a person is involved, and the whole security boundary of the flow. A claude.ai
+    connector can now install itself from a URL ([KB.md](KB.md) #54).
+
+    **4.10's design held.** OAuth became a third resolver name inside `requireCaller` and nothing
+    else changed: no route and no tool knows which kind of credential arrived. The only edit to
+    `/api/mcp` was a `WWW-Authenticate` header on its 401, which is what turns a failure into
+    "sign in here".
+
+    **One bug found on the way, older than the phase.** The login redirect carried only the path,
+    so a signed-out person clicking Connect signed in and arrived at a consent screen with nothing
+    to consent to — an OAuth request *is* its query string ([KB.md](KB.md) #55).
+
+    **Not finished.** The migration is on dev only, and nothing has installed it from claude.ai
+    yet (§Open items 15, 16). SSO (4.4, now Google *and* Microsoft) and push reminders come after
+    that.
 17. ✅ **Supabase Pro — agreed 26 Aug 2026, upgraded 13 Sep 2026.** It stops the live app
     sleeping and unblocks leaked-password protection. It is billed **per organisation**, so both
     projects are on it and "dev stays free" did not survive contact with the billing model
@@ -329,7 +342,7 @@ paper. Met.
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
 | 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, merged 26 Aug 2026, live on prod |
 | 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ Complete — PR #27, live on prod, driven from Claude Code 13 Sep 2026 |
-| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | **Next** — §"The Claude connector" |
+| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | 🔄 PR #31, 13 Sep 2026 — dev only, not yet installed from claude.ai |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
 alpha channel at all, and the fix is per icon rather than global: the `purpose: "any"` pair is
@@ -431,6 +444,12 @@ HTML page ([KB.md](KB.md) #37) — a bearer client would have received that HTML
 depended on it. `/api` is exempt from the redirect as of 26 Aug 2026 and every route answers 401
 itself, which each of them already did.
 
+**4.11 was built on 13 Sep 2026** — the section below is what it was going to be, and it is what
+it became. The endpoints are `/.well-known/oauth-protected-resource`,
+`/.well-known/oauth-authorization-server`, `/api/oauth/register`, `/oauth/authorize` (a consent
+screen, not an API), `/api/oauth/token` and `/api/oauth/revoke`; the five decisions behind them are
+in [KB.md](KB.md) #54.
+
 **4.11: OAuth 2.1 — and it is not polish.** This section said it was, on the grounds that it is
 "the difference between pasting a token once and clicking Connect". That was wrong, and the
 correction is the most important thing on this page: **a pasted token cannot reach claude.ai at
@@ -506,8 +525,9 @@ Two things stop being deferrable the day this ships, and both are already open i
 ### Sequence
 
 4.8 small fixes ✅ → 4.9 tokens, bearer auth and the `/api` redirect exemption ✅ → 4.10 `/api/mcp`
-and the tools ✅ → **live with it from Claude Code** → 4.11 OAuth, which is what reaches claude.ai
-and the phone. Then 5.6, the unattended sweep, only if it still looks worth it.
+and the tools ✅, driven from Claude Code 13 Sep 2026 → 4.11 OAuth ✅ built the same day, which is
+what reaches claude.ai and the phone → **install it there and live with it**. Then 5.6, the
+unattended sweep, only if it still looks worth it.
 
 **Adding it to Claude Code**, once a token exists on the Connections page:
 
@@ -692,6 +712,16 @@ all.
     suite takes ~2 minutes, needs two real accounts and the Anthropic key in CI secrets, writes to
     the real dev project, and spends a capture from the daily quota on every run
     ([KB.md](KB.md) #48). **Not decided** — it needs one deliberate call, not a drift.
+15. **Push `20260913000001_connector_oauth` to prod.** It is on dev. **Merging does not apply it**
+    ([KB.md](KB.md) #51), and until it is pushed, prod keeps working by token while every OAuth
+    endpoint fails on a missing table. Commands in [CONTRIBUTING.md](CONTRIBUTING.md)
+    §"Deploying a database migration" — and pull `main` in the checkout you run them from, or
+    `db push` will say "up to date" and mean it.
+16. **Add Clarity to claude.ai as a custom connector.** This closes 4.11, and it is the first time
+    the connector will have been used from the place the whole thing exists to serve — a phone. It
+    needs item 15 first, then Settings → Connectors → Add custom connector, with
+    `https://task-planner-nine-sigma.vercel.app/api/mcp`. There is nothing to paste: it discovers
+    the rest, registers itself, and sends you to a Clarity consent screen.
 
 ---
 
@@ -886,3 +916,21 @@ re-litigated.**
   live app that does not sleep and leaked-password protection — and dev not sleeping is a bonus
   that costs compute. **The e2e-in-CI decision is reopened as a consequence** (§Open items 14),
   because its stated reason was the sleeping it just removed.
+- **13 Sep 2026** — **the consent screen is the security boundary, so client registration is
+  open.** Dynamic client registration has no authentication and cannot have any: nobody is present
+  when a client first meets the server, which is the whole point of it. Two things make that
+  acceptable rather than merely necessary — a client row grants nothing on its own, and every
+  token requires a person to read what is being asked for and press Allow. The consequence taken
+  knowingly: anyone can create client rows, and nothing deletes them
+  ([KB.md](KB.md) #54).
+
+- **13 Sep 2026** — **a failed PKCE check spends the authorization code.** The code is consumed in
+  the statement that reads it, so verification failure costs the attempt rather than allowing a
+  retry. A legitimate client never presents the wrong verifier; one that does has either stolen
+  the code or is broken, and the retry is what would make a code worth guessing at.
+
+- **13 Sep 2026** — **OAuth access tokens live in their own table with their own resolver**,
+  rather than as rows in `api_tokens` with a client id attached. They expire in an hour, rotate on
+  refresh and belong to a client; a personal access token does none of those. What they share is
+  everything after the lookup, which is why `resolveBearer` takes the resolver's name as an
+  argument and no route can tell the two apart ([KB.md](KB.md) #54).
