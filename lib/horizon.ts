@@ -205,6 +205,21 @@ export function horizonFromAnchor(
 }
 
 /**
+ * True only for a real calendar date in YYYY-MM-DD form.
+ *
+ * Shared because three callers need the same answer: the brain dump validating
+ * what a model returned, the connector's tools validating what a model sent, and
+ * task writes checking a due date before Postgres does. The regex alone is not
+ * enough — "2026-02-31" matches it and is not a date, which is what the
+ * round-trip through `toISOString` catches.
+ */
+export function isIsoDate(value: unknown): value is string {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const parsed = new Date(value + 'T12:00:00')
+  return !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value)
+}
+
+/**
  * The seven columns picked out of a request body, with anything unrecognised
  * dropped.
  *

@@ -3,7 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Category } from '@/types'
 import { getPersonalWorkspaceId } from '@/lib/workspace-server'
 import { MAX_BRAIN_DUMP_CHARS, MAX_CAPTURES_PER_DAY } from '@/lib/limits'
-import { buildHorizonFields, horizonFromAnchor } from '@/lib/horizon'
+import { buildHorizonFields, horizonFromAnchor, isIsoDate } from '@/lib/horizon'
 import type { Refusal } from '@/lib/api'
 
 /**
@@ -69,13 +69,6 @@ export type SaveResult =
 
 const PRECISIONS: ParsedHorizonPrecision[] =
   ['unplanned', 'year', 'quarter', 'month', 'week', 'day']
-
-/** True only for a real calendar date in YYYY-MM-DD form. */
-function isIsoDate(value: unknown): value is string {
-  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
-  const parsed = new Date(value + 'T12:00:00')
-  return !isNaN(parsed.getTime()) && parsed.toISOString().startsWith(value)
-}
 
 /**
  * Claims one of today's calls, atomically.

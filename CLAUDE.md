@@ -103,6 +103,9 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **The capture quota is counted in [lib/brain-dump.ts](lib/brain-dump.ts)**, not in the route and
   not in the tool — one budget of twenty a day, whichever door the call came through. The e2e
   suite spends from it ([KB.md](KB.md) #48).
+- **A task's `category_id` must belong to the task's own workspace** — checked in
+  [lib/tasks-server.ts](lib/tasks-server.ts), because until 13 Sep 2026 only the shape of the
+  category picker stopped it and a tool call went straight past that ([KB.md](KB.md) #53).
 - **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
   the connector's tools both call it, and `complete_task` is separate from an update because
   completing advances a recurrence ([KB.md](KB.md) #24, #49).
