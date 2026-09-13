@@ -42,6 +42,7 @@ from memory.
 | `There is no GET /api/tasks, and nothing lists workspaces` | Both exist as of Phase 4.10 — the connector's tools needed them and the app never had ([PLAN.md](PLAN.md) §"The tool surface") |
 | `The brain dump has no quota` | Twenty captures per user per UTC day since Phase 4.10, shared between the textarea and the `capture` tool ([KB.md](KB.md) #48) |
 | `The credential pin makes gh return that account's token whatever is active` | Not true on gh 2.90.0 — the username hint returns *nothing*, and the push dies with a TTY error rather than a 403 ([KB.md](KB.md) #52 corrects #27) |
+| `Both Supabase projects are free tier and pause after ~7 days` | Wrong since 13 Sep 2026 — the organisation is on Pro, so neither pauses. `Pro on prod, dev stays free` was never possible: Pro is billed per organisation ([KB.md](KB.md) #4) |
 | Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 
 Current figures come from [PLAN.md](PLAN.md) §"Where we are" — not from memory, and not from an
@@ -74,8 +75,9 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **`supabase db push` has no project-ref flag** — it pushes to the linked project, and the CLI
   is linked to dev. Re-link, push, re-link back ([KB.md](KB.md) #1).
 - **The Supabase MCP cannot apply migrations, and points at dev only** ([KB.md](KB.md) #3).
-- **Both Supabase projects pause after ~7 days idle** on the free tier. A paused project also
-  produces a misleading network error ([KB.md](KB.md) #4, #2).
+- **Neither Supabase project pauses** — the organisation went Pro on 13 Sep 2026, and Pro is per
+  organisation, so dev is on it too. A paused project still produces a misleading network error if
+  you ever meet one ([KB.md](KB.md) #4, #2).
 - **Two GitHub accounts on this machine, and `gh auth switch` is global.** A bare `403` on push
   means the pin, never the switch ([KB.md](KB.md) #27).
 - **A push to `main` deploys to production in ~2 minutes**, and `verify` cannot be required
