@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 14 Sep 2026 | `docs/4-11-live` | Closing 4.11 — installed from claude.ai and working | `PLAN.md` §"Where we are" item 16, §Phases 4.11, §Open items 15/16, §Sequence; `KB.md` #54 |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch

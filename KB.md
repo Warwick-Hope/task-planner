@@ -974,6 +974,13 @@ served, because which one a client builds is not ours to choose. And `/api/mcp` 
 `WWW-Authenticate: Bearer resource_metadata="…"` — without that header a client has a failure and
 no way to discover what to do about it.
 
+**What "it worked" looks like from the other side.** On claude.ai, Settings → Connectors → Add
+custom connector, given only the `/api/mcp` URL, marks both *Sign in now* and *Register
+automatically* as **Detected** — that badge is the client saying it fetched the discovery documents
+and found OAuth with dynamic registration. If either shows as undetected, the fault is in the
+metadata or in reaching it anonymously, before any part of the flow has run. Confirmed working from
+claude.ai on 14 Sep 2026.
+
 **Registered client rows are never deleted.** A client has no owner, so nobody can delete one, and
 the e2e suite leaves one per run on dev. A client with no live grant can do nothing at all, so
 they are litter rather than risk — but that is a decision, not an oversight.
