@@ -19,7 +19,7 @@ file wins.
 
 ## Where we are, and what's next
 
-**Updated:** 2026-09-13
+**Updated:** 2026-09-14
 
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
@@ -148,8 +148,8 @@ happened rather than only in the app.
     had never been written. A model holding two workspace ids and two category lists expressed it
     immediately ([KB.md](KB.md) #53). Fixed in `lib/tasks-server.ts` so both routes and both tools
     inherit it, with a date-shape check alongside.
-16. 🔄 **Phase 4.11 — connector OAuth.** PR #31, 13 Sep 2026, migration
-    `20260913000001_connector_oauth` applied to **dev**. Discovery metadata, open client
+16. ✅ **Phase 4.11 — connector OAuth.** PR #31, merged 13 Sep 2026, migration
+    `20260913000001_connector_oauth` applied to **dev and prod**. Discovery metadata, open client
     registration, authorization codes with PKCE, rotating refresh tokens, and a consent screen —
     the only place a person is involved, and the whole security boundary of the flow. A claude.ai
     connector can now install itself from a URL ([KB.md](KB.md) #54).
@@ -163,9 +163,15 @@ happened rather than only in the app.
     so a signed-out person clicking Connect signed in and arrived at a consent screen with nothing
     to consent to — an OAuth request *is* its query string ([KB.md](KB.md) #55).
 
-    **Not finished.** The migration is on dev only, and nothing has installed it from claude.ai
-    yet (§Open items 15, 16). SSO (4.4, now Google *and* Microsoft) and push reminders come after
-    that.
+    **Installed from claude.ai on 14 Sep 2026, and working.** The Add-connector dialog marked
+    both *Sign in now* and *Register automatically* as **Detected** — which is claude.ai saying it
+    read the discovery documents and found OAuth with dynamic registration — and the flow ran
+    through to the Clarity consent screen with nothing pasted anywhere.
+
+    **Which closes the arc 4.9 started.** Clarity is reachable from the terminal by token and from
+    the phone by OAuth, and a task gets in from wherever the thought happened. What is next is
+    ordinary again: SSO (4.4, now Google *and* Microsoft), push reminders, and 5.6 only if the
+    unattended case still looks worth it after living with this.
 17. ✅ **Supabase Pro — agreed 26 Aug 2026, upgraded 13 Sep 2026.** It stops the live app
     sleeping and unblocks leaked-password protection. It is billed **per organisation**, so both
     projects are on it and "dev stays free" did not survive contact with the billing model
@@ -179,9 +185,11 @@ happened rather than only in the app.
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-20. **Open manual items** — see §Open items. Both of the items that 4.10 was going to force are
-    settled: the quota shipped with it, and the Pro decision was taken. What is left is manual —
-    the Pro upgrade itself, the prod VAPID pair, and connecting a real client to the connector.
+20. **Open manual items** — see §Open items. Everything the connector forced is settled: the
+    quota, the Pro decision and the upgrade, both migrations on prod, and a real client on each
+    end. What is left there is older than any of it — the **prod VAPID pair**, which is all that
+    stands between 4.3 and a working notification, and the **leaked-password toggle** that Pro
+    unblocked.
 
 ---
 
@@ -342,7 +350,7 @@ paper. Met.
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
 | 4.9 | Token-authed API — personal access tokens, bearer auth alongside the session cookie | ✅ PR #25, merged 26 Aug 2026, live on prod |
 | 4.10 | Claude connector — `/api/mcp`, the tool surface, authenticated with a pasted token | ✅ Complete — PR #27, live on prod, driven from Claude Code 13 Sep 2026 |
-| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | 🔄 PR #31, 13 Sep 2026 — dev only, not yet installed from claude.ai |
+| 4.11 | Connector OAuth 2.1 — the only way a connector reaches claude.ai and the phone | ✅ Complete — PR #31, live on prod, installed from claude.ai 14 Sep 2026 |
 
 **4.8 is done, and both halves needed a little more than the diagnosis said.** The icons had no
 alpha channel at all, and the fix is per icon rather than global: the `purpose: "any"` pair is
@@ -525,9 +533,9 @@ Two things stop being deferrable the day this ships, and both are already open i
 ### Sequence
 
 4.8 small fixes ✅ → 4.9 tokens, bearer auth and the `/api` redirect exemption ✅ → 4.10 `/api/mcp`
-and the tools ✅, driven from Claude Code 13 Sep 2026 → 4.11 OAuth ✅ built the same day, which is
-what reaches claude.ai and the phone → **install it there and live with it**. Then 5.6, the
-unattended sweep, only if it still looks worth it.
+and the tools ✅, driven from Claude Code 13 Sep 2026 → 4.11 OAuth ✅ built the same day and
+installed from claude.ai on 14 Sep 2026 → **live with it**. Then 5.6, the unattended sweep, only
+if it still looks worth it.
 
 **Adding it to Claude Code**, once a token exists on the Connections page:
 
@@ -712,16 +720,12 @@ all.
     suite takes ~2 minutes, needs two real accounts and the Anthropic key in CI secrets, writes to
     the real dev project, and spends a capture from the daily quota on every run
     ([KB.md](KB.md) #48). **Not decided** — it needs one deliberate call, not a drift.
-15. **Push `20260913000001_connector_oauth` to prod.** It is on dev. **Merging does not apply it**
-    ([KB.md](KB.md) #51), and until it is pushed, prod keeps working by token while every OAuth
-    endpoint fails on a missing table. Commands in [CONTRIBUTING.md](CONTRIBUTING.md)
-    §"Deploying a database migration" — and pull `main` in the checkout you run them from, or
-    `db push` will say "up to date" and mean it.
-16. **Add Clarity to claude.ai as a custom connector.** This closes 4.11, and it is the first time
-    the connector will have been used from the place the whole thing exists to serve — a phone. It
-    needs item 15 first, then Settings → Connectors → Add custom connector, with
-    `https://task-planner-nine-sigma.vercel.app/api/mcp`. There is nothing to paste: it discovers
-    the rest, registers itself, and sends you to a Clarity consent screen.
+15. ✅ **`20260913000001_connector_oauth` is on prod**, 14 Sep 2026, CLI re-linked to dev. The
+    checkout needed pulling first, exactly as [KB.md](KB.md) #51 says — the first `db push` of the
+    day answered "up to date" for that reason.
+16. ✅ **Clarity is a claude.ai custom connector**, 14 Sep 2026. Added by URL with nothing pasted:
+    the dialog marked OAuth and dynamic registration as *Detected*, and the flow ran to the
+    consent screen and back. **This closed 4.11.**
 
 ---
 
