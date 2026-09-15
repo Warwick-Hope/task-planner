@@ -90,6 +90,9 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **The status cycle, colour inheritance, task-status toggling, drag sensors and the app shell
   are shared in `lib/` and `components/layout/`** — each was duplicated five or six times and
   had drifted. Add to them ([KB.md](KB.md) #24).
+- **A row of controls that is too wide shrinks rather than overflows, and a `text-sm` input
+  zooms a phone on focus** — the overflow guard cannot see either. Stack below `sm` and use
+  `text-base sm:text-sm` on an input ([KB.md](KB.md) #58).
 - **`group-hover` controls do not render at all on a touch screen** — show them below `md`
   ([KB.md](KB.md) #26).
 - **The service worker caches no user data and registers in production only** — adding pages or

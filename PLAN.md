@@ -189,6 +189,11 @@ happened rather than only in the app.
       household task list is unchanged and still shows everything — it renders no filter row at
       all, so the same default there would hide finished tasks with nothing to bring them back
       ([KB.md](KB.md) #56).
+    - **The meal library works on a phone.** Adding an ingredient put five controls in one
+      row: they did not overflow, they shrank, to a 90px field for an ingredient name. What
+      ran off the side of the screen was the *zoomed* page — a phone zooms in when it focuses
+      an input under 16px, and the row that just fitted then did not. The forms stack below
+      `sm` and their inputs are 16px there ([KB.md](KB.md) #58).
     - **A top-level category can be put on a task.** The API had always allowed it and both
       pickers refused it, so a task the connector could file under "Work" could not be filed
       under "Work" in the app. The task form and the brain-dump review panel both offer the

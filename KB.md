@@ -147,6 +147,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
 | 56 | A filter default that is not "everything" changes what an absent parameter means | The app | Live |
 | 57 | The category pickers refused a top-level category that the API had always accepted | The app | Live |
+| 58 | A cramped row does not overflow, it shrinks — and a 14px input zooms the phone | The app | Live |
+| 59 | A hard-coded date in a spec fails on the clock, not on a change | The e2e suite | Live |
 
 ---
 
@@ -533,6 +535,22 @@ await request.post('/api/mcp', {
 
 Worth knowing beyond this one test: any spec asserting on how a route handles a *malformed*
 payload is at risk of asserting on how it handles a well-formed one instead.
+
+### 59. A hard-coded date in a spec fails on the clock, not on a change
+
+`mcp.spec.ts` seeded a weekly task due `2026-09-07` and asserted its follow-up came out
+`2026-09-14`. It passed for a week and then failed every run from 15 Sep 2026, on a branch that
+had touched none of it — which costs more than the assertion was ever worth, because a red test
+is read as a regression first.
+
+The behaviour it was pinning is also not what the dates implied. A stored recurrence rule
+carries no DTSTART, so rrule counts occurrences from the moment it parses the string — today —
+not from the due date that was missed. Completing a weekly task that was due a fortnight ago
+schedules the next one from now, which is right, and which the two fixed dates happened to
+agree with only while today fell between them. Both are derived from `new Date()` now.
+
+Same rule anywhere else: a date in an assertion is either computed from today or it is a time
+bomb with a known fuse.
 
 ---
 
@@ -1051,6 +1069,28 @@ cleared in one place.
 The parent chip in the task form carries `aria-label="<name> (top level)"` because a subcategory
 is allowed to share its parent's name, and two chips reading "Work" are indistinguishable to
 anything that cannot see the indentation. The e2e guard addresses it by that name.
+
+### 58. A cramped row does not overflow, it shrinks — and a 14px input zooms the phone
+
+The meal library's add-ingredient form is five controls — name, quantity, unit, Add, cancel —
+laid out in one flex row. On a phone it was unusable, and the two reasons are both worth
+having.
+
+**It did not overflow.** Measured at a 393px viewport every control was on screen, because
+flexbox shrinks children before it overflows a container: the ingredient field came out 90px
+wide and the quantity and unit fields 43px each. A guard that only asks "does anything stick
+out past the edge" says yes to that. `e2e/mobile.spec.ts` asks for a *usable* width instead.
+
+**What did run off the side was the zoomed page.** A phone browser zooms in when it focuses an
+input whose font is under 16px, and every input in this app is `text-sm` — 14px. Focus the
+ingredient field, the viewport narrows to roughly 320 CSS px, and the row that just fitted no
+longer does. The meal forms are `text-base sm:text-sm` now, which is the whole fix for the
+zoom. **Every other form in the app is still 14px and still zooms** — the same defect, not yet
+swept.
+
+The page-wide overflow guard could not have caught any of this anyway. The form only exists
+after a click, and each meal card carries `overflow-hidden`, which `overflowingElements()`
+treats as a deliberate sideways scroller and skips (#18).
 
 ---
 
