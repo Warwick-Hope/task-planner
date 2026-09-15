@@ -63,22 +63,22 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
     setIds(Array.from(next))
   }
 
-  /** Clicking the parent pill body toggles ALL its children (or itself if no children). */
+  /** Every id a parent pill stands for: itself, and each of its children. */
+  function bucketIds(parent: Category): string[] {
+    // The parent's own id is in here because a task can be tagged with the
+    // top-level category rather than a subcategory. Leaving it out made those
+    // tasks invisible to the filter for the category they are actually in.
+    return [parent.id, ...allCategories.filter(c => c.parent_id === parent.id).map(c => c.id)]
+  }
+
+  /** Clicking the parent pill body toggles the whole bucket — the parent and its children. */
   function handleParentToggle(parent: Category) {
-    const children = allCategories.filter(c => c.parent_id === parent.id)
-    if (children.length === 0) {
-      toggleId(parent.id)
-      return
-    }
-    const childIds = children.map(c => c.id)
-    const allSelected = childIds.every(id => selectedIds.includes(id))
+    const ids = bucketIds(parent)
+    const allSelected = ids.every(id => selectedIds.includes(id))
     if (allSelected) {
-      // Deselect all children of this parent
-      setIds(selectedIds.filter(id => !childIds.includes(id)))
+      setIds(selectedIds.filter(id => !ids.includes(id)))
     } else {
-      // Select all children of this parent (merge with existing)
-      const next = new Set([...selectedIds, ...childIds])
-      setIds(Array.from(next))
+      setIds(Array.from(new Set([...selectedIds, ...ids])))
     }
   }
 
@@ -89,15 +89,18 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
   }
 
   function isParentActive(parent: Category): boolean {
-    const children = allCategories.filter(c => c.parent_id === parent.id)
-    if (children.length === 0) return selectedIds.includes(parent.id)
-    return children.some(c => selectedIds.includes(c.id))
+    return bucketIds(parent).some(id => selectedIds.includes(id))
   }
 
-  const expandedChildren = expandedParent
-    ? allCategories.filter(c => c.parent_id === expandedParent).sort((a, b) => a.sort_order - b.sort_order)
-    : []
   const expandedParentObj = parents.find(p => p.id === expandedParent)
+  const expandedOptions = expandedParentObj
+    ? [
+        expandedParentObj,
+        ...allCategories
+          .filter(c => c.parent_id === expandedParent)
+          .sort((a, b) => a.sort_order - b.sort_order),
+      ]
+    : []
 
   const activeCount =
     (currentStatus === DEFAULT_STATUS_FILTER ? 0 : 1) +
@@ -213,17 +216,18 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
       </div>
 
       {/* Subcategory row — shown when a parent with children is expanded */}
-      {expandedParent && expandedParentObj && expandedChildren.length > 0 && (
+      {expandedParent && expandedParentObj && expandedOptions.length > 1 && (
         <div
           className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-1.5 px-3 py-2 bg-gray-50 rounded-lg border border-gray-100`}
         >
           <span className="text-xs text-gray-400 mr-1">{expandedParentObj.name}:</span>
-          {expandedChildren.map(child => {
-            const selected = selectedIds.includes(child.id)
+          {expandedOptions.map(option => {
+            const selected = selectedIds.includes(option.id)
+            const isParent = option.id === expandedParentObj.id
             return (
               <button
-                key={child.id}
-                onClick={() => toggleId(child.id)}
+                key={option.id}
+                onClick={() => toggleId(option.id)}
                 className={`rounded-full px-3 py-1.5 sm:py-1 text-xs font-medium border transition-colors ${
                   selected
                     ? 'border-transparent text-white'
@@ -231,15 +235,15 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
                 }`}
                 style={selected ? { backgroundColor: expandedParentObj.colour ?? DEFAULT_CATEGORY_COLOUR } : {}}
               >
-                {child.name}
+                {isParent ? `${option.name} (top level)` : option.name}
               </button>
             )
           })}
-          {selectedIds.some(id => expandedChildren.some(c => c.id === id)) && (
+          {selectedIds.some(id => expandedOptions.some(c => c.id === id)) && (
             <button
               onClick={() => {
-                const childIds = new Set(expandedChildren.map(c => c.id))
-                setIds(selectedIds.filter(id => !childIds.has(id)))
+                const optionIds = new Set(expandedOptions.map(c => c.id))
+                setIds(selectedIds.filter(id => !optionIds.has(id)))
               }}
               className="text-xs text-gray-400 hover:text-gray-600 ml-1"
             >

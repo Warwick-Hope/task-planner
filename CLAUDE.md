@@ -111,6 +111,9 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
   the connector's tools both call it, and `complete_task` is separate from an update because
   completing advances a recurrence ([KB.md](KB.md) #24, #49).
+- **A top-level category is a valid `category_id`** — the only rule is that it belongs to the
+  task's workspace, so a picker that offers only subcategories is refusing what the API accepts,
+  and a category filter has to count the parent's own id ([KB.md](KB.md) #57).
 - **A task list defaults to Open, so an absent `?status=` means Open, not "no filter"** — the
   statuses live in [lib/task-status.ts](lib/task-status.ts), and `all` is now the value that has
   to be written into the URL rather than the one that is dropped from it ([KB.md](KB.md) #56).

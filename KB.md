@@ -146,6 +146,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
 | 56 | A filter default that is not "everything" changes what an absent parameter means | The app | Live |
+| 57 | The category pickers refused a top-level category that the API had always accepted | The app | Live |
 
 ---
 
@@ -1027,6 +1028,29 @@ row, so the same default there would hide every finished task with no control to
 Defaulting it to Open and giving it the filter row are one piece of work, not two.
 
 ---
+
+### 57. The category pickers refused a top-level category that the API had always accepted
+
+A task's `category_id` may be any category in the task's own workspace. That is the whole rule —
+`checkCategory` in [lib/tasks-server.ts](lib/tasks-server.ts) compares workspaces and nothing else
+(#53). Neither picker in the app agreed. In the task form a parent *with* children was a group
+header, and in the brain-dump review panel it was an `<optgroup>` label; both are markup that
+cannot be chosen. A parent with *no* children was selectable in both, which is why it read as a
+deliberate hierarchy rule rather than an oversight.
+
+The result was a task the connector could file under "Work" and the app could not, with nothing
+anywhere saying the two disagreed. Both pickers offer the parent now.
+
+**Changing that forced a change to the filter, which is the part worth remembering.** The
+category filter's parent pill stood for its children's ids — not its own — so a task tagged with
+the parent would have been invisible under the filter for the very category it is in. A pill now
+stands for the bucket: the parent and everything under it. The expanded subcategory row lists the
+parent first, labelled "(top level)", so the bucket can be narrowed to the parent alone and
+cleared in one place.
+
+The parent chip in the task form carries `aria-label="<name> (top level)"` because a subcategory
+is allowed to share its parent's name, and two chips reading "Work" are indistinguishable to
+anything that cannot see the indentation. The e2e guard addresses it by that name.
 
 ---
 

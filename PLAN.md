@@ -180,12 +180,21 @@ happened rather than only in the app.
     projects are on it and "dev stays free" did not survive contact with the billing model
     (§Open items 5, [KB.md](KB.md) #4). Leaked-password protection is still a toggle nobody has
     flipped (§Open items 4).
-18. ✅ **The tasks list opens on Open — 15 Sep 2026.** The personal task list showed every task
-    ever created, done and cancelled alike, because an absent `?status=` meant no filter. It now
-    defaults to the two open statuses, with an **Open** pill alongside the existing ones and
-    **All** still one click away. The household task list is unchanged and still shows
-    everything — it renders no filter row at all, so the same default there would hide finished
-    tasks with nothing to bring them back (§Decisions log, [KB.md](KB.md) #56).
+18. 🔄 **Task screen fixes — 15 Sep 2026, PR #34, not yet merged.** Findings from using the app,
+    gathered onto one branch rather than one PR each.
+
+    - **The list opens on Open.** It showed every task ever created, done and cancelled alike,
+      because an absent `?status=` meant no filter. It defaults to the two open statuses now,
+      with an **Open** pill alongside the existing ones and **All** still one click away. The
+      household task list is unchanged and still shows everything — it renders no filter row at
+      all, so the same default there would hide finished tasks with nothing to bring them back
+      ([KB.md](KB.md) #56).
+    - **A top-level category can be put on a task.** The API had always allowed it and both
+      pickers refused it, so a task the connector could file under "Work" could not be filed
+      under "Work" in the app. The task form and the brain-dump review panel both offer the
+      parent now, and the category filter counts a task tagged with the parent as being in that
+      bucket — without which it would have been invisible under the filter for the very category
+      it is in ([KB.md](KB.md) #57).
 19. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
@@ -954,3 +963,9 @@ re-litigated.**
   **The household task list keeps its old behaviour on purpose.** It reads `?status=` but renders
   no filter row, so defaulting it to Open would hide every finished task with no control to show
   them again. Giving it the same filter row is the fix, and it is a separate piece of work.
+
+- **15 Sep 2026** — **a parent pill in the category filter means the whole bucket**, the top-level
+  category and everything under it, rather than the children alone. The alternative — parent
+  selects only itself, children selected individually — is more precise and wrong for the common
+  case: "show me Work" is what the pill is for. Narrowing to the top-level category on its own is
+  still possible, from the expanded subcategory row ([KB.md](KB.md) #57).

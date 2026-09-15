@@ -121,6 +121,30 @@ test('the list opens on Open, and a finished task is only behind All', async ({ 
   await deleteTaskRow(page, title)
 })
 
+test('a top-level category can be put on a task, not just a subcategory', async ({ page }) => {
+  const title = uniqueTitle('top-level-category')
+
+  await page.goto('/tasks/new')
+  await page.getByPlaceholder('What needs doing?').fill(title)
+
+  // The top-level chips are the ones whose accessible name ends "(top level)".
+  // The account always has at least one — onboarding requires a category.
+  const topLevel = page.getByRole('button', { name: /\(top level\)$/ }).first()
+  const name = ((await topLevel.textContent()) ?? '').trim()
+  expect(name, 'the account has no top-level category to pick').not.toBe('')
+  await topLevel.click()
+  await expect(topLevel).toHaveAttribute('aria-pressed', 'true')
+
+  await page.getByRole('button', { name: 'Create task' }).click()
+  await expect(page).toHaveURL('/tasks')
+
+  // The row carrying the parent's own name is the assertion that a top-level
+  // id reached the database, not just the picker.
+  await expect(taskRow(page, title).first()).toContainText(name)
+
+  await deleteTaskRow(page, title)
+})
+
 test('the API refuses a task with no title', async ({ request }) => {
   // Session cookies come from the shared storageState, so this exercises the
   // authenticated path rather than the 401 branch.

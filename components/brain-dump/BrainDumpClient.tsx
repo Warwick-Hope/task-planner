@@ -156,6 +156,9 @@ function TaskCard({ task, index, categories, onChange, onDiscard }: TaskCardProp
               const subs = children.filter(c => c.parent_id === parent.id)
               return subs.length > 0 ? (
                 <optgroup key={parent.id} label={parent.name}>
+                  {/* The parent itself, because a task can sit in the top-level
+                      category rather than in any of its subcategories. */}
+                  <option value={parent.id}>{parent.name} (top level)</option>
                   {subs.map(sub => (
                     <option key={sub.id} value={sub.id}>{sub.name}</option>
                   ))}
