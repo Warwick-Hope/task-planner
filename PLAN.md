@@ -180,15 +180,21 @@ happened rather than only in the app.
     projects are on it and "dev stays free" did not survive contact with the billing model
     (§Open items 5, [KB.md](KB.md) #4). Leaked-password protection is still a toggle nobody has
     flipped (§Open items 4).
-18. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+18. ✅ **The tasks list opens on Open — 15 Sep 2026.** The personal task list showed every task
+    ever created, done and cancelled alike, because an absent `?status=` meant no filter. It now
+    defaults to the two open statuses, with an **Open** pill alongside the existing ones and
+    **All** still one click away. The household task list is unchanged and still shows
+    everything — it renders no filter row at all, so the same default there would hide finished
+    tasks with nothing to bring them back (§Decisions log, [KB.md](KB.md) #56).
+19. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-19. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+20. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-20. **Open manual items** — see §Open items. Everything the connector forced is settled: the
+21. **Open manual items** — see §Open items. Everything the connector forced is settled: the
     quota, the Pro decision and the upgrade, both migrations on prod, and a real client on each
     end. What is left there is older than any of it — the **prod VAPID pair**, which is all that
     stands between 4.3 and a working notification, and the **leaked-password toggle** that Pro
@@ -938,3 +944,13 @@ re-litigated.**
   refresh and belong to a client; a personal access token does none of those. What they share is
   everything after the lookup, which is why `resolveBearer` takes the resolver's name as an
   argument and no route can tell the two apart ([KB.md](KB.md) #54).
+
+- **15 Sep 2026** — **a task list defaults to Open, and an absent parameter now carries a
+  meaning.** Every filter until now defaulted to "show everything", which let one rule serve them
+  all: a parameter equal to `all` was dropped from the URL. Status no longer defaults to `all`, so
+  `all` became a value that has to be *written* rather than omitted, and the shared rule silently
+  deleted it. The rule is per parameter now ([KB.md](KB.md) #56).
+
+  **The household task list keeps its old behaviour on purpose.** It reads `?status=` but renders
+  no filter row, so defaulting it to Open would hide every finished task with no control to show
+  them again. Giving it the same filter row is the fix, and it is a separate piece of work.

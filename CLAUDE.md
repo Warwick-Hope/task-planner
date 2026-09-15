@@ -111,6 +111,9 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
   the connector's tools both call it, and `complete_task` is separate from an update because
   completing advances a recurrence ([KB.md](KB.md) #24, #49).
+- **A task list defaults to Open, so an absent `?status=` means Open, not "no filter"** — the
+  statuses live in [lib/task-status.ts](lib/task-status.ts), and `all` is now the value that has
+  to be written into the URL rather than the one that is dropped from it ([KB.md](KB.md) #56).
 - **OAuth is a third credential, not a second system** — `resolveBearer` takes the resolver's
   name (`resolve_api_token` or `resolve_oauth_token`) and everything after the lookup is identical.
   `caller.via` is for logging; nothing branches on it ([KB.md](KB.md) #54).

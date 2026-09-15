@@ -5,8 +5,10 @@ import { useState } from 'react'
 import type { Category } from '@/types'
 
 import { DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
+import { DEFAULT_STATUS_FILTER } from '@/lib/task-status'
 
 const STATUS_OPTIONS = [
+  { value: 'open', label: 'Open' },
   { value: 'all', label: 'All' },
   { value: 'not_started', label: 'Not started' },
   { value: 'wip', label: 'In progress' },
@@ -19,7 +21,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
   const pathname = usePathname()
   const params = useSearchParams()
 
-  const currentStatus = params.get('status') ?? 'all'
+  const currentStatus = params.get('status') ?? DEFAULT_STATUS_FILTER
   const currentView = params.get('view') ?? 'all'
   const selectedIds: string[] = (params.get('category') ?? '').split(',').filter(Boolean)
 
@@ -32,10 +34,18 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
     .filter(c => c.parent_id === null)
     .sort((a, b) => a.sort_order - b.sort_order)
 
+  // What each filter is when its parameter is absent, so the URL only carries
+  // what differs from the default. Status defaults to Open, which is why "all"
+  // has to be written into the URL here rather than dropped like the others.
+  const PARAM_DEFAULTS: Record<string, string> = {
+    status: DEFAULT_STATUS_FILTER,
+    view: 'all',
+  }
+
   function pushParams(updates: Record<string, string | null>) {
     const next = new URLSearchParams(params.toString())
     for (const [k, v] of Object.entries(updates)) {
-      if (v === null || v === '' || v === 'all') next.delete(k)
+      if (v === null || v === '' || v === PARAM_DEFAULTS[k]) next.delete(k)
       else next.set(k, v)
     }
     const qs = next.toString()
@@ -90,7 +100,9 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
   const expandedParentObj = parents.find(p => p.id === expandedParent)
 
   const activeCount =
-    (currentStatus === 'all' ? 0 : 1) + (currentView === 'unplanned' ? 1 : 0) + selectedIds.length
+    (currentStatus === DEFAULT_STATUS_FILTER ? 0 : 1) +
+    (currentView === 'unplanned' ? 1 : 0) +
+    selectedIds.length
 
   return (
     <div className="flex flex-col gap-2 mb-4 sm:mb-6">
@@ -116,7 +128,7 @@ export default function TaskFilters({ allCategories }: { allCategories: Category
         className={`${showFilters ? 'flex' : 'hidden'} sm:flex flex-wrap items-center gap-x-4 sm:gap-x-6 gap-y-2`}
       >
         {/* Status */}
-        <div className="flex items-center gap-1.5">
+        <div role="group" aria-label="Status filter" className="flex items-center gap-1.5">
           <span className="text-xs text-gray-400 mr-1">Status</span>
           {STATUS_OPTIONS.map(opt => (
             <button

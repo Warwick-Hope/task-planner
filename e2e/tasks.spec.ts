@@ -80,6 +80,47 @@ test('the status indicator advances and the change persists', async ({ page }) =
   await deleteTaskRow(page, title)
 })
 
+test('the list opens on Open, and a finished task is only behind All', async ({ page }) => {
+  const title = uniqueTitle('open-filter')
+
+  await page.goto('/tasks/new')
+  await page.getByPlaceholder('What needs doing?').fill(title)
+  await page.getByRole('button', { name: 'Create task' }).click()
+  await expect(page).toHaveURL('/tasks')
+  await expect(taskRow(page, title).first()).toBeVisible()
+
+  // Two clicks is not_started -> wip -> done. Each PATCH is waited for because
+  // the indicator updates optimistically, so the second click can otherwise
+  // land before the first write has reached the database.
+  const indicator = () =>
+    taskRow(page, title)
+      .first()
+      .getByTitle(/^Status:/)
+  for (const reached of ['wip', 'done']) {
+    const written = page.waitForResponse(
+      (res) => res.request().method() === 'PATCH' && res.url().includes('/api/tasks/')
+    )
+    await indicator().click()
+    expect((await written).ok(), 'the status PATCH failed').toBe(true)
+    if (reached === 'wip') {
+      await expect(indicator()).toHaveAttribute('title', /wip/)
+    }
+  }
+
+  // The default list is Open, so a done task leaves it.
+  await page.reload()
+  await expect(taskRow(page, title)).toHaveCount(0)
+
+  // All brings it back, and says so in the URL — status=all is the one value
+  // that has to be written out, since an absent parameter now means Open.
+  const statusFilter = page.getByRole('group', { name: 'Status filter' })
+  await statusFilter.getByRole('button', { name: 'All' }).click()
+  await expect(page).toHaveURL(/status=all/)
+  await expect(taskRow(page, title).first()).toBeVisible()
+
+  await deleteTaskRow(page, title)
+})
+
 test('the API refuses a task with no title', async ({ request }) => {
   // Session cookies come from the shared storageState, so this exercises the
   // authenticated path rather than the 401 branch.

@@ -145,6 +145,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 53 | A category could be written across workspaces, because only the UI ever stopped it | The app | Live |
 | 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
+| 56 | A filter default that is not "everything" changes what an absent parameter means | The app | Live |
 
 ---
 
@@ -1001,6 +1002,31 @@ other branch: `router.push(next)` pushed whatever the query string said, so `?ne
 would have been an open redirect on a sign-in page. It predates 4.11 and nothing was exploiting
 it — but a `next` that now legitimately carries a query string is one somebody is more likely to
 look at.
+
+### 56. A filter default that is not "everything" changes what an absent parameter means
+
+The personal task list opened on every task the account had ever created — finished and cancelled
+included — because `?status=` absent meant no `where` clause at all. It defaults to the two open
+statuses now (`not_started`, `wip`), which is what `OPEN_STATUSES` and `statusesForFilter()` in
+[lib/task-status.ts](lib/task-status.ts) are for. Both the page query and the filter pills read
+them, so the default is stated once.
+
+**The part that is not obvious is what it did to the URL.** `TaskFilters.pushParams` dropped any
+parameter whose value was `all`, one rule shared by every filter, and that was correct for exactly
+as long as every filter defaulted to "show everything". The moment status defaulted to `open`,
+`all` stopped being the omittable value and became one that has to be *written* — and the shared
+rule deleted it on the way out, so clicking **All** navigated to the same URL and changed nothing.
+The rule is per parameter now (`PARAM_DEFAULTS`), and the e2e guard asserts `status=all` survives
+into the URL rather than only asserting the rows.
+
+An unrecognised `?status=` returns the default rather than an empty list, so a mistyped or
+stale link shows the usual list instead of zero tasks and an empty state that blames the filters.
+
+**The household task list is deliberately not changed.** It reads `?status=` but renders no filter
+row, so the same default there would hide every finished task with no control to bring them back.
+Defaulting it to Open and giving it the filter row are one piece of work, not two.
+
+---
 
 ---
 
