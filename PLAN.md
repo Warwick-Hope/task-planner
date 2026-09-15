@@ -19,7 +19,7 @@ file wins.
 
 ## Where we are, and what's next
 
-**Updated:** 2026-09-14
+**Updated:** 2026-09-15
 
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
@@ -78,14 +78,17 @@ happened rather than only in the app.
 
     **The app is installed on an Android handset and running standalone**, and the invitation
     link was confirmed correct on production after #16 deployed.
-11. 🔄 **Phase 4.3 — web push, assignment notifications.** PR #18, merged 26 Aug 2026 and
+11. ✅ **Phase 4.3 — web push, assignment notifications.** PR #18, merged 26 Aug 2026 and
     auto-deployed, and `20260826000001_push_subscriptions` applied to **prod** the same day —
     CLI re-linked to dev afterwards and checked. Being assigned a task by another adult pushes
     to whatever devices that person has turned on, from the notification bell. **Scheduled
     reminders are deliberately not in it** — see the decisions log for 26 Aug 2026.
 
-    **Not finished.** Prod has no VAPID pair, so subscribing there answers 503 and nothing can
-    be sent. *Done* means a real notification arriving on the handset (§Open items 2).
+    **A notification arrived on the handset on 15 Sep 2026**, from the installed app on prod,
+    which is what *done* meant. The VAPID pair had been in Vercel since 26 Aug — Production scope,
+    all three variables — and every merge since had rebuilt with it. So the phase had been
+    finished for nearly three weeks and the page said otherwise, because the only thing left was a
+    test nobody had run (§Open items 2).
 12. ✅ **Parallel-session guard — 26 Aug 2026.** A worktree per session, `npm run session`
     (`scripts/session-check.mjs`, on a `SessionStart` hook) and
     [WORKSTREAMS.md](WORKSTREAMS.md), the claim board. Prompted by two sessions colliding in one
@@ -342,7 +345,7 @@ paper. Met.
 |---|---|---|
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
-| 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | ✅ PR #18, merged 26 Aug 2026 — prod VAPID pair outstanding |
+| 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | ✅ Complete — PR #18, and a notification confirmed on the handset 15 Sep 2026 |
 | 4.4 | **Google and Microsoft** OAuth — **additive**, not a replacement for email/password | After 4.11 |
 | 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
@@ -644,14 +647,11 @@ all.
    install offer itself**, since it is already installed and Chrome will not offer again. If it
    matters, confirm it from a second device or a fresh browser profile — or accept the code
    reading, which is that suppressing it was the only thing stopping it ([KB.md](KB.md) #35).
-2. **Generate the production VAPID pair and set it in Vercel.** The code and the migration are
-   both live as of 26 Aug 2026; this is the only thing between them and a working notification.
-   Dev has its own pair in `.env.local`; prod needs a different one, and until it exists push
-   subscribes answer 503 and nothing can be sent. Vercel applies new variables to **new
-   deployments only**, so redeploy after adding them. `npx web-push generate-vapid-keys`, then
-   `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` in the Production
-   scope ([KB.md](KB.md) #38). Then confirm a real assignment notification arrives on the
-   handset — that is what closes 4.3.
+2. ✅ **Push works on prod**, confirmed on the handset 15 Sep 2026. The VAPID pair had been in
+   Vercel since 26 Aug 2026 in the Production scope, and this item claimed otherwise for three
+   weeks: what was outstanding was the *test*, and the item was written as though it were the
+   *setup*. An item that names the wrong remaining step is worse than one that is merely stale —
+   it sends somebody to redo work that was already done.
 3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
    it, to confirm the `auth_rls_initplan` findings clear.
 4. **Leaked password protection — now one toggle, and nobody has flipped it.** Authentication →
