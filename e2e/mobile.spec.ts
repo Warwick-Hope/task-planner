@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { taskRow, deleteTaskRow, uniqueTitle } from './helpers'
 
 /**
@@ -80,6 +80,73 @@ test('every section is reachable from the tab bar or its More sheet', async ({ p
   await sheet.getByRole('link', { name: 'Brain dump' }).click()
   await expect(page).toHaveURL(/\/brain-dump/)
   await expect(sheet).toBeHidden()
+})
+
+/**
+ * The meal library's add-ingredient form, which the route sweep above cannot
+ * judge: the form only exists after a click, and each meal card carries
+ * `overflow-hidden`, which the overflow helper treats as a deliberate clip and
+ * skips.
+ *
+ * It also does not assert overflow, because that is not how this broke. Five
+ * controls in one row do not run off the side — flexbox shrinks them instead,
+ * to an ingredient field 90px wide. What ran off the side was the *zoomed*
+ * page: a phone browser zooms in when it focuses an input whose font is under
+ * 16px, and the row that just fitted no longer did. So the two things checked
+ * here are the two that were actually wrong — a usable width, and a font that
+ * does not trigger the zoom.
+ */
+test('the add-ingredient form is usable on a phone', async ({ page, request }) => {
+  const created = await request.post('/api/household', {
+    data: { name: `[e2e] meals ${Date.now()}` },
+  })
+  expect(created.ok(), `household create failed: ${created.status()}`).toBe(true)
+  const { workspaceId } = await created.json()
+
+  const mealName = '[e2e] Toad in the Hole'
+  const meal = await request.post(`/api/household/${workspaceId}/meals`, {
+    data: { name: mealName },
+  })
+  expect(meal.ok(), `meal create failed: ${meal.status()}`).toBe(true)
+
+  await page.goto(`/household/${workspaceId}/meals/library`)
+  await page.getByRole('button', { name: /Toad in the Hole/ }).click()
+  await page.getByRole('button', { name: '+ Add ingredient' }).click()
+
+  const ingredient = page.getByPlaceholder('Ingredient')
+  await expect(ingredient).toBeVisible()
+
+  const box = await ingredient.boundingBox()
+  expect(box!.width, 'the ingredient field is too narrow to type a name into').toBeGreaterThan(
+    200
+  )
+
+  const fontSize = await ingredient.evaluate((el) => parseFloat(getComputedStyle(el).fontSize))
+  expect(fontSize, 'under 16px makes the phone zoom in when the field is focused').
+    toBeGreaterThanOrEqual(16)
+
+  // Every control on screen, and the form still saves.
+  const width = page.viewportSize()!.width
+  const controls: Array<[string, Locator]> = [
+    ['Ingredient', ingredient],
+    ['Qty', page.getByPlaceholder('Qty')],
+    ['Unit', page.getByPlaceholder('Unit')],
+    ['Add', page.getByRole('button', { name: 'Add', exact: true })],
+    ['Cancel', page.getByRole('button', { name: 'Cancel adding ingredient' })],
+  ]
+  for (const [label, control] of controls) {
+    await expect(control, `${label} is not on screen`).toBeVisible()
+    const r = await control.boundingBox()
+    expect(r!.x, `${label} starts off the left of the screen`).toBeGreaterThanOrEqual(-1)
+    expect(r!.x + r!.width, `${label} runs past the right of the screen`).toBeLessThanOrEqual(
+      width + 1
+    )
+  }
+
+  await ingredient.fill('Sausages')
+  await page.getByPlaceholder('Qty').fill('8')
+  await page.getByRole('button', { name: 'Add', exact: true }).click()
+  await expect(page.getByText('Sausages')).toBeVisible()
 })
 
 test('task row actions are reachable without hovering', async ({ page }) => {

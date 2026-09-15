@@ -560,22 +560,39 @@ export default function TaskForm({
         )}
       </div>
 
-      {/* Categories — top-level are group headers; children are selectable (single select) */}
+      {/* Categories — the top-level one is selectable too, not just a group header.
+          A task may sit in "Work" itself rather than in any of its subcategories,
+          which the API has always allowed and this picker used to refuse. */}
       {categoryGroups.length > 0 && (
         <div>
-          <p className="block text-sm font-medium text-gray-700 mb-3">Category</p>
+          <p className="block text-sm font-medium text-gray-700 mb-1">Category</p>
+          <p className="text-xs text-gray-400 mb-3">
+            Pick a subcategory, or the top-level category on its own.
+          </p>
           <div className="space-y-3">
-            {categoryGroups.map(({ parent, children }) => (
+            {categoryGroups.map(({ parent, children }) => {
+              const parentColour = parent.colour ?? DEFAULT_CATEGORY_COLOUR
+              const parentSelected = selectedCategoryId === parent.id
+              return (
               <div key={parent.id}>
-                <div className="flex items-center gap-1.5 mb-1.5">
+                {/* A subcategory can share its parent's name, so the accessible
+                    name says which of the two this chip is. */}
+                <button
+                  type="button"
+                  aria-label={`${parent.name} (top level)`}
+                  aria-pressed={parentSelected}
+                  onClick={() => setSelectedCategoryId(parentSelected ? null : parent.id)}
+                  className={`-ml-2 flex items-center gap-1.5 mb-1.5 rounded-full px-2 py-1.5 sm:py-1 text-xs font-medium uppercase tracking-wide transition-colors ${
+                    parentSelected ? 'text-white' : 'text-gray-500 hover:bg-gray-100'
+                  }`}
+                  style={parentSelected ? { backgroundColor: parentColour } : {}}
+                >
                   <span
                     className="w-2.5 h-2.5 rounded-full shrink-0"
-                    style={{ backgroundColor: parent.colour ?? DEFAULT_CATEGORY_COLOUR }}
+                    style={{ backgroundColor: parentSelected ? '#fff' : parentColour }}
                   />
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-                    {parent.name}
-                  </span>
-                </div>
+                  {parent.name}
+                </button>
 
                 {children.length > 0 ? (
                   <div className="flex flex-wrap gap-2 pl-4">
@@ -607,7 +624,8 @@ export default function TaskForm({
                   </p>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         </div>
       )}

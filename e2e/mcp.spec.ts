@@ -161,6 +161,36 @@ test.describe('the transport', () => {
   })
 })
 
+const iso = (d: Date) =>
+  `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+
+/** A date relative to today, as YYYY-MM-DD in local time. */
+function daysFromToday(offset: number): string {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() + offset)
+  return iso(d)
+}
+
+/**
+ * The next Monday strictly after today.
+ *
+ * A stored recurrence rule carries no DTSTART, so rrule counts occurrences
+ * from the moment it parses the string — today — rather than from the due date
+ * that was missed. The follow-up is therefore the next Monday from now, whatever
+ * the completed task was due. This was a hard-coded pair of dates until
+ * 15 Sep 2026, when the later one went by and the test began failing on a clock
+ * rather than on a change (KB.md #59).
+ */
+function nextMonday(): string {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  do {
+    d.setDate(d.getDate() + 1)
+  } while (d.getDay() !== 1)
+  return iso(d)
+}
+
 test.describe('the tool surface', () => {
   test('tools/list is the seven tools, each with a schema', async ({ request }) => {
     const { body } = await rpc(request, 'tools/list')
@@ -336,7 +366,7 @@ test.describe('the tool surface', () => {
     const recurring = await request.post('/api/tasks', {
       data: {
         title: recurringTitle,
-        due_date: '2026-09-07',
+        due_date: daysFromToday(-7),
         is_recurring: true,
         recurrence_rule: 'FREQ=WEEKLY;BYDAY=MO',
       },
@@ -351,10 +381,10 @@ test.describe('the tool surface', () => {
 
     const next = await (await request.get(`/api/tasks/${advanced.next_task_id}`)).json()
     expect(next.task.title).toBe(recurringTitle)
-    expect(next.task.due_date).toBe('2026-09-14')
+    expect(next.task.due_date).toBe(nextMonday())
     expect(next.task.status).toBe('not_started')
     // The follow-up is dated by lib/horizon.ts, not copied from the original.
-    expect(next.task.horizon_day).toBe('2026-09-14')
+    expect(next.task.horizon_day).toBe(nextMonday())
 
     await request.delete(`/api/tasks/${plainId}`)
     await request.delete(`/api/tasks/${recurringId}`)

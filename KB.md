@@ -145,6 +145,10 @@ Every entry, in number order. Statuses are the point of this table.
 | 53 | A category could be written across workspaces, because only the UI ever stopped it | The app | Live |
 | 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
+| 56 | A filter default that is not "everything" changes what an absent parameter means | The app | Live |
+| 57 | The category pickers refused a top-level category that the API had always accepted | The app | Live |
+| 58 | A cramped row does not overflow, it shrinks — and a 14px input zooms the phone | The app | Live |
+| 59 | A hard-coded date in a spec fails on the clock, not on a change | The e2e suite | Live |
 
 ---
 
@@ -531,6 +535,22 @@ await request.post('/api/mcp', {
 
 Worth knowing beyond this one test: any spec asserting on how a route handles a *malformed*
 payload is at risk of asserting on how it handles a well-formed one instead.
+
+### 59. A hard-coded date in a spec fails on the clock, not on a change
+
+`mcp.spec.ts` seeded a weekly task due `2026-09-07` and asserted its follow-up came out
+`2026-09-14`. It passed for a week and then failed every run from 15 Sep 2026, on a branch that
+had touched none of it — which costs more than the assertion was ever worth, because a red test
+is read as a regression first.
+
+The behaviour it was pinning is also not what the dates implied. A stored recurrence rule
+carries no DTSTART, so rrule counts occurrences from the moment it parses the string — today —
+not from the due date that was missed. Completing a weekly task that was due a fortnight ago
+schedules the next one from now, which is right, and which the two fixed dates happened to
+agree with only while today fell between them. Both are derived from `new Date()` now.
+
+Same rule anywhere else: a date in an assertion is either computed from today or it is a time
+bomb with a known fuse.
 
 ---
 
@@ -1001,6 +1021,76 @@ other branch: `router.push(next)` pushed whatever the query string said, so `?ne
 would have been an open redirect on a sign-in page. It predates 4.11 and nothing was exploiting
 it — but a `next` that now legitimately carries a query string is one somebody is more likely to
 look at.
+
+### 56. A filter default that is not "everything" changes what an absent parameter means
+
+The personal task list opened on every task the account had ever created — finished and cancelled
+included — because `?status=` absent meant no `where` clause at all. It defaults to the two open
+statuses now (`not_started`, `wip`), which is what `OPEN_STATUSES` and `statusesForFilter()` in
+[lib/task-status.ts](lib/task-status.ts) are for. Both the page query and the filter pills read
+them, so the default is stated once.
+
+**The part that is not obvious is what it did to the URL.** `TaskFilters.pushParams` dropped any
+parameter whose value was `all`, one rule shared by every filter, and that was correct for exactly
+as long as every filter defaulted to "show everything". The moment status defaulted to `open`,
+`all` stopped being the omittable value and became one that has to be *written* — and the shared
+rule deleted it on the way out, so clicking **All** navigated to the same URL and changed nothing.
+The rule is per parameter now (`PARAM_DEFAULTS`), and the e2e guard asserts `status=all` survives
+into the URL rather than only asserting the rows.
+
+An unrecognised `?status=` returns the default rather than an empty list, so a mistyped or
+stale link shows the usual list instead of zero tasks and an empty state that blames the filters.
+
+**The household task list is deliberately not changed.** It reads `?status=` but renders no filter
+row, so the same default there would hide every finished task with no control to bring them back.
+Defaulting it to Open and giving it the filter row are one piece of work, not two.
+
+---
+
+### 57. The category pickers refused a top-level category that the API had always accepted
+
+A task's `category_id` may be any category in the task's own workspace. That is the whole rule —
+`checkCategory` in [lib/tasks-server.ts](lib/tasks-server.ts) compares workspaces and nothing else
+(#53). Neither picker in the app agreed. In the task form a parent *with* children was a group
+header, and in the brain-dump review panel it was an `<optgroup>` label; both are markup that
+cannot be chosen. A parent with *no* children was selectable in both, which is why it read as a
+deliberate hierarchy rule rather than an oversight.
+
+The result was a task the connector could file under "Work" and the app could not, with nothing
+anywhere saying the two disagreed. Both pickers offer the parent now.
+
+**Changing that forced a change to the filter, which is the part worth remembering.** The
+category filter's parent pill stood for its children's ids — not its own — so a task tagged with
+the parent would have been invisible under the filter for the very category it is in. A pill now
+stands for the bucket: the parent and everything under it. The expanded subcategory row lists the
+parent first, labelled "(top level)", so the bucket can be narrowed to the parent alone and
+cleared in one place.
+
+The parent chip in the task form carries `aria-label="<name> (top level)"` because a subcategory
+is allowed to share its parent's name, and two chips reading "Work" are indistinguishable to
+anything that cannot see the indentation. The e2e guard addresses it by that name.
+
+### 58. A cramped row does not overflow, it shrinks — and a 14px input zooms the phone
+
+The meal library's add-ingredient form is five controls — name, quantity, unit, Add, cancel —
+laid out in one flex row. On a phone it was unusable, and the two reasons are both worth
+having.
+
+**It did not overflow.** Measured at a 393px viewport every control was on screen, because
+flexbox shrinks children before it overflows a container: the ingredient field came out 90px
+wide and the quantity and unit fields 43px each. A guard that only asks "does anything stick
+out past the edge" says yes to that. `e2e/mobile.spec.ts` asks for a *usable* width instead.
+
+**What did run off the side was the zoomed page.** A phone browser zooms in when it focuses an
+input whose font is under 16px, and every input in this app is `text-sm` — 14px. Focus the
+ingredient field, the viewport narrows to roughly 320 CSS px, and the row that just fitted no
+longer does. The meal forms are `text-base sm:text-sm` now, which is the whole fix for the
+zoom. **Every other form in the app is still 14px and still zooms** — the same defect, not yet
+swept.
+
+The page-wide overflow guard could not have caught any of this anyway. The form only exists
+after a click, and each meal card carries `overflow-hidden`, which `overflowingElements()`
+treats as a deliberate sideways scroller and skips (#18).
 
 ---
 
