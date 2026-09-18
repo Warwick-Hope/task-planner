@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import GoogleButton from '@/components/auth/GoogleButton'
 
 /**
  * Where to go after signing in — a path on this site, or the dashboard.
@@ -52,6 +53,10 @@ export default function LoginForm({ next }: { next?: string }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
       <h1 className="text-2xl font-semibold text-gray-900 mb-1">Sign in</h1>
       <p className="text-sm text-gray-500 mb-6">Task Planner</p>
+
+      <div className="mb-6">
+        <GoogleButton next={next} label="Continue with Google" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>

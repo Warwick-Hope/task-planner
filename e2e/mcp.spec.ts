@@ -332,11 +332,27 @@ test.describe('the tool surface', () => {
 
     // A recurring task is created through the API, since the tool surface
     // deliberately does not expose recurrence rules to a model.
+    //
+    // The dates are computed from today rather than written down. They were
+    // fixed strings until 18 Sep 2026, when this test failed for the calendar
+    // rather than for a defect: a stored rule carries no DTSTART, so `rrule`
+    // takes it from the clock at parse time and **occurrences before now do not
+    // exist**. A due date in the past therefore advances to the next matching
+    // day after *today*, not after the due date — correct behaviour, since a
+    // task dated in the past is no use, and invisible until a test hard-codes a
+    // date and then ages past it (KB.md #49).
+    const nextMonday = new Date()
+    nextMonday.setUTCDate(nextMonday.getUTCDate() + ((8 - nextMonday.getUTCDay()) % 7 || 7))
+    const dueDate = nextMonday.toISOString().split('T')[0]
+    const weekLater = new Date(nextMonday)
+    weekLater.setUTCDate(weekLater.getUTCDate() + 7)
+    const nextDueDate = weekLater.toISOString().split('T')[0]
+
     const recurringTitle = uniqueTitle('mcp weekly')
     const recurring = await request.post('/api/tasks', {
       data: {
         title: recurringTitle,
-        due_date: '2026-09-07',
+        due_date: dueDate,
         is_recurring: true,
         recurrence_rule: 'FREQ=WEEKLY;BYDAY=MO',
       },
@@ -351,10 +367,10 @@ test.describe('the tool surface', () => {
 
     const next = await (await request.get(`/api/tasks/${advanced.next_task_id}`)).json()
     expect(next.task.title).toBe(recurringTitle)
-    expect(next.task.due_date).toBe('2026-09-14')
+    expect(next.task.due_date, 'a week on from the one just completed').toBe(nextDueDate)
     expect(next.task.status).toBe('not_started')
     // The follow-up is dated by lib/horizon.ts, not copied from the original.
-    expect(next.task.horizon_day).toBe('2026-09-14')
+    expect(next.task.horizon_day).toBe(nextDueDate)
 
     await request.delete(`/api/tasks/${plainId}`)
     await request.delete(`/api/tasks/${recurringId}`)

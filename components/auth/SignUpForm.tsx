@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase'
 import Link from 'next/link'
+import GoogleButton from '@/components/auth/GoogleButton'
 
 export default function SignUpForm({ next }: { next?: string }) {
   const [email, setEmail] = useState('')
@@ -50,6 +51,10 @@ export default function SignUpForm({ next }: { next?: string }) {
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
       <h1 className="text-2xl font-semibold text-gray-900 mb-1">Create account</h1>
       <p className="text-sm text-gray-500 mb-6">Task Planner</p>
+
+      <div className="mb-6">
+        <GoogleButton next={next} label="Continue with Google" />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
