@@ -19,7 +19,7 @@ file wins.
 
 ## Where we are, and what's next
 
-**Updated:** 2026-09-15
+**Updated:** 2026-09-18
 
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
@@ -346,8 +346,8 @@ paper. Met.
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
 | 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | ✅ Complete — PR #18, and a notification confirmed on the handset 15 Sep 2026 |
-| 4.4 | **Google and Microsoft** OAuth — **additive**, not a replacement for email/password | After 4.11 |
-| 4.5 | Voice input — Whisper transcription into the brain dump | Not started |
+| 4.4 | **Google** OAuth — **additive**, not a replacement for email/password. Microsoft deferred | 🔄 PR #35, 18 Sep 2026 — dev only, not yet live on prod |
+| 4.5 | ~~Voice input — Whisper transcription into the brain dump~~ | **Dropped 18 Sep 2026** — Wispr Flow does it, into any text field (§Decisions log) |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
 | 4.8 | Two small fixes — the install icon's white corners, and revoking a household invitation | ✅ PR #24, 26 Aug 2026 |
@@ -679,14 +679,14 @@ all.
 8. **`shopping_list` UPDATE column rule lives only in the route layer.** RLS cannot express
    "restricted members may change `is_purchased` only". A trigger would be needed. Recorded
    rather than fixed.
-9. **Google and Microsoft SSO are one job, not two.** 4.4 named only Microsoft. Each is a
-   Supabase Auth provider toggle, a redirect URL on the allow-list and a button — the same work
-   either way, so do the pair together. Both need an app registration on the provider side,
-   which is the manual half and the reason this is listed here rather than only in §Phases.
-10. **Mint a token on prod and call one route with it.** Everything under it is done — the key
-    is in Vercel, the migration is applied, and prod answers 401 rather than 503 to an unknown
-    token, which is what proves the key is being read. What is left is one real token used once,
-    which needs a browser session on the live app and is therefore the only part nobody has done.
+9. 🔄 **Google SSO is built; Microsoft is deferred, not dropped.** The observation that the two
+   are one job still holds — a provider toggle, a redirect URL on the allow-list and a button —
+   so adding Microsoft later is the manual half only: an app registration on their side, then the
+   same credentials into both Supabase projects. **Google is on dev; prod needs the same client
+   ID and secret pasted into its Auth provider settings before it works there** (§Open items 15).
+10. ✅ **A real token was minted on prod and used**, 13 Sep 2026 — it is what connected Claude
+    Code to `/api/mcp`, and it was revoked the same day after being pasted into a chat. This item
+    said otherwise for five days.
 11. **`firstOccurrence` has the same day-vs-moment bug `nextOccurrence` had.** It asks for the
     first occurrence on or after midday, so an occurrence earlier that day is missed and the task
     form offers the next period instead of today ([KB.md](KB.md) #49). Left alone on purpose:

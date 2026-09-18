@@ -145,6 +145,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 53 | A category could be written across workspaces, because only the UI ever stopped it | The app | Live |
 | 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
+| 56 | A stored recurrence rule has no DTSTART, so it has no past | The app | Live |
 
 ---
 
@@ -1001,6 +1002,25 @@ other branch: `router.push(next)` pushed whatever the query string said, so `?ne
 would have been an open redirect on a sign-in page. It predates 4.11 and nothing was exploiting
 it — but a `next` that now legitimately carries a query string is one somebody is more likely to
 look at.
+
+### 56. A stored recurrence rule has no DTSTART, so it has no past
+
+`rrule` takes its start date from **the clock at parse time** when the stored string carries no
+`DTSTART`, which every rule in this app does. Occurrences before that moment therefore do not
+exist, and two consequences follow:
+
+- **Completing an overdue recurring task advances to the next matching day after *today***, not
+  after its own due date. A weekly Monday task three weeks late produces one due this coming
+  Monday rather than three weeks ago. That is the behaviour you want — a task dated in the past
+  is no use to anyone — and it is not what the code appears to say, which is
+  `nextOccurrence(rule, task.due_date)`.
+- **A test that hard-codes dates ages into a failure.** `e2e/mcp.spec.ts` asserted a task due
+  7 Sep 2026 advanced to 14 Sep; it passed for three weeks and failed on 18 Sep, because by then
+  the parse-time start was later than both. It computes its dates from today now, which is the
+  general rule: **in a suite that runs for years, a fixed future date is a fixed expiry date.**
+
+Related: #49, where the same missing `DTSTART` made "the next occurrence" depend on the time of
+day.
 
 ---
 
