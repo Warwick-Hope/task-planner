@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 18 Sep 2026 | `feat/google-sso` | Phase 4.4 — Continue with Google, and retiring 4.5 | `PLAN.md` §"Where we are", §Phases 4.4/4.5, §Open items 9/10, §Decisions log; `KB.md` §The app |
 
-Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch

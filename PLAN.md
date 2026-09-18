@@ -175,20 +175,31 @@ happened rather than only in the app.
     the phone by OAuth, and a task gets in from wherever the thought happened. What is next is
     ordinary again: SSO (4.4, now Google *and* Microsoft), push reminders, and 5.6 only if the
     unattended case still looks worth it after living with this.
-17. ✅ **Supabase Pro — agreed 26 Aug 2026, upgraded 13 Sep 2026.** It stops the live app
+17. 🔄 **Phase 4.4 — sign in with Google.** PR #35, 18 Sep 2026. A "Continue with Google" button
+    on the sign-in and sign-up pages, **additive**: email and password stay, because removing that
+    path would strand the e2e accounts and the invitation flow (§Decisions log, 14 Aug 2026).
+    Nothing else was needed — `/api/auth/callback` already exchanges a code for a session, and a
+    brand-new account lands with no profile, which `AppShell` already sends to `/onboarding`.
+
+    **Microsoft is deferred rather than dropped**, and is now the manual half only: an app
+    registration, then the same pair of fields in both Supabase projects (§Open items 9).
+
+    **Not finished.** The credentials are on the dev project only; prod needs the same client ID
+    and secret before the button works there (§Open items 17).
+18. ✅ **Supabase Pro — agreed 26 Aug 2026, upgraded 13 Sep 2026.** It stops the live app
     sleeping and unblocks leaked-password protection. It is billed **per organisation**, so both
     projects are on it and "dev stays free" did not survive contact with the billing model
     (§Open items 5, [KB.md](KB.md) #4). Leaked-password protection is still a toggle nobody has
     flipped (§Open items 4).
-18. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+19. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-19. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+20. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-20. **Open manual items** — see §Open items. Everything the connector forced is settled: the
+21. **Open manual items** — see §Open items. Everything the connector forced is settled: the
     quota, the Pro decision and the upgrade, both migrations on prod, and a real client on each
     end. What is left there is older than any of it — the **prod VAPID pair**, which is all that
     stands between 4.3 and a working notification, and the **leaked-password toggle** that Pro
@@ -683,7 +694,7 @@ all.
    are one job still holds — a provider toggle, a redirect URL on the allow-list and a button —
    so adding Microsoft later is the manual half only: an app registration on their side, then the
    same credentials into both Supabase projects. **Google is on dev; prod needs the same client
-   ID and secret pasted into its Auth provider settings before it works there** (§Open items 15).
+   ID and secret pasted into its Auth provider settings before it works there** (§Open items 17).
 10. ✅ **A real token was minted on prod and used**, 13 Sep 2026 — it is what connected Claude
     Code to `/api/mcp`, and it was revoked the same day after being pasted into a chat. This item
     said otherwise for five days.
@@ -726,6 +737,11 @@ all.
 16. ✅ **Clarity is a claude.ai custom connector**, 14 Sep 2026. Added by URL with nothing pasted:
     the dialog marked OAuth and dynamic registration as *Detected*, and the flow ran to the
     consent screen and back. **This closed 4.11.**
+17. **Put the Google credentials into the prod Supabase project.** Dev has them; prod does not, so
+    the button is there and fails on the live app until it does. Authentication → Sign In /
+    Providers → Google on `ialovkohwdlkpgsrqrjo`, the same client ID and secret — the Google client
+    already lists both projects' callback URLs, so nothing changes on Google's side. Then sign in
+    with Google once on prod, which is what closes 4.4.
 
 ---
 
@@ -938,3 +954,16 @@ re-litigated.**
   refresh and belong to a client; a personal access token does none of those. What they share is
   everything after the lookup, which is why `resolveBearer` takes the resolver's name as an
   argument and no route can tell the two apart ([KB.md](KB.md) #54).
+
+- **18 Sep 2026** — **4.5 voice input is dropped, not deferred.** Wispr Flow does speech to text
+  into any text field, including the brain dump's, on the machine and on the phone. Building a
+  Whisper pipeline would reproduce a tool that already works everywhere rather than only in this
+  app — the same reasoning that took the four M365 integrations out of Phase 5.6: the general
+  tool beats the built-in one when it is already there.
+
+- **18 Sep 2026** — **Google SSO first, Microsoft only if it is ever wanted.** §Open items 9 said
+  to do the pair together because the work is identical, and that is still true of the *code* — it
+  is a provider toggle and a button. What is not shared is the manual half: an app registration
+  per provider, a consent screen per provider, and a second set of credentials in both Supabase
+  projects. With one person signing in, the second provider buys nothing, so it waits for someone
+  who wants it.
