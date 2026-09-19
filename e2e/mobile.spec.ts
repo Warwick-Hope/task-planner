@@ -38,6 +38,31 @@ async function overflowingElements(page: Page): Promise<string[]> {
   })
 }
 
+/**
+ * Fields a phone browser would zoom the page for.
+ *
+ * Under 16px, focusing an input zooms in and never zooms back out — and the
+ * zoomed viewport is what puts a row off the side of the screen. `globals.css`
+ * lifts every field on small screens; this is the check that the rule still
+ * wins, because for a while it did not and read as though it did (KB.md #59).
+ */
+async function smallFields(page: Page): Promise<string[]> {
+  return page.evaluate(() => {
+    const small: string[] = []
+    document.querySelectorAll('input, select, textarea').forEach((el) => {
+      const r = el.getBoundingClientRect()
+      if (r.width === 0 || r.height === 0) return
+      const type = (el as HTMLInputElement).type
+      if (type === 'checkbox' || type === 'radio' || type === 'hidden') return
+      const size = parseFloat(getComputedStyle(el).fontSize)
+      if (size >= 16) return
+      const name = (el as HTMLInputElement).placeholder || el.getAttribute('aria-label') || type
+      small.push(`${el.tagName.toLowerCase()} "${name}" at ${size}px`)
+    })
+    return small
+  })
+}
+
 const PERSONAL_ROUTES = [
   '/dashboard',
   '/tasks',
@@ -56,6 +81,19 @@ for (const route of PERSONAL_ROUTES) {
 
     const offenders = await overflowingElements(page)
     expect(offenders, `${route} has content past the edge of the screen`).toEqual([])
+
+    const small = await smallFields(page)
+    expect(small, `${route} has fields a phone would zoom in on`).toEqual([])
+  })
+}
+
+// The forms live behind their own routes, and a zoomed form is the worst case:
+// the zoom happens on focus, which is the moment the layout has to hold.
+for (const route of ['/tasks/new', '/brain-dump', '/roles', '/mission']) {
+  test(`${route} has no field a phone would zoom in on`, async ({ page }) => {
+    await page.goto(route)
+    const small = await smallFields(page)
+    expect(small, `${route} has fields a phone would zoom in on`).toEqual([])
   })
 }
 

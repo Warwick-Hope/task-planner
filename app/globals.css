@@ -25,15 +25,21 @@ body {
 }
 
 /*
- * Anything under 16px makes mobile Safari zoom the page in when the field takes
+ * Anything under 16px makes a phone browser zoom the page in when the field takes
  * focus, and it never zooms back out. The app styles its inputs text-sm (14px),
  * so lift them on small screens rather than annotating every field.
+ *
+ * `!important` is the whole point of the rule, not a shortcut around one.
+ * Beating `.text-sm` is what it exists to do, and an element selector cannot:
+ * it is (0,0,1) against a class at (0,1,0), so this rule sat here losing every
+ * time while reading as though it worked. The meal library was measured at 14px
+ * on a Pixel 5 viewport with this file in place ([KB.md](KB.md) #59).
  */
 @media (max-width: 639px) {
   input,
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 

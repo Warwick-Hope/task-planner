@@ -206,7 +206,10 @@ happened rather than only in the app.
       row: they did not overflow, they shrank, to a 90px field for an ingredient name. What
       ran off the side of the screen was the *zoomed* page — a phone zooms in when it focuses
       an input under 16px, and the row that just fitted then did not. The forms stack below
-      `sm` and their inputs are 16px there ([KB.md](KB.md) #59).
+      `sm`, and every field in the app is 16px on a phone — which turned out to be one
+      `!important` in `app/globals.css` rather than the twenty-file sweep it looked like.
+      The rule was already there and had been losing to `text-sm` on specificity since it
+      was written ([KB.md](KB.md) #59).
     - **A task can be marked done wherever it appears.** The calendar chips, the plan board and
       the "needs attention" panel showed a task and offered no way to finish it — the panel
       worst of all, since "this was due last month" is most often answered with "it is done".
@@ -690,12 +693,14 @@ all.
    weeks: what was outstanding was the *test*, and the item was written as though it were the
    *setup*. An item that names the wrong remaining step is worse than one that is merely stale —
    it sends somebody to redo work that was already done.
-3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
-   it, to confirm the `auth_rls_initplan` findings clear.
-4. **Leaked password protection — now one toggle, and nobody has flipped it.** Authentication →
-   Providers → Email on **prod**, and the setting is Pro-plan and above ([KB.md](KB.md) #12). The
-   organisation went Pro on 13 Sep 2026, so it is available on both projects now; prod is the one
-   that matters, because those are the live passwords.
+3. 🔄 **Supabase Performance advisor re-run on prod, 19 Sep 2026 — 22 suggestions remain.**
+   What is *not* known is whether any of them are still `auth_rls_initplan`, which is the
+   only question this item was asking. Read the list and either close this or record what is
+   left; a count on its own does not answer it.
+4. ✅ **Leaked password protection is on, on prod** — 19 Sep 2026, Authentication → Providers
+   → Email. Pro unblocked it on 13 Sep 2026 and it stayed unflipped for six days
+   ([KB.md](KB.md) #12). Dev is left alone deliberately: the e2e accounts use fixed passwords
+   and a breach check would be a new way for the suite to fail.
 5. ✅ **Supabase Pro — upgraded 13 Sep 2026**, and it landed differently from the decision.
    **Pro is billed per organisation, not per project**, and both projects live in
    `Warwick-Hope's Personal`, so **dev is on Pro too**. "Dev stays free" (26 Aug 2026) was never

@@ -1076,6 +1076,15 @@ anything that cannot see the indentation. The e2e guard addresses it by that nam
 
 ### 59. A cramped row does not overflow, it shrinks — and a 14px input zooms the phone
 
+> **Corrected 19 Sep 2026.** This entry first said the zoom was fixed by putting
+> `text-base sm:text-sm` on the meal forms. It was not — `app/globals.css` had already
+> carried a rule lifting every field to 16px on small screens, and the rule was losing to
+> Tailwind's `text-sm` on specificity: an element selector is (0,0,1) against a class at
+> (0,1,0). It needed `!important`, which is what the rule exists to do. The meal forms are
+> back to `text-sm` like everything else, and one line fixed every form in the app rather
+> than twenty files. **A rule that reads as though it works is worse than no rule** — this
+> one sat in the stylesheet, with a comment explaining its purpose, doing nothing.
+
 The meal library's add-ingredient form is five controls — name, quantity, unit, Add, cancel —
 laid out in one flex row. On a phone it was unusable, and the two reasons are both worth
 having.
@@ -1088,9 +1097,9 @@ out past the edge" says yes to that. `e2e/mobile.spec.ts` asks for a *usable* wi
 **What did run off the side was the zoomed page.** A phone browser zooms in when it focuses an
 input whose font is under 16px, and every input in this app is `text-sm` — 14px. Focus the
 ingredient field, the viewport narrows to roughly 320 CSS px, and the row that just fitted no
-longer does. The meal forms are `text-base sm:text-sm` now, which is the whole fix for the
-zoom. **Every other form in the app is still 14px and still zooms** — the same defect, not yet
-swept.
+longer does. One `!important` in `app/globals.css` is the whole fix for the
+zoom. Every form in the app was affected, not only this one: measured on a Pixel 5 viewport,
+`/tasks/new` served its title input and notes textarea at 14px.
 
 The page-wide overflow guard could not have caught any of this anyway. The form only exists
 after a click, and each meal card carries `overflow-hidden`, which `overflowingElements()`

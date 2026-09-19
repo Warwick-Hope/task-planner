@@ -186,7 +186,7 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
                 value={editMealName}
                 onChange={(e) => setEditMealName(e.target.value)}
                 autoFocus
-                className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-base sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
               <div className="flex gap-2">
                 <button
@@ -286,7 +286,7 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
                     placeholder="Ingredient"
                     required
                     autoFocus
-                    className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-base sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
                   <div className="flex gap-2">
                     <input
@@ -294,14 +294,14 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
                       value={ingredientForm.quantity}
                       onChange={(e) => setIngredientForm((f) => ({ ...f, quantity: e.target.value }))}
                       placeholder="Qty"
-                      className="w-1/2 sm:w-16 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-base sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-1/2 sm:w-16 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                     <input
                       type="text"
                       value={ingredientForm.unit}
                       onChange={(e) => setIngredientForm((f) => ({ ...f, unit: e.target.value }))}
                       placeholder="Unit"
-                      className="w-1/2 sm:w-16 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-base sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      className="w-1/2 sm:w-16 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                     />
                   </div>
                   <div className="flex gap-2">
@@ -345,7 +345,7 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
             placeholder="Meal name"
             required
             autoFocus
-            className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-2 text-base sm:text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
           <div className="flex gap-2">
             <button type="submit" className="flex-1 sm:flex-none rounded-md bg-blue-600 px-4 py-2.5 sm:py-2 text-sm text-white hover:bg-blue-700 transition-colors">Add</button>
