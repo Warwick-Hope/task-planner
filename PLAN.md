@@ -19,7 +19,7 @@ file wins.
 
 ## Where we are, and what's next
 
-**Updated:** 2026-09-18
+**Updated:** 2026-09-19
 
 Phases 0 to 3 are complete and running in production at
 <https://task-planner-nine-sigma.vercel.app>. Security hardening tiers 1 and 2 shipped to prod
@@ -175,7 +175,7 @@ happened rather than only in the app.
     the phone by OAuth, and a task gets in from wherever the thought happened. What is next is
     ordinary again: SSO (4.4, now Google *and* Microsoft), push reminders, and 5.6 only if the
     unattended case still looks worth it after living with this.
-17. 🔄 **Phase 4.4 — sign in with Google.** PR #35, 18 Sep 2026. A "Continue with Google" button
+17. ✅ **Phase 4.4 — sign in with Google.** PR #35, merged 18 Sep 2026, working on prod 19 Sep. A "Continue with Google" button
     on the sign-in and sign-up pages, **additive**: email and password stay, because removing that
     path would strand the e2e accounts and the invitation flow (§Decisions log, 14 Aug 2026).
     Nothing else was needed — `/api/auth/callback` already exchanges a code for a session, and a
@@ -184,8 +184,10 @@ happened rather than only in the app.
     **Microsoft is deferred rather than dropped**, and is now the manual half only: an app
     registration, then the same pair of fields in both Supabase projects (§Open items 9).
 
-    **Not finished.** The credentials are on the dev project only; prod needs the same client ID
-    and secret before the button works there (§Open items 17).
+    **Signed in with Google on the live app on 19 Sep 2026**, from the phone, which closes it.
+    The consent screen names the Supabase project host rather than Clarity — Google shows the
+    redirect host unless the consent screen carries an authorised domain you have verified, and
+    `supabase.co` is not one anybody here can verify. Parked deliberately (§Open items 18).
 18. ✅ **Supabase Pro — agreed 26 Aug 2026, upgraded 13 Sep 2026.** It stops the live app
     sleeping and unblocks leaked-password protection. It is billed **per organisation**, so both
     projects are on it and "dev stays free" did not survive contact with the billing model
@@ -357,7 +359,7 @@ paper. Met.
 | 4.1 | Mobile-optimised layouts throughout | ✅ merged 25 Aug 2026 — real-phone check outstanding |
 | 4.2 | Progressive Web App — manifest, service worker, installable | ✅ PR #14, 25 Aug 2026 — installed and running standalone on Android |
 | 4.3 | Web push notifications — assignments. Reminders deferred, 26 Aug 2026 | ✅ Complete — PR #18, and a notification confirmed on the handset 15 Sep 2026 |
-| 4.4 | **Google** OAuth — **additive**, not a replacement for email/password. Microsoft deferred | 🔄 PR #35, 18 Sep 2026 — dev only, not yet live on prod |
+| 4.4 | **Google** OAuth — **additive**, not a replacement for email/password. Microsoft deferred | ✅ Complete — PR #35, working on prod 19 Sep 2026 |
 | 4.5 | ~~Voice input — Whisper transcription into the brain dump~~ | **Dropped 18 Sep 2026** — Wispr Flow does it, into any text field (§Decisions log) |
 | 4.6 | Billing — Stripe, free personal tier vs paid household tier | Deferred until an external household wants in |
 | 4.7 | Onboarding improvements — guided household setup | Not started |
@@ -737,11 +739,17 @@ all.
 16. ✅ **Clarity is a claude.ai custom connector**, 14 Sep 2026. Added by URL with nothing pasted:
     the dialog marked OAuth and dynamic registration as *Detected*, and the flow ran to the
     consent screen and back. **This closed 4.11.**
-17. **Put the Google credentials into the prod Supabase project.** Dev has them; prod does not, so
-    the button is there and fails on the live app until it does. Authentication → Sign In /
-    Providers → Google on `ialovkohwdlkpgsrqrjo`, the same client ID and secret — the Google client
-    already lists both projects' callback URLs, so nothing changes on Google's side. Then sign in
-    with Google once on prod, which is what closes 4.4.
+17. ✅ **Google sign-in works on prod**, 19 Sep 2026 — the credentials are in both projects and
+    the round trip was completed from the phone. **This closed 4.4.**
+18. **Google's consent screen says `ialovkohwdlkpgsrqrjo.supabase.co`, not Clarity — parked
+    19 Sep 2026.** Google shows the redirect host unless the OAuth consent screen carries an
+    *authorised domain* verified as yours, and `supabase.co` cannot be verified by us. The fix is a
+    custom auth domain on the Supabase project, so the callback becomes something like
+    `auth.<yourdomain>`, verified in Google Search Console and listed on the consent screen. That
+    needs a domain nobody here owns yet, and Supabase bills custom domains as a paid add-on per
+    project on top of Pro. **Worth revisiting only alongside moving the app itself off
+    `task-planner-nine-sigma.vercel.app`** — the two are the same decision, and neither is
+    cosmetic enough to pay for on its own.
 
 ---
 
