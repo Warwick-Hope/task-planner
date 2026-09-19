@@ -90,6 +90,9 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **The status cycle, colour inheritance, task-status toggling, drag sensors and the app shell
   are shared in `lib/` and `components/layout/`** — each was duplicated five or six times and
   had drifted. Add to them ([KB.md](KB.md) #24).
+- **A row of controls that is too wide shrinks rather than overflows, and a `text-sm` input
+  zooms a phone on focus** — the overflow guard cannot see either. Stack below `sm` and use
+  `text-base sm:text-sm` on an input ([KB.md](KB.md) #59).
 - **`group-hover` controls do not render at all on a touch screen** — show them below `md`
   ([KB.md](KB.md) #26).
 - **The service worker caches no user data and registers in production only** — adding pages or
@@ -111,6 +114,16 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
   the connector's tools both call it, and `complete_task` is separate from an update because
   completing advances a recurrence ([KB.md](KB.md) #24, #49).
+- **The status circle is [components/tasks/StatusButton.tsx](components/tasks/StatusButton.tsx),
+  not markup you write again** — it carries the touch target, the accessible name and the
+  `pointerdown` guard a draggable chip needs. Every surface that shows a task gets one
+  ([KB.md](KB.md) #60, #24).
+- **A top-level category is a valid `category_id`** — the only rule is that it belongs to the
+  task's workspace, so a picker that offers only subcategories is refusing what the API accepts,
+  and a category filter has to count the parent's own id ([KB.md](KB.md) #58).
+- **A task list defaults to Open, so an absent `?status=` means Open, not "no filter"** — the
+  statuses live in [lib/task-status.ts](lib/task-status.ts), and `all` is now the value that has
+  to be written into the URL rather than the one that is dropped from it ([KB.md](KB.md) #57).
 - **OAuth is a third credential, not a second system** — `resolveBearer` takes the resolver's
   name (`resolve_api_token` or `resolve_oauth_token`) and everything after the lookup is identical.
   `caller.via` is for logging; nothing branches on it ([KB.md](KB.md) #54).

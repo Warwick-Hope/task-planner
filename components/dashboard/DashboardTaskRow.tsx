@@ -1,17 +1,10 @@
 'use client'
 
 import Link from 'next/link'
-import type { Task, Category, TaskStatus } from '@/types'
-import { STATUS_DISPLAY } from '@/lib/task-status'
+import type { Task, Category } from '@/types'
 import { categoryColour } from '@/lib/category-colour'
 import { useTaskStatus } from '@/lib/use-task-status'
-
-const STATUS_CLASS: Record<TaskStatus, string> = {
-  not_started: 'text-gray-300 hover:text-gray-500',
-  wip: 'text-blue-500 hover:text-blue-600',
-  done: 'text-green-500 hover:text-green-600',
-  cancelled: 'text-gray-300',
-}
+import StatusButton from '@/components/tasks/StatusButton'
 
 export default function DashboardTaskRow({
   task: initial,
@@ -28,14 +21,7 @@ export default function DashboardTaskRow({
 
   return (
     <div className={`flex items-center gap-2 sm:gap-3 px-3 sm:px-4 py-1.5 sm:py-2.5 border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors group ${done ? 'opacity-60' : ''}`}>
-      <button
-        onClick={toggleStatus}
-        disabled={toggling}
-        aria-label={`Status: ${task.status}. Advance status.`}
-        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 text-lg leading-none transition-colors ${STATUS_CLASS[task.status]}`}
-      >
-        {STATUS_DISPLAY[task.status].icon}
-      </button>
+      <StatusButton status={task.status} toggling={toggling} onToggle={toggleStatus} />
 
       {colour && (
         <span

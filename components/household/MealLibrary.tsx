@@ -142,33 +142,35 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
           <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100">
             <button
               onClick={() => setExpandedId(expandedId === meal.id ? null : meal.id)}
-              className="flex-1 text-left flex items-center gap-2"
+              className="flex-1 min-w-0 text-left flex items-center gap-2"
             >
-              <span className="text-sm font-medium text-gray-900">{meal.name}</span>
-              <span className="text-xs text-gray-400">
+              <span className="min-w-0 flex-1 flex flex-col sm:flex-row sm:items-center sm:gap-2">
+                <span className="truncate text-sm font-medium text-gray-900">{meal.name}</span>
+                <span className="text-xs text-gray-400 whitespace-nowrap">
                 {meal.ingredients.length > 0 ? `${meal.ingredients.length} ingredient${meal.ingredients.length !== 1 ? 's' : ''}` : 'No ingredients'}
+                </span>
               </span>
-              <span className="text-gray-400 text-xs ml-auto">{expandedId === meal.id ? '▲' : '▼'}</span>
+              <span className="text-gray-400 text-xs shrink-0">{expandedId === meal.id ? '▲' : '▼'}</span>
             </button>
             {canManage && (
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   onClick={() => { setEditingMealId(meal.id); setEditMealName(meal.name) }}
-                  className="text-xs text-gray-400 hover:text-gray-700 transition-colors"
+                  className="min-h-[36px] sm:min-h-0 inline-flex items-center text-xs transition-colors text-gray-400 hover:text-gray-700"
                 >
                   Rename
                 </button>
                 {meal.ingredients.length > 0 && (
                   <button
                     onClick={() => openPush(meal)}
-                    className="text-xs text-green-600 hover:text-green-800 transition-colors"
+                    className="min-h-[36px] sm:min-h-0 inline-flex items-center text-xs transition-colors text-green-600 hover:text-green-800"
                   >
                     → Shopping
                   </button>
                 )}
                 <button
                   onClick={() => deleteMeal(meal.id)}
-                  className="text-xs text-red-400 hover:text-red-600 transition-colors"
+                  className="min-h-[36px] sm:min-h-0 inline-flex items-center text-xs transition-colors text-red-400 hover:text-red-600"
                 >
                   Delete
                 </button>
@@ -178,22 +180,24 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
 
           {/* Rename form */}
           {editingMealId === meal.id && (
-            <div className="px-4 py-3 border-b border-gray-100 flex gap-2">
+            <div className="px-4 py-3 border-b border-gray-100 flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={editMealName}
                 onChange={(e) => setEditMealName(e.target.value)}
                 autoFocus
-                className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
               />
-              <button
-                onClick={() => saveMealName(meal.id)}
-                className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 transition-colors"
-              >Save</button>
-              <button
-                onClick={() => setEditingMealId(null)}
-                className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-              >Cancel</button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => saveMealName(meal.id)}
+                  className="flex-1 sm:flex-none rounded-md bg-blue-600 px-3 py-2.5 sm:py-1.5 text-sm text-white hover:bg-blue-700 transition-colors"
+                >Save</button>
+                <button
+                  onClick={() => setEditingMealId(null)}
+                  className="flex-1 sm:flex-none rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                >Cancel</button>
+              </div>
             </div>
           )}
 
@@ -270,9 +274,11 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
                 <p className="px-4 py-2.5 text-xs text-gray-400">No ingredients yet.</p>
               )}
 
-              {/* Add ingredient form */}
+              {/* Add ingredient form. Five controls in one row is wider than a
+                  phone, so below sm the name takes a row of its own, the two
+                  small fields share the next, and the buttons share the last. */}
               {canManage && addingIngredientTo === meal.id ? (
-                <form onSubmit={(e) => addIngredient(meal.id, e)} className="px-4 py-3 border-t border-gray-100 flex gap-2">
+                <form onSubmit={(e) => addIngredient(meal.id, e)} className="px-4 py-3 border-t border-gray-100 flex flex-col sm:flex-row gap-2">
                   <input
                     type="text"
                     value={ingredientForm.name}
@@ -280,24 +286,33 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
                     placeholder="Ingredient"
                     required
                     autoFocus
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   />
-                  <input
-                    type="text"
-                    value={ingredientForm.quantity}
-                    onChange={(e) => setIngredientForm((f) => ({ ...f, quantity: e.target.value }))}
-                    placeholder="Qty"
-                    className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <input
-                    type="text"
-                    value={ingredientForm.unit}
-                    onChange={(e) => setIngredientForm((f) => ({ ...f, unit: e.target.value }))}
-                    placeholder="Unit"
-                    className="w-16 rounded-md border border-gray-300 px-2 py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                  <button type="submit" className="rounded-md bg-blue-600 px-3 py-1.5 text-sm text-white hover:bg-blue-700 transition-colors">Add</button>
-                  <button type="button" onClick={() => setAddingIngredientTo(null)} className="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors">✕</button>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={ingredientForm.quantity}
+                      onChange={(e) => setIngredientForm((f) => ({ ...f, quantity: e.target.value }))}
+                      placeholder="Qty"
+                      className="w-1/2 sm:w-16 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                    <input
+                      type="text"
+                      value={ingredientForm.unit}
+                      onChange={(e) => setIngredientForm((f) => ({ ...f, unit: e.target.value }))}
+                      placeholder="Unit"
+                      className="w-1/2 sm:w-16 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button type="submit" className="flex-1 sm:flex-none rounded-md bg-blue-600 px-3 py-2.5 sm:py-1.5 text-sm text-white hover:bg-blue-700 transition-colors">Add</button>
+                    <button
+                      type="button"
+                      onClick={() => setAddingIngredientTo(null)}
+                      aria-label="Cancel adding ingredient"
+                      className="shrink-0 rounded-md border border-gray-300 px-3 py-2.5 sm:py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
+                    >✕</button>
+                  </div>
                 </form>
               ) : (
                 canManage && (
@@ -322,7 +337,7 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
 
       {/* Add meal */}
       {canManage && showAddMeal ? (
-        <form onSubmit={addMeal} className="flex gap-2">
+        <form onSubmit={addMeal} className="flex flex-col sm:flex-row gap-2">
           <input
             type="text"
             value={newMealName}
@@ -330,10 +345,12 @@ export default function MealLibrary({ workspaceId, initialMeals, canManage }: Pr
             placeholder="Meal name"
             required
             autoFocus
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            className="w-full sm:flex-1 rounded-md border border-gray-300 px-3 py-2.5 sm:py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           />
-          <button type="submit" className="rounded-md bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700 transition-colors">Add</button>
-          <button type="button" onClick={() => { setShowAddMeal(false); setNewMealName('') }} className="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+          <div className="flex gap-2">
+            <button type="submit" className="flex-1 sm:flex-none rounded-md bg-blue-600 px-4 py-2.5 sm:py-2 text-sm text-white hover:bg-blue-700 transition-colors">Add</button>
+            <button type="button" onClick={() => { setShowAddMeal(false); setNewMealName('') }} className="flex-1 sm:flex-none rounded-md border border-gray-300 px-4 py-2.5 sm:py-2 text-sm text-gray-600 hover:bg-gray-50 transition-colors">Cancel</button>
+          </div>
         </form>
       ) : (
         canManage && (

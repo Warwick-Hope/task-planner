@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase-server'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { horizonSortKey } from '@/lib/horizon'
+import { statusesForFilter } from '@/lib/task-status'
 import TaskFilters from '@/components/tasks/TaskFilters'
 import TaskListClient from '@/components/tasks/TaskListClient'
 import ReviewPromptsPanel from '@/components/tasks/ReviewPromptsPanel'
@@ -37,8 +38,11 @@ export default async function TasksPage({ searchParams }: PageProps) {
     .select('*')
     .eq('created_by', user!.id)
 
-  if (searchParams.status && searchParams.status !== 'all') {
-    query = query.eq('status', searchParams.status)
+  // No ?status= means Open — a list that opens on everything ever created,
+  // finished and cancelled included, is not the list anyone wants first.
+  const statuses = statusesForFilter(searchParams.status)
+  if (statuses) {
+    query = query.in('status', statuses)
   }
 
   if (searchParams.category && searchParams.category !== 'all') {

@@ -146,6 +146,10 @@ Every entry, in number order. Statuses are the point of this table.
 | 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
 | 56 | A stored recurrence rule has no DTSTART, so it has no past | The app | Live |
+| 57 | A filter default that is not "everything" changes what an absent parameter means | The app | Live |
+| 58 | The category pickers refused a top-level category that the API had always accepted | The app | Live |
+| 59 | A cramped row does not overflow, it shrinks — and a 14px input zooms the phone | The app | Live |
+| 60 | The status control is a component, not a pattern — and a chip that drags needs one | The app | Live |
 
 ---
 
@@ -1021,6 +1025,115 @@ exist, and two consequences follow:
 
 Related: #49, where the same missing `DTSTART` made "the next occurrence" depend on the time of
 day.
+
+### 57. A filter default that is not "everything" changes what an absent parameter means
+
+The personal task list opened on every task the account had ever created — finished and cancelled
+included — because `?status=` absent meant no `where` clause at all. It defaults to the two open
+statuses now (`not_started`, `wip`), which is what `OPEN_STATUSES` and `statusesForFilter()` in
+[lib/task-status.ts](lib/task-status.ts) are for. Both the page query and the filter pills read
+them, so the default is stated once.
+
+**The part that is not obvious is what it did to the URL.** `TaskFilters.pushParams` dropped any
+parameter whose value was `all`, one rule shared by every filter, and that was correct for exactly
+as long as every filter defaulted to "show everything". The moment status defaulted to `open`,
+`all` stopped being the omittable value and became one that has to be *written* — and the shared
+rule deleted it on the way out, so clicking **All** navigated to the same URL and changed nothing.
+The rule is per parameter now (`PARAM_DEFAULTS`), and the e2e guard asserts `status=all` survives
+into the URL rather than only asserting the rows.
+
+An unrecognised `?status=` returns the default rather than an empty list, so a mistyped or
+stale link shows the usual list instead of zero tasks and an empty state that blames the filters.
+
+**The household task list is deliberately not changed.** It reads `?status=` but renders no filter
+row, so the same default there would hide every finished task with no control to bring them back.
+Defaulting it to Open and giving it the filter row are one piece of work, not two.
+
+---
+
+### 58. The category pickers refused a top-level category that the API had always accepted
+
+A task's `category_id` may be any category in the task's own workspace. That is the whole rule —
+`checkCategory` in [lib/tasks-server.ts](lib/tasks-server.ts) compares workspaces and nothing else
+(#53). Neither picker in the app agreed. In the task form a parent *with* children was a group
+header, and in the brain-dump review panel it was an `<optgroup>` label; both are markup that
+cannot be chosen. A parent with *no* children was selectable in both, which is why it read as a
+deliberate hierarchy rule rather than an oversight.
+
+The result was a task the connector could file under "Work" and the app could not, with nothing
+anywhere saying the two disagreed. Both pickers offer the parent now.
+
+**Changing that forced a change to the filter, which is the part worth remembering.** The
+category filter's parent pill stood for its children's ids — not its own — so a task tagged with
+the parent would have been invisible under the filter for the very category it is in. A pill now
+stands for the bucket: the parent and everything under it. The expanded subcategory row lists the
+parent first, labelled "(top level)", so the bucket can be narrowed to the parent alone and
+cleared in one place.
+
+The parent chip in the task form carries `aria-label="<name> (top level)"` because a subcategory
+is allowed to share its parent's name, and two chips reading "Work" are indistinguishable to
+anything that cannot see the indentation. The e2e guard addresses it by that name.
+
+### 59. A cramped row does not overflow, it shrinks — and a 14px input zooms the phone
+
+> **Corrected 19 Sep 2026.** This entry first said the zoom was fixed by putting
+> `text-base sm:text-sm` on the meal forms. It was not — `app/globals.css` had already
+> carried a rule lifting every field to 16px on small screens, and the rule was losing to
+> Tailwind's `text-sm` on specificity: an element selector is (0,0,1) against a class at
+> (0,1,0). It needed `!important`, which is what the rule exists to do. The meal forms are
+> back to `text-sm` like everything else, and one line fixed every form in the app rather
+> than twenty files. **A rule that reads as though it works is worse than no rule** — this
+> one sat in the stylesheet, with a comment explaining its purpose, doing nothing.
+
+The meal library's add-ingredient form is five controls — name, quantity, unit, Add, cancel —
+laid out in one flex row. On a phone it was unusable, and the two reasons are both worth
+having.
+
+**It did not overflow.** Measured at a 393px viewport every control was on screen, because
+flexbox shrinks children before it overflows a container: the ingredient field came out 90px
+wide and the quantity and unit fields 43px each. A guard that only asks "does anything stick
+out past the edge" says yes to that. `e2e/mobile.spec.ts` asks for a *usable* width instead.
+
+**What did run off the side was the zoomed page.** A phone browser zooms in when it focuses an
+input whose font is under 16px, and every input in this app is `text-sm` — 14px. Focus the
+ingredient field, the viewport narrows to roughly 320 CSS px, and the row that just fitted no
+longer does. One `!important` in `app/globals.css` is the whole fix for the
+zoom. Every form in the app was affected, not only this one: measured on a Pixel 5 viewport,
+`/tasks/new` served its title input and notes textarea at 14px.
+
+The page-wide overflow guard could not have caught any of this anyway. The form only exists
+after a click, and each meal card carries `overflow-hidden`, which `overflowingElements()`
+treats as a deliberate sideways scroller and skips (#18).
+
+### 60. The status control is a component, not a pattern — and a chip that drags needs one
+
+#24 shared the status *cycle* and the icons, and left every component to render its own button
+around them. Five did, and by the time a sixth was wanted they had drifted exactly as copies
+do: four carried the 40px touch target the mobile pass added, `CleaningScheduleView` did not,
+and that one had no `aria-label` either — a bare `○` glyph, to a screen reader.
+`DashboardTaskRow` had gone further and kept its own `STATUS_CLASS` map, a second copy of the
+colours already in `STATUS_DISPLAY`.
+
+[components/tasks/StatusButton.tsx](components/tasks/StatusButton.tsx) is the control now. The
+hook stays in the caller, because a row needs the optimistic task for its own line-through and
+opacity; only the button moved.
+
+**The reason it had to be a component and not another copy** is the two screens that were
+missing it. On the calendar and the plan board a task is a chip, and the chip *is* the drag
+handle — dnd-kit spreads its listeners over the whole element. A control inside one has to
+stop `pointerdown` reaching them or pressing it picks the task up, and it has to be small
+enough that a 40px target is not taller than the chip. Both live in the component (`compact`),
+rather than in whichever copy remembered.
+
+The third screen with no control was the "needs attention" panel, and it is a server component
+— the row had to be split into [ReviewPromptRow.tsx](components/tasks/ReviewPromptRow.tsx) to
+hold the hook at all. Which is the general shape: a panel that queries can stay on the server,
+but the row a person touches cannot.
+
+**Non-negotiables is deliberately still its own toggle.** It goes done ↔ not started in one
+tap, with no "in progress" — a non-negotiable is a thing you did or did not do today. Sharing
+the three-state cycle there would take a tap away from the one screen designed around a single
+one.
 
 ---
 

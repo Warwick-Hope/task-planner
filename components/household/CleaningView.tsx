@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import type { Room, Category, Task } from '@/types'
 import CleaningTaskForm from './CleaningTaskForm'
 import { formatHorizon } from '@/lib/horizon'
-import { STATUS_DISPLAY } from '@/lib/task-status'
 import { useTaskStatus } from '@/lib/use-task-status'
+import StatusButton from '@/components/tasks/StatusButton'
 
 interface Member {
   id: string
@@ -50,18 +50,15 @@ function TaskRow({
     router.refresh()
   }
 
-  const cfg = STATUS_DISPLAY[task.status]
 
   return (
     <div className={`group flex items-start gap-3 px-4 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors ${task.status === 'done' ? 'opacity-60' : ''}`}>
-      <button
-        onClick={toggleStatus}
-        disabled={toggling}
-        aria-label={`Status: ${task.status}. Advance status.`}
-        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:mt-0.5 text-lg leading-none transition-colors ${cfg.className}`}
-      >
-        {cfg.icon}
-      </button>
+      <StatusButton
+        status={task.status}
+        toggling={toggling}
+        onToggle={toggleStatus}
+        className="sm:mt-0.5"
+      />
 
       <div className="flex-1 min-w-0">
         <span className={`text-sm ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>

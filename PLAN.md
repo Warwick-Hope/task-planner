@@ -193,15 +193,43 @@ happened rather than only in the app.
     projects are on it and "dev stays free" did not survive contact with the billing model
     (§Open items 5, [KB.md](KB.md) #4). Leaked-password protection is still a toggle nobody has
     flipped (§Open items 4).
-19. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
+19. 🔄 **Task screen fixes — 15–19 Sep 2026, PR #34, not yet merged.** Findings from using the
+    app, gathered onto one branch rather than one PR each.
+
+    - **The list opens on Open.** It showed every task ever created, done and cancelled alike,
+      because an absent `?status=` meant no filter. It defaults to the two open statuses now,
+      with an **Open** pill alongside the existing ones and **All** still one click away. The
+      household task list is unchanged and still shows everything — it renders no filter row at
+      all, so the same default there would hide finished tasks with nothing to bring them back
+      ([KB.md](KB.md) #58).
+    - **The meal library works on a phone.** Adding an ingredient put five controls in one
+      row: they did not overflow, they shrank, to a 90px field for an ingredient name. What
+      ran off the side of the screen was the *zoomed* page — a phone zooms in when it focuses
+      an input under 16px, and the row that just fitted then did not. The forms stack below
+      `sm`, and every field in the app is 16px on a phone — which turned out to be one
+      `!important` in `app/globals.css` rather than the twenty-file sweep it looked like.
+      The rule was already there and had been losing to `text-sm` on specificity since it
+      was written ([KB.md](KB.md) #59).
+    - **A task can be marked done wherever it appears.** The calendar chips, the plan board and
+      the "needs attention" panel showed a task and offered no way to finish it — the panel
+      worst of all, since "this was due last month" is most often answered with "it is done".
+      All three carry the same status circle as the lists now, and the control itself is one
+      component rather than the five copies it had become ([KB.md](KB.md) #60).
+    - **A top-level category can be put on a task.** The API had always allowed it and both
+      pickers refused it, so a task the connector could file under "Work" could not be filed
+      under "Work" in the app. The task form and the brain-dump review panel both offer the
+      parent now, and the category filter counts a task tagged with the parent as being in that
+      bucket — without which it would have been invisible under the filter for the very category
+      it is in ([KB.md](KB.md) #57).
+20. **Phase 5.6 is no longer "M365 integration."** Reading Outlook, Teams, Plaud or Fathom
     *interactively* is what the connector gives away for nothing, because Claude already holds
     connectors for all four. 5.6 is now only the **unattended** case — a sweep that runs with
     nothing open. See §Phases, Phase 5.
-20. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
+21. **Deferred by decision, not oversight** — Phase 1 items 1.15 (AI planning assistant), 1.16
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-21. **Open manual items** — see §Open items. Everything the connector forced is settled: the
+22. **Open manual items** — see §Open items. Everything the connector forced is settled: the
     quota, the Pro decision and the upgrade, both migrations on prod, and a real client on each
     end. What is left there is older than any of it — the **prod VAPID pair**, which is all that
     stands between 4.3 and a working notification, and the **leaked-password toggle** that Pro
@@ -665,12 +693,14 @@ all.
    weeks: what was outstanding was the *test*, and the item was written as though it were the
    *setup*. An item that names the wrong remaining step is worse than one that is merely stale —
    it sends somebody to redo work that was already done.
-3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
-   it, to confirm the `auth_rls_initplan` findings clear.
-4. **Leaked password protection — now one toggle, and nobody has flipped it.** Authentication →
-   Providers → Email on **prod**, and the setting is Pro-plan and above ([KB.md](KB.md) #12). The
-   organisation went Pro on 13 Sep 2026, so it is available on both projects now; prod is the one
-   that matters, because those are the live passwords.
+3. 🔄 **Supabase Performance advisor re-run on prod, 19 Sep 2026 — 22 suggestions remain.**
+   What is *not* known is whether any of them are still `auth_rls_initplan`, which is the
+   only question this item was asking. Read the list and either close this or record what is
+   left; a count on its own does not answer it.
+4. ✅ **Leaked password protection is on, on prod** — 19 Sep 2026, Authentication → Providers
+   → Email. Pro unblocked it on 13 Sep 2026 and it stayed unflipped for six days
+   ([KB.md](KB.md) #12). Dev is left alone deliberately: the e2e accounts use fixed passwords
+   and a breach check would be a new way for the suite to fail.
 5. ✅ **Supabase Pro — upgraded 13 Sep 2026**, and it landed differently from the decision.
    **Pro is billed per organisation, not per project**, and both projects live in
    `Warwick-Hope's Personal`, so **dev is on Pro too**. "Dev stays free" (26 Aug 2026) was never
@@ -962,6 +992,22 @@ re-litigated.**
   refresh and belong to a client; a personal access token does none of those. What they share is
   everything after the lookup, which is why `resolveBearer` takes the resolver's name as an
   argument and no route can tell the two apart ([KB.md](KB.md) #54).
+
+- **15 Sep 2026** — **a task list defaults to Open, and an absent parameter now carries a
+  meaning.** Every filter until now defaulted to "show everything", which let one rule serve them
+  all: a parameter equal to `all` was dropped from the URL. Status no longer defaults to `all`, so
+  `all` became a value that has to be *written* rather than omitted, and the shared rule silently
+  deleted it. The rule is per parameter now ([KB.md](KB.md) #58).
+
+  **The household task list keeps its old behaviour on purpose.** It reads `?status=` but renders
+  no filter row, so defaulting it to Open would hide every finished task with no control to show
+  them again. Giving it the same filter row is the fix, and it is a separate piece of work.
+
+- **15 Sep 2026** — **a parent pill in the category filter means the whole bucket**, the top-level
+  category and everything under it, rather than the children alone. The alternative — parent
+  selects only itself, children selected individually — is more precise and wrong for the common
+  case: "show me Work" is what the pill is for. Narrowing to the top-level category on its own is
+  still possible, from the expanded subcategory row ([KB.md](KB.md) #57).
 
 - **18 Sep 2026** — **4.5 voice input is dropped, not deferred.** Wispr Flow does speech to text
   into any text field, including the brain dump's, on the machine and on the phone. Building a
