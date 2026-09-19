@@ -43,6 +43,8 @@ from memory.
 | `The brain dump has no quota` | Twenty captures per user per UTC day since Phase 4.10, shared between the textarea and the `capture` tool ([KB.md](KB.md) #48) |
 | `The credential pin makes gh return that account's token whatever is active` | Not true on gh 2.90.0 — the username hint returns *nothing*, and the push dies with a TTY error rather than a 403 ([KB.md](KB.md) #52 corrects #27) |
 | `Both Supabase projects are free tier and pause after ~7 days` | Wrong since 13 Sep 2026 — the organisation is on Pro, so neither pauses. `Pro on prod, dev stays free` was never possible: Pro is billed per organisation ([KB.md](KB.md) #4) |
+| `Every recurrence rule in this app carries no DTSTART` | Wrong — `buildRrule` emits `DTSTART:20000101T000000Z`, so a rule made in the task or cleaning form has a past and a fixed midnight occurrence time. Only a bare rule handed to the API takes its start from the parse-time clock ([KB.md](KB.md) #57 corrects #56) |
+| `The initplan rewrite has not been confirmed on prod` | Confirmed 19 Sep 2026 — the prod Performance advisor reports **0** `auth_rls_initplan` findings. Twenty-two others remain, none of them RLS ([PLAN.md](PLAN.md) §Open items 3) |
 | Phase `5.6 M365 integration` | Retired 26 Aug 2026 — Clarity does **not** integrate with Teams, Outlook, Plaud or Fathom. Claude already connects to all four, so the Claude connector reads them and calls Clarity's tools. 5.6 is now the unattended sweep only ([PLAN.md](PLAN.md) §"The Claude connector") |
 
 Current figures come from [PLAN.md](PLAN.md) §"Where we are" — not from memory, and not from an
@@ -87,6 +89,10 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
   from the Management API rather than from the CLI ([KB.md](KB.md) #51).
 - **Build horizon fields through [lib/horizon.ts](lib/horizon.ts)**, never by setting
   `horizon_*` columns directly ([KB.md](KB.md) #22).
+- **A recurrence is measured in days, so compare days** — `nextOccurrence` asks from the end of
+  its date and `firstOccurrence` from the start of its date. A rule from the form carries a
+  `DTSTART` and a rule from the API does not, which is why the same mistake looked deterministic in
+  one and intermittent in the other ([KB.md](KB.md) #49, #57).
 - **The status cycle, colour inheritance, task-status toggling, drag sensors and the app shell
   are shared in `lib/` and `components/layout/`** — each was duplicated five or six times and
   had drifted. Add to them ([KB.md](KB.md) #24).

@@ -103,7 +103,24 @@ export function nextOccurrence(rruleStr: string, afterDate: string): string | nu
 export function firstOccurrence(rruleStr: string, fromDate: string): string | null {
   try {
     const rule = RRule.fromString(rruleStr)
-    const from = new Date(fromDate + 'T12:00:00Z')
+
+    /**
+     * The start of that day, not the middle of it — the mirror of the fix in
+     * `nextOccurrence` above, and the same underlying mistake (KB.md #49).
+     *
+     * An occurrence has a time of day whether we want one or not: midnight UTC
+     * for a rule `buildRrule` wrote, because it emits a DTSTART, and the clock
+     * at parse time for one that arrived as a bare RRULE through the API. From
+     * midday, the first kind always missed an occurrence falling on fromDate
+     * itself, so the task form offered next week for a weekly task created on
+     * its own weekday; the second kind missed it only before midday, which is
+     * why it looked intermittent.
+     *
+     * Asking from the start of the day makes both kinds return fromDate when
+     * fromDate is an occurrence, which is what "on or after" says.
+     */
+    const from = new Date(fromDate + 'T00:00:00.000Z')
+
     const next = rule.after(from, true) // true = inclusive (on or after)
     if (!next) return null
     return next.toISOString().split('T')[0]

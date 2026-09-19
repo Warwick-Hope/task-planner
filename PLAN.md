@@ -201,11 +201,25 @@ happened rather than only in the app.
     (brain dump AI steering) and 1.17 (calendar time slots) are unbuilt and not blockers.
     **1.18 (UI density pass) was largely absorbed by 4.1** — touch target sizes and hover states
     were reworked throughout. Check what 4.1 actually did before rebuilding any of it.
-21. **Open manual items** — see §Open items. Everything the connector forced is settled: the
+21. ✅ **Backlog sweep — 19 Sep 2026.** Two long-standing items closed, one from each end of the
+    stack. The **`initplan` rewrite is confirmed on prod**: the Performance advisor reports zero
+    `auth_rls_initplan` findings, which is the check PR #10 asked for in August and nobody had run
+    (§Open items 3). And **`firstOccurrence` is fixed with the test it was waiting for** — the
+    task form offered next week for a weekly task created on its own weekday, and tomorrow for a
+    daily one (§Open items 11, [KB.md](KB.md) #57).
+
+    **The test found something the code reading had not.** A rule made in the form carries a
+    `DTSTART` and a rule handed to the API does not, so the same mistake was deterministic through
+    one door and intermittent through the other. [KB.md](KB.md) #56 said no rule in the app carries
+    one; it is corrected. The live consequence — completing an overdue recurring task hands back a
+    replacement dated in the past — is a product decision and is **not** fixed here (§Open items
+    19).
+22. **Open manual items** — see §Open items. Everything the connector forced is settled: the
     quota, the Pro decision and the upgrade, both migrations on prod, and a real client on each
-    end. What is left there is older than any of it — the **prod VAPID pair**, which is all that
-    stands between 4.3 and a working notification, and the **leaked-password toggle** that Pro
-    unblocked.
+    end. What is left is the **leaked-password toggle** that Pro unblocked and nobody has flipped
+    (§Open items 4), and three things nobody has decided rather than anything anybody is blocked
+    on: the `shopping_list` trigger (§Open items 8), the e2e suite in CI (§Open items 14), and
+    whether 1.18 has anything left in it (§Open items 7).
 
 ---
 
@@ -665,8 +679,17 @@ all.
    weeks: what was outstanding was the *test*, and the item was written as though it were the
    *setup*. An item that names the wrong remaining step is worse than one that is merely stale —
    it sends somebody to redo work that was already done.
-3. **Re-run the Supabase Performance advisor on prod** after the `initplan` migration reaches
-   it, to confirm the `auth_rls_initplan` findings clear.
+3. ✅ **The prod Performance advisor reports zero `auth_rls_initplan` findings**, 19 Sep 2026.
+   Read from the Management API rather than the MCP, which points at dev and stays there
+   ([KB.md](KB.md) #3). That closes the PR #10 rewrite: 53 policies, and the advisor now agrees.
+
+   **Twenty-two findings remain, none of them RLS.** Seven unindexed foreign keys
+   (`household_invitations.created_by`, `household_profiles.created_by`,
+   `oauth_authorization_codes.client_id` and `.user_id`, `oauth_grants.client_id`,
+   `shopping_list.added_by`, `tasks.assigned_to_profile_id`), fourteen unused indexes, and the
+   Auth connection pool being a fixed 10 rather than a percentage. On a database this size none of
+   them is costing anything, and an index added for an advisor rather than a measured query is how
+   the fourteen unused ones got there. Recorded, not scheduled.
 4. **Leaked password protection — now one toggle, and nobody has flipped it.** Authentication →
    Providers → Email on **prod**, and the setting is Pro-plan and above ([KB.md](KB.md) #12). The
    organisation went Pro on 13 Sep 2026, so it is available on both projects now; prod is the one
@@ -700,11 +723,15 @@ all.
 10. ✅ **A real token was minted on prod and used**, 13 Sep 2026 — it is what connected Claude
     Code to `/api/mcp`, and it was revoked the same day after being pasted into a chat. This item
     said otherwise for five days.
-11. **`firstOccurrence` has the same day-vs-moment bug `nextOccurrence` had.** It asks for the
-    first occurrence on or after midday, so an occurrence earlier that day is missed and the task
-    form offers the next period instead of today ([KB.md](KB.md) #49). Left alone on purpose:
-    nothing tests what the form offers, and the fix is a behaviour change made on a code reading.
-    Worth doing with a test rather than without one.
+11. ✅ **`firstOccurrence` fixed, with the test that was the reason for waiting**, 19 Sep 2026.
+    It asked from midday, so an occurrence on `fromDate` itself was behind the question — creating
+    a daily task offered tomorrow and creating a weekly task on its own weekday offered next week.
+    It asks from the start of the day now, the mirror of what #49 did to `nextOccurrence`
+    ([KB.md](KB.md) #57).
+
+    `e2e/recurrence.spec.ts` is the test this was waiting for, and it is the suite's first
+    **pure-logic** spec — no page, no network, in Playwright because Playwright is the only runner
+    here. Four of its seven `firstOccurrence` cases fail against the old code.
 12. ✅ **A real client connected**, 13 Sep 2026 — Claude Code against prod, registered at user
     scope. Seven tools, nothing missing, one bug found ([KB.md](KB.md) #53) and fixed. Two things
     the test could not reach, both needing a second person: **assignment through the connector**
@@ -750,6 +777,18 @@ all.
     project on top of Pro. **Worth revisiting only alongside moving the app itself off
     `task-planner-nine-sigma.vercel.app`** — the two are the same decision, and neither is
     cosmetic enough to pay for on its own.
+
+19. **What should an overdue recurring task produce when you complete it?** Found on the way to
+    item 11 and deliberately not fixed with it, because it is a product decision rather than a
+    bug. `complete_task` calls `nextOccurrence(rule, task.due_date)`, so for a rule made in the
+    task form — which carries a `DTSTART` — a weekly task three weeks late produces a replacement
+    **dated twelve days ago**. [KB.md](KB.md) #56 records the opposite behaviour as the one that is
+    wanted, and it is right about what is wanted and wrong about which rules do it: only a bare
+    rule handed to the API behaves that way, because it has no past to find ([KB.md](KB.md) #57).
+
+    The choice is one line either way — advance from the due date, or from whichever of the due
+    date and today is later. **Not decided.** Nothing has been overdue long enough to notice,
+    which is also why it went unseen.
 
 ---
 
@@ -975,3 +1014,17 @@ re-litigated.**
   per provider, a consent screen per provider, and a second set of credentials in both Supabase
   projects. With one person signing in, the second provider buys nothing, so it waits for someone
   who wants it.
+
+- **19 Sep 2026** — **pure-logic specs live in `e2e/`, in the Playwright suite.** There is no unit
+  runner and adding one — Vitest, its config, a second `testMatch` vocabulary and a second thing CI
+  must know about — buys nothing here that `test()` and `expect()` in a file with no `page` do not
+  already do. The cost is honest and small: a pure spec waits for `setup` to sign in and for the
+  dev server to start, about fifteen seconds it does not need. `e2e/recurrence.spec.ts` is the
+  first, and the precedent is that a helper in `lib/` with arithmetic in it can be tested directly
+  rather than through a page that happens to call it.
+
+- **19 Sep 2026** — **the prod Performance advisor's remaining findings are recorded, not
+  scheduled.** Seven unindexed foreign keys and fourteen unused indexes on a database with one
+  household in it measure nothing. Fourteen unused indexes is itself the evidence: they were added
+  because an advisor asked, not because a query was slow, and each one costs a write. Revisit when
+  there is a slow query to point at (§Open items 3).

@@ -145,7 +145,8 @@ Every entry, in number order. Statuses are the point of this table.
 | 53 | A category could be written across workspaces, because only the UI ever stopped it | The app | Live |
 | 54 | OAuth: what the connector needed, and the five things that are decisions | The app | Live |
 | 55 | The login redirect dropped the query string, which is most of an OAuth request | The app | Live |
-| 56 | A stored recurrence rule has no DTSTART, so it has no past | The app | Live |
+| 56 | A recurrence rule made through the API has no DTSTART, so it has no past | The app | Live, corrected by #57 |
+| 57 | `firstOccurrence` skipped today, and a rule's shape decides its occurrence time | The app | Live |
 
 ---
 
@@ -1003,17 +1004,25 @@ would have been an open redirect on a sign-in page. It predates 4.11 and nothing
 it — but a `next` that now legitimately carries a query string is one somebody is more likely to
 look at.
 
-### 56. A stored recurrence rule has no DTSTART, so it has no past
+### 56. A recurrence rule made through the API has no DTSTART, so it has no past
+
+> **Corrected, 19 Sep 2026: "which every rule in this app does" is wrong.** `buildRrule` sets a
+> `dtstart` of 1 Jan 2000 and `RRule.toString()` emits it, so **every rule created through the
+> task form or the cleaning form carries `DTSTART:20000101T000000Z`** and does have a past. The
+> rules with no `DTSTART` are the ones handed to the API as a bare string — which a Claude tool
+> call does, and which `e2e/mcp.spec.ts` does (`FREQ=WEEKLY;BYDAY=MO`). That is the rule the
+> observation below was made against. **The consequence in the first bullet therefore does not
+> hold for a form-made rule**, and the difference is live behaviour, not trivia — see #57.
 
 `rrule` takes its start date from **the clock at parse time** when the stored string carries no
-`DTSTART`, which every rule in this app does. Occurrences before that moment therefore do not
-exist, and two consequences follow:
+`DTSTART`. Occurrences before that moment therefore do not exist, and two consequences follow:
 
 - **Completing an overdue recurring task advances to the next matching day after *today***, not
-  after its own due date. A weekly Monday task three weeks late produces one due this coming
-  Monday rather than three weeks ago. That is the behaviour you want — a task dated in the past
-  is no use to anyone — and it is not what the code appears to say, which is
-  `nextOccurrence(rule, task.due_date)`.
+  after its own due date — *for a rule with no `DTSTART`*. A weekly Monday task three weeks late
+  produces one due this coming Monday rather than three weeks ago. That is the behaviour you
+  want, and it is not what the code appears to say, which is
+  `nextOccurrence(rule, task.due_date)`. **A form-made rule does what the code says instead**, and
+  hands back a replacement dated in the past (#57).
 - **A test that hard-codes dates ages into a failure.** `e2e/mcp.spec.ts` asserted a task due
   7 Sep 2026 advanced to 14 Sep; it passed for three weeks and failed on 18 Sep, because by then
   the parse-time start was later than both. It computes its dates from today now, which is the
@@ -1021,6 +1030,39 @@ exist, and two consequences follow:
 
 Related: #49, where the same missing `DTSTART` made "the next occurrence" depend on the time of
 day.
+
+### 57. The same day-vs-moment mistake, in mirror image — and two rule shapes, not one
+
+`firstOccurrence` asked rrule for the first occurrence on or after **midday** of `fromDate`, so an
+occurrence falling on `fromDate` itself was behind the question and got skipped. The task form
+calls it to date a recurring task that has no start date, which meant **creating a daily task
+offered tomorrow, and creating a weekly task on its own weekday offered next week**. Fixed
+19 Sep 2026 by asking from `T00:00:00.000Z` — the mirror of #49, which fixed `nextOccurrence` by
+moving the other comparison to the *end* of its day. The unit of a recurrence here is a day, so
+both ends of it have to be a day.
+
+**It had been left alone on purpose** (PLAN.md §Open items 11): nothing tested what the form
+offered, and a behaviour change made on a code reading is a guess. `e2e/recurrence.spec.ts` is
+that test — **pure logic, no page, no network**, in the Playwright suite because Playwright is the
+only runner this repository has. Four of its seven `firstOccurrence` cases fail against the old
+code.
+
+**Which is where the two rule shapes matter**, and they are the correction to #56:
+
+| Made by | String | Occurrence time |
+|---|---|---|
+| `buildRrule` — the task form, the cleaning form | `DTSTART:20000101T000000Z` + `RRULE:…` | midnight UTC, always |
+| A bare string through `POST /api/tasks` or a connector tool | `FREQ=WEEKLY;BYDAY=MO` | the clock at parse time |
+
+From midday, the first kind missed the day **every time**; the second missed it only before
+midday. One bug, and it looked deterministic or intermittent depending on which door the task came
+in through — which is why reproducing it needs a rule of each shape, and why the spec asserts both.
+
+**One live consequence is not fixed and is not a code reading.** For a form-made rule,
+`nextOccurrence(rule, task.due_date)` does exactly what it says: completing a weekly task that is
+three weeks overdue produces a replacement **dated twelve days ago**. #56 records the opposite as
+"the behaviour you want", and it is right about what is wanted and wrong about which rules do it.
+Deciding what an overdue recurrence should produce is PLAN.md §Open items 19.
 
 ---
 
