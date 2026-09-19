@@ -20,9 +20,8 @@ edit §"Where we are".
 
 | Claimed | Branch | What it is doing | Sections it owns |
 |---|---|---|---|
-| 19 Sep 2026 | `fix/backlog-sweep` | `firstOccurrence` day-vs-moment fix, and the prod advisor re-run | PLAN §"Where we are", §Open items 3/11/19, §Decisions log · KB #56, #57 · CLAUDE.md retired facts |
 
-**One claim live.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
+**Nothing claimed.** Current position and what is next: [PLAN.md](PLAN.md) §"Where we are, and what's next".
 
 > **Remove your row in the last commit before you mark the PR ready** — not after merging.
 > Squash-merging deletes the branch, and `npm run check:docs` fails on a claim naming a branch
