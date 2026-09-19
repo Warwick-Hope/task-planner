@@ -5,8 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import type { Task, Category } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
-import { STATUS_DISPLAY } from '@/lib/task-status'
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
+import StatusButton from '@/components/tasks/StatusButton'
 import { useTaskStatus } from '@/lib/use-task-status'
 
 export default function TaskRow({
@@ -23,7 +23,6 @@ export default function TaskRow({
   const [pinning, setPinning] = useState(false)
   const [pinError, setPinError] = useState<string | null>(null)
 
-  const statusConfig = STATUS_DISPLAY[task.status]
   const category = task.category_id
     ? allCategories.find((c) => c.id === task.category_id) ?? null
     : null
@@ -64,15 +63,12 @@ export default function TaskRow({
       }`}
     >
       {/* Status toggle */}
-      <button
-        onClick={toggleStatus}
-        disabled={toggling}
-        title={`Status: ${task.status}. Click to advance.`}
-        aria-label={`Status: ${task.status}. Advance status.`}
-        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:mt-0.5 text-lg leading-none transition-colors ${statusConfig.className}`}
-      >
-        {statusConfig.icon}
-      </button>
+      <StatusButton
+        status={task.status}
+        toggling={toggling}
+        onToggle={toggleStatus}
+        className="sm:mt-0.5"
+      />
 
       {/* Title + notes */}
       <div className="flex-1 min-w-0 py-2 sm:py-0">

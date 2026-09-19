@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Locator, type Page } from '@playwright/test'
 import { taskRow, deleteTaskRow, uniqueTitle } from './helpers'
 
 /**
@@ -145,6 +145,74 @@ test('a top-level category can be put on a task, not just a subcategory', async 
   await deleteTaskRow(page, title)
 })
 
+/**
+ * Completing a task from the three screens that used to only show it.
+ *
+ * The calendar and the plan board are the ones worth a test: their chips are
+ * drag handles, and dnd-kit claims any pointerdown it can see — so a control
+ * inside one picks the task up instead of advancing it unless the event is
+ * stopped. That is a thing you cannot tell from a screenshot.
+ */
+
+/** The chip or row carrying this title, addressed by the status control in it. */
+function taskWithStatusControl(page: Page, title: string): Locator {
+  return page
+    .locator('div')
+    .filter({ has: page.getByText(title) })
+    .filter({ has: page.getByRole('button', { name: /^Status:/ }) })
+    .last()
+}
+
+/** Advances the control until the task is done, waiting for each write. */
+async function completeFromControl(page: Page, title: string) {
+  for (let step = 0; step < 3; step++) {
+    const control = taskWithStatusControl(page, title).getByRole('button', { name: /^Status:/ })
+    const name = (await control.getAttribute('aria-label')) ?? ''
+    if (name.includes('done')) return
+    const written = page.waitForResponse(
+      (res) => res.request().method() === 'PATCH' && res.url().includes('/api/tasks/')
+    )
+    await control.click()
+    expect((await written).ok(), 'the status PATCH failed').toBe(true)
+  }
+  throw new Error('the control never reached done')
+}
+
+/** YYYY-MM-DD, offset from today in local time. */
+function dayOffset(days: number): string {
+  const d = new Date()
+  d.setHours(12, 0, 0, 0)
+  d.setDate(d.getDate() + days)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
+for (const { screen, path, seed } of [
+  { screen: 'the plan board', path: '/plan', seed: {} },
+  { screen: 'the calendar', path: '/calendar', seed: {} },
+  {
+    screen: 'the needs-attention panel',
+    path: '/tasks',
+    seed: { horizon_precision: 'week', horizon_date: dayOffset(-14) },
+  },
+]) {
+  test(`a task can be completed from ${screen}`, async ({ page, request }) => {
+    const title = uniqueTitle(`complete-from-${path.slice(1)}`)
+    const created = await request.post('/api/tasks', { data: { title, ...seed } })
+    expect(created.status(), await created.text()).toBe(201)
+    const { id } = await created.json()
+
+    await page.goto(path)
+    await expect(taskWithStatusControl(page, title)).toBeVisible()
+    await completeFromControl(page, title)
+
+    // Read it back rather than trusting the optimistic row.
+    const after = await (await request.get(`/api/tasks/${id}`)).json()
+    expect(after.task.status, `${screen} did not save the change`).toBe('done')
+
+    await request.delete(`/api/tasks/${id}`)
+  })
+}
 test('the API refuses a task with no title', async ({ request }) => {
   // Session cookies come from the shared storageState, so this exercises the
   // authenticated path rather than the 401 branch.

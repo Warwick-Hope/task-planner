@@ -1,8 +1,8 @@
 'use client'
 
 import type { Room, Task } from '@/types'
-import { STATUS_DISPLAY } from '@/lib/task-status'
 import { useTaskStatus } from '@/lib/use-task-status'
+import StatusButton from '@/components/tasks/StatusButton'
 
 interface Props {
   rooms: Room[]
@@ -46,17 +46,10 @@ function ScheduleRow({
 }) {
   const { task, toggling, toggleStatus } = useTaskStatus(initialTask)
 
-  const cfg = STATUS_DISPLAY[task.status]
 
   return (
     <div className={`flex items-center gap-3 px-4 py-2.5 border-b border-gray-100 last:border-0 ${task.status === 'done' ? 'opacity-50' : ''}`}>
-      <button
-        onClick={toggleStatus}
-        disabled={toggling}
-        className={`text-lg leading-none shrink-0 transition-colors ${cfg.className}`}
-      >
-        {cfg.icon}
-      </button>
+      <StatusButton status={task.status} toggling={toggling} onToggle={toggleStatus} />
       <span className={`flex-1 text-sm ${task.status === 'done' ? 'line-through text-gray-400' : 'text-gray-900'}`}>
         {task.title}
         {task.is_recurring && <span className="ml-1.5 text-gray-300 text-xs">↻</span>}

@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase-server'
-import Link from 'next/link'
+import ReviewPromptRow from '@/components/tasks/ReviewPromptRow'
 import { getHorizonReviewStatus, formatHorizon } from '@/lib/horizon'
 import type { Task, Category } from '@/types'
 
@@ -58,7 +58,7 @@ export default async function ReviewPromptsPanel({
 
       <div className="divide-y divide-amber-100">
         {overdue.map(({ task }) => (
-          <ReviewRow
+          <ReviewPromptRow
             key={task.id}
             task={task}
             label={`Overdue — was due ${formatHorizon(task)}`}
@@ -67,7 +67,7 @@ export default async function ReviewPromptsPanel({
           />
         ))}
         {approaching.map(({ task }) => (
-          <ReviewRow
+          <ReviewPromptRow
             key={task.id}
             task={task}
             label={`Approaching — ${formatHorizon(task)}`}
@@ -76,36 +76,6 @@ export default async function ReviewPromptsPanel({
           />
         ))}
       </div>
-    </div>
-  )
-}
-
-function ReviewRow({
-  task,
-  label,
-  labelClass,
-  categoryName,
-}: {
-  task: Task
-  label: string
-  labelClass: string
-  categoryName: string | null
-}) {
-  return (
-    <div className="flex items-center gap-3 px-4 py-2.5">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-gray-900 truncate">{task.title}</p>
-        <p className={`text-xs mt-0.5 ${labelClass}`}>{label}</p>
-      </div>
-      {categoryName && (
-        <span className="hidden sm:inline text-xs text-gray-400 shrink-0">{categoryName}</span>
-      )}
-      <Link
-        href={`/tasks/${task.id}/edit`}
-        className="shrink-0 rounded-md border border-amber-300 bg-white px-2.5 py-2 sm:py-1 text-xs font-medium text-amber-800 hover:bg-amber-50 transition-colors"
-      >
-        Set date
-      </Link>
     </div>
   )
 }

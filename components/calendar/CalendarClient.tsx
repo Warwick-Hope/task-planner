@@ -13,10 +13,12 @@ import {
 } from '@dnd-kit/core'
 import { useDragSensors } from '@/lib/dnd-sensors'
 import { CSS } from '@dnd-kit/utilities'
-import type { Task, Category } from '@/types'
+import type { Task, Category, TaskStatus } from '@/types'
 import { buildHorizonFields } from '@/lib/horizon'
 
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
+import { useTaskStatus } from '@/lib/use-task-status'
+import StatusButton from '@/components/tasks/StatusButton'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -81,28 +83,56 @@ function getHorizonFieldsForDay(dateStr: string) {
 
 // ─── Task chip ────────────────────────────────────────────────────────────────
 
-function TaskChip({ task, categories, isDragging = false }: { task: Task; categories: Category[]; isDragging?: boolean }) {
+function TaskChip({
+  task,
+  categories,
+  isDragging = false,
+  status,
+  control,
+}: {
+  task: Task
+  categories: Category[]
+  isDragging?: boolean
+  /** The live status, which the chip in a drag overlay does not have. */
+  status?: TaskStatus
+  control?: React.ReactNode
+}) {
   const colour = categoryColour(task.category_id, categories) ?? DEFAULT_CATEGORY_COLOUR
+  const shown = status ?? task.status
   return (
     <div
       title={task.title}
       className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-xs truncate select-none
-        ${task.status === 'done' ? 'opacity-50 line-through' : ''}
+        ${shown === 'done' ? 'opacity-50 line-through' : ''}
         ${isDragging ? 'shadow-lg rotate-1' : ''}`}
       style={{ backgroundColor: colour + '22', borderLeft: `3px solid ${colour}` }}
     >
+      {control}
       <span className="truncate text-gray-800">{task.title}</span>
     </div>
   )
 }
 
-function DraggableChip({ task, categories }: { task: Task; categories: Category[] }) {
+function DraggableChip({ task: initial, categories }: { task: Task; categories: Category[] }) {
+  const { task, toggling, toggleStatus } = useTaskStatus(initial)
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: task.id, data: { task } })
   return (
     <div ref={setNodeRef} style={{ transform: CSS.Translate.toString(transform), opacity: isDragging ? 0.3 : 1 }}
       {...listeners} {...attributes}>
       <Link href={`/tasks/${task.id}/edit`} onClick={e => { if (isDragging) e.preventDefault() }}>
-        <TaskChip task={task} categories={categories} />
+        <TaskChip
+          task={task}
+          categories={categories}
+          status={task.status}
+          control={
+            <StatusButton
+              status={task.status}
+              toggling={toggling}
+              onToggle={toggleStatus}
+              compact
+            />
+          }
+        />
       </Link>
     </div>
   )

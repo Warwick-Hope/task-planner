@@ -193,8 +193,8 @@ happened rather than only in the app.
     projects are on it and "dev stays free" did not survive contact with the billing model
     (§Open items 5, [KB.md](KB.md) #4). Leaked-password protection is still a toggle nobody has
     flipped (§Open items 4).
-19. 🔄 **Task screen fixes — 15 Sep 2026, PR #34, not yet merged.** Findings from using the app,
-    gathered onto one branch rather than one PR each.
+19. 🔄 **Task screen fixes — 15–19 Sep 2026, PR #34, not yet merged.** Findings from using the
+    app, gathered onto one branch rather than one PR each.
 
     - **The list opens on Open.** It showed every task ever created, done and cancelled alike,
       because an absent `?status=` meant no filter. It defaults to the two open statuses now,
@@ -207,6 +207,11 @@ happened rather than only in the app.
       ran off the side of the screen was the *zoomed* page — a phone zooms in when it focuses
       an input under 16px, and the row that just fitted then did not. The forms stack below
       `sm` and their inputs are 16px there ([KB.md](KB.md) #59).
+    - **A task can be marked done wherever it appears.** The calendar chips, the plan board and
+      the "needs attention" panel showed a task and offered no way to finish it — the panel
+      worst of all, since "this was due last month" is most often answered with "it is done".
+      All three carry the same status circle as the lists now, and the control itself is one
+      component rather than the five copies it had become ([KB.md](KB.md) #60).
     - **A top-level category can be put on a task.** The API had always allowed it and both
       pickers refused it, so a task the connector could file under "Work" could not be filed
       under "Work" in the app. The task form and the brain-dump review panel both offer the

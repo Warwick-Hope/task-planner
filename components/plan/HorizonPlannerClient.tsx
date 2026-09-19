@@ -9,6 +9,8 @@ import {
   useDroppable,
 } from '@dnd-kit/core'
 import { useDragSensors } from '@/lib/dnd-sensors'
+import { useTaskStatus } from '@/lib/use-task-status'
+import StatusButton from '@/components/tasks/StatusButton'
 import Link from 'next/link'
 import type { Task, Category } from '@/types'
 import {
@@ -68,9 +70,11 @@ function categoryColour(categoryId: string | null, categories: Category[]): stri
 
 // ─── DraggableTaskChip ────────────────────────────────────────────────────────
 
-function DraggableTaskChip({ task, categories }: { task: Task; categories: Category[] }) {
+function DraggableTaskChip({ task: initial, categories }: { task: Task; categories: Category[] }) {
+  const { task, toggling, toggleStatus } = useTaskStatus(initial)
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: task.id })
   const colour = categoryColour(task.category_id, categories)
+  const done = task.status === 'done'
   return (
     <div
       ref={setNodeRef}
@@ -78,10 +82,13 @@ function DraggableTaskChip({ task, categories }: { task: Task; categories: Categ
       {...attributes}
       className={`flex items-center gap-1.5 px-2 py-2.5 sm:py-1.5 rounded-md bg-white border border-gray-200 text-xs cursor-grab select-none shadow-sm transition-opacity ${
         isDragging ? 'opacity-40' : 'hover:border-gray-300 hover:shadow'
-      }`}
+      } ${done ? 'opacity-60' : ''}`}
     >
+      <StatusButton status={task.status} toggling={toggling} onToggle={toggleStatus} compact />
       <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ backgroundColor: colour }} />
-      <span className="truncate text-gray-700">{task.title}</span>
+      <span className={`truncate ${done ? 'line-through text-gray-400' : 'text-gray-700'}`}>
+        {task.title}
+      </span>
     </div>
   )
 }

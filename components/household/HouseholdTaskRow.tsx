@@ -6,9 +6,9 @@ import Link from 'next/link'
 import type { Task, Category } from '@/types'
 import { formatHorizon } from '@/lib/horizon'
 import AssignButton from './AssignButton'
-import { STATUS_DISPLAY } from '@/lib/task-status'
 import { categoryColour, DEFAULT_CATEGORY_COLOUR } from '@/lib/category-colour'
 import { useTaskStatus } from '@/lib/use-task-status'
+import StatusButton from '@/components/tasks/StatusButton'
 
 interface Member {
   id: string
@@ -44,7 +44,6 @@ export default function HouseholdTaskRow({
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [deleting, setDeleting] = useState(false)
 
-  const statusConfig = STATUS_DISPLAY[task.status]
   const category = task.category_id ? allCategories.find((c) => c.id === task.category_id) ?? null : null
   const dotColour = category ? categoryColour(category.id, allCategories) ?? DEFAULT_CATEGORY_COLOUR : null
   const horizonLabel = formatHorizon(task)
@@ -58,14 +57,12 @@ export default function HouseholdTaskRow({
 
   return (
     <div className={`group flex items-start gap-2 sm:gap-3 px-3 sm:px-4 py-2 sm:py-3 border-b border-gray-100 hover:bg-gray-50 transition-colors ${task.status === 'done' ? 'opacity-60' : ''}`}>
-      <button
-        onClick={toggleStatus}
-        disabled={toggling}
-        aria-label={`Status: ${task.status}. Advance status.`}
-        className={`shrink-0 flex items-center justify-center min-h-[40px] min-w-[36px] sm:min-h-0 sm:min-w-0 sm:mt-0.5 text-lg leading-none transition-colors ${statusConfig.className}`}
-      >
-        {statusConfig.icon}
-      </button>
+      <StatusButton
+        status={task.status}
+        toggling={toggling}
+        onToggle={toggleStatus}
+        className="sm:mt-0.5"
+      />
 
       <div className="flex-1 min-w-0 py-2 sm:py-0">
         <Link

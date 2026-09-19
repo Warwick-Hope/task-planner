@@ -149,6 +149,7 @@ Every entry, in number order. Statuses are the point of this table.
 | 57 | A filter default that is not "everything" changes what an absent parameter means | The app | Live |
 | 58 | The category pickers refused a top-level category that the API had always accepted | The app | Live |
 | 59 | A cramped row does not overflow, it shrinks — and a 14px input zooms the phone | The app | Live |
+| 60 | The status control is a component, not a pattern — and a chip that drags needs one | The app | Live |
 
 ---
 
@@ -1094,6 +1095,36 @@ swept.
 The page-wide overflow guard could not have caught any of this anyway. The form only exists
 after a click, and each meal card carries `overflow-hidden`, which `overflowingElements()`
 treats as a deliberate sideways scroller and skips (#18).
+
+### 60. The status control is a component, not a pattern — and a chip that drags needs one
+
+#24 shared the status *cycle* and the icons, and left every component to render its own button
+around them. Five did, and by the time a sixth was wanted they had drifted exactly as copies
+do: four carried the 40px touch target the mobile pass added, `CleaningScheduleView` did not,
+and that one had no `aria-label` either — a bare `○` glyph, to a screen reader.
+`DashboardTaskRow` had gone further and kept its own `STATUS_CLASS` map, a second copy of the
+colours already in `STATUS_DISPLAY`.
+
+[components/tasks/StatusButton.tsx](components/tasks/StatusButton.tsx) is the control now. The
+hook stays in the caller, because a row needs the optimistic task for its own line-through and
+opacity; only the button moved.
+
+**The reason it had to be a component and not another copy** is the two screens that were
+missing it. On the calendar and the plan board a task is a chip, and the chip *is* the drag
+handle — dnd-kit spreads its listeners over the whole element. A control inside one has to
+stop `pointerdown` reaching them or pressing it picks the task up, and it has to be small
+enough that a 40px target is not taller than the chip. Both live in the component (`compact`),
+rather than in whichever copy remembered.
+
+The third screen with no control was the "needs attention" panel, and it is a server component
+— the row had to be split into [ReviewPromptRow.tsx](components/tasks/ReviewPromptRow.tsx) to
+hold the hook at all. Which is the general shape: a panel that queries can stay on the server,
+but the row a person touches cannot.
+
+**Non-negotiables is deliberately still its own toggle.** It goes done ↔ not started in one
+tap, with no "in progress" — a non-negotiable is a thing you did or did not do today. Sharing
+the three-state cycle there would take a tap away from the one screen designed around a single
+one.
 
 ---
 

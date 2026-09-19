@@ -114,6 +114,10 @@ Branching, commits, PRs and migration deploys are all in [CONTRIBUTING.md](CONTR
 - **Task reads and writes go through [lib/tasks-server.ts](lib/tasks-server.ts)** — the routes and
   the connector's tools both call it, and `complete_task` is separate from an update because
   completing advances a recurrence ([KB.md](KB.md) #24, #49).
+- **The status circle is [components/tasks/StatusButton.tsx](components/tasks/StatusButton.tsx),
+  not markup you write again** — it carries the touch target, the accessible name and the
+  `pointerdown` guard a draggable chip needs. Every surface that shows a task gets one
+  ([KB.md](KB.md) #60, #24).
 - **A top-level category is a valid `category_id`** — the only rule is that it belongs to the
   task's workspace, so a picker that offers only subcategories is refusing what the API accepts,
   and a category filter has to count the parent's own id ([KB.md](KB.md) #58).
